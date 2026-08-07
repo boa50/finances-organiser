@@ -39,6 +39,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>('Credit Card');
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState<PaymentMethodItem[]>([]);
+  const [store, setStore] = useState('');
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -72,6 +73,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         setCurrency(transaction.currency);
         setCategory(transaction.category);
         setPaymentMethod(transaction.paymentMethod || pms[0]?.name || 'Credit Card');
+        setStore(transaction.store || '');
         setDate(dateFromTransaction(transaction.date));
         setNotes(transaction.notes || '');
       } else {
@@ -80,6 +82,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         setCurrency('BRL');
         setCategory(cats[0]?.name || '');
         setPaymentMethod(pms[0]?.name || 'Credit Card');
+        setStore('');
         setDate(new Date());
         setNotes('');
       }
@@ -117,6 +120,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         currency,
         category: category.trim(),
         paymentMethod: type === 'expense' ? (paymentMethod.trim() || undefined) : undefined,
+        store: type === 'expense' ? (store.trim() || undefined) : undefined,
         date: date.toISOString(),
         notes: notes.trim() || undefined,
       };
@@ -194,15 +198,20 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
               </ScrollView>
             </Field>
             {type === 'expense' && (
-              <Field label="Way of Payment">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                  {availablePaymentMethods.map((item) => (
-                    <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
-                      <Text style={styles.chipText}>💳 {item.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </Field>
+              <>
+                <Field label="Way of Payment">
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
+                    {availablePaymentMethods.map((item) => (
+                      <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
+                        <Text style={styles.chipText}>💳 {item.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </Field>
+                <Field label="Store / Merchant (optional)">
+                  <TextInput style={styles.input} value={store} onChangeText={setStore} placeholder="e.g. Amazon, Supermarket, Target" placeholderTextColor={theme.colors.textTertiary} />
+                </Field>
+              </>
             )}
             <Field label="Date">
               <View style={styles.pickerRow}>

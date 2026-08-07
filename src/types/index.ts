@@ -8,6 +8,7 @@ export interface Transaction {
   currency: string; // e.g. 'USD', 'EUR', 'BRL', 'GBP'
   category: string;
   paymentMethod?: string;
+  store?: string;
   date: string; // ISO 8601 string: YYYY-MM-DDTHH:mm:ss.sssZ
   notes?: string;
   createdAt: string;

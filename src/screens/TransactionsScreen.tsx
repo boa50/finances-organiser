@@ -67,6 +67,12 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
           <Text style={styles.txTitle}>{transaction.title}</Text>
           <View style={styles.txMetaRow}>
             <Text style={styles.txCategory}>{transaction.category}</Text>
+            {transaction.store ? (
+              <>
+                <Text style={styles.dotSeparator}>•</Text>
+                <Text style={styles.txStore}>🏪 {transaction.store}</Text>
+              </>
+            ) : null}
             {transaction.paymentMethod ? (
               <>
                 <Text style={styles.dotSeparator}>•</Text>
@@ -417,6 +423,11 @@ const styles = StyleSheet.create({
   },
   txCategory: {
     color: theme.colors.accent,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  txStore: {
+    color: theme.colors.textLight,
     fontSize: 12,
     fontWeight: '600',
   },

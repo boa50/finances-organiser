@@ -32,6 +32,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amount: Number(row.amount),
         currency: String(row.currency),
         category: String(row.category),
+        paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
+        store: row.store ? String(row.store) : undefined,
         date: String(row.date),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at || row.date),
@@ -41,18 +43,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST /api/transactions - Add a new transaction
     if (req.method === 'POST') {
-      const { type, title, amount, currency, category, date, notes } = req.body || {};
+      const { type, title, amount, currency, category, paymentMethod, store, date, notes } = req.body || {};
       if (!type || !title || amount === undefined || !currency || !category || !date) {
         return res.status(400).json({ error: 'Missing required transaction fields' });
       }
 
       const id = 'tx-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
       const createdAt = new Date().toISOString();
+      const pmVal = type === 'expense' && paymentMethod ? String(paymentMethod).trim() : null;
+      const storeVal = type === 'expense' && store ? String(store).trim() : null;
 
       await client.execute({
-        sql: `INSERT INTO transactions (id, type, title, amount, currency, category, date, notes, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [id, type, title, Number(amount), currency, category, date, notes || '', createdAt],
+        sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, store, date, notes, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [id, type, title, Number(amount), currency, category, pmVal, storeVal, date, notes || '', createdAt],
       });
 
       const newTx = {
@@ -62,6 +66,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amount: Number(amount),
         currency,
         category,
+        paymentMethod: pmVal || undefined,
+        store: storeVal || undefined,
         date,
         notes: notes || undefined,
         createdAt,
@@ -71,16 +77,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // PUT /api/transactions - Update an existing transaction
     if (req.method === 'PUT') {
-      const { id, type, title, amount, currency, category, date, notes } = req.body || {};
+      const { id, type, title, amount, currency, category, paymentMethod, store, date, notes } = req.body || {};
       if (!id || !type || !title || amount === undefined || !currency || !category || !date) {
         return res.status(400).json({ error: 'Missing required transaction fields for update' });
       }
 
+      const pmVal = type === 'expense' && paymentMethod ? String(paymentMethod).trim() : null;
+      const storeVal = type === 'expense' && store ? String(store).trim() : null;
+
       await client.execute({
         sql: `UPDATE transactions
-              SET type = ?, title = ?, amount = ?, currency = ?, category = ?, date = ?, notes = ?
+              SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, store = ?, date = ?, notes = ?
               WHERE id = ?`,
-        args: [type, title, Number(amount), currency, category, date, notes || '', id],
+        args: [type, title, Number(amount), currency, category, pmVal, storeVal, date, notes || '', id],
       });
 
       const updatedTx = {
@@ -90,6 +99,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         amount: Number(amount),
         currency,
         category,
+        paymentMethod: pmVal || undefined,
+        store: storeVal || undefined,
         date,
         notes: notes || undefined,
       };

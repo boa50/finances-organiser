@@ -312,6 +312,7 @@ class TursoDatabaseService {
         currency: String(row.currency),
         category: String(row.category),
         paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
+        store: row.store ? String(row.store) : undefined,
         date: String(row.date),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at || row.date),
@@ -367,8 +368,8 @@ class TursoDatabaseService {
     if (this.client) {
       try {
         await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, date, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, store, date, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newTx.id,
             newTx.type,
@@ -377,6 +378,7 @@ class TursoDatabaseService {
             newTx.currency,
             newTx.category,
             newTx.paymentMethod || null,
+            newTx.store || null,
             newTx.date,
             newTx.notes || '',
             newTx.createdAt,
@@ -465,7 +467,7 @@ class TursoDatabaseService {
       try {
         await this.client.execute({
           sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, date = ?, notes = ?
+                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, store = ?, date = ?, notes = ?
                 WHERE id = ?`,
           args: [
             updatedTx.type,
@@ -474,6 +476,7 @@ class TursoDatabaseService {
             updatedTx.currency,
             updatedTx.category,
             updatedTx.paymentMethod || null,
+            updatedTx.store || null,
             updatedTx.date,
             updatedTx.notes || '',
             id,

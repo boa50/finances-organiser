@@ -72,6 +72,7 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       currency TEXT NOT NULL,
       category TEXT NOT NULL,
       payment_method TEXT,
+      store TEXT,
       date TEXT NOT NULL,
       notes TEXT,
       created_at TEXT NOT NULL
@@ -82,6 +83,13 @@ export async function ensureTablesExist(client: Client): Promise<void> {
     await client.execute('ALTER TABLE transactions ADD COLUMN payment_method TEXT');
   } catch (e) {
     // Column already exists
+  }
+
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN store TEXT');
+  } catch (e) {
+    // Column already exists
+    
   }
 
   await client.execute(`
