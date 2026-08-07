@@ -116,7 +116,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         amount: parsedAmount,
         currency,
         category: category.trim(),
-        paymentMethod: paymentMethod.trim() || undefined,
+        paymentMethod: type === 'expense' ? (paymentMethod.trim() || undefined) : undefined,
         date: date.toISOString(),
         notes: notes.trim() || undefined,
       };
@@ -193,15 +193,17 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 ))}
               </ScrollView>
             </Field>
-            <Field label="Way of Payment">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                {availablePaymentMethods.map((item) => (
-                  <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
-                    <Text style={styles.chipText}>💳 {item.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </Field>
+            {type === 'expense' && (
+              <Field label="Way of Payment">
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
+                  {availablePaymentMethods.map((item) => (
+                    <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
+                      <Text style={styles.chipText}>💳 {item.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </Field>
+            )}
             <Field label="Date">
               <View style={styles.pickerRow}>
                 <TouchableOpacity style={styles.pickerButton} onPress={() => setDatePickerVisible(true)}>
