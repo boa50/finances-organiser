@@ -13,10 +13,10 @@ import { tursoService } from './src/services/tursoService';
 import { OverviewScreen } from './src/screens/OverviewScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
-import { CategoryManagementScreen } from './src/screens/CategoryManagementScreen';
+import { ManagementScreen } from './src/screens/ManagementScreen';
 import { refreshCurrencyRates } from './src/utils/currencies';
 import { TransactionEditModal } from './src/components/TransactionEditModal';
-import { ChartNoAxesCombined, House, Layers, List, Plus, Trash2, Zap } from 'lucide-react-native';
+import { ChartNoAxesCombined, House, List, Plus, SlidersHorizontal, Trash2, Zap } from 'lucide-react-native';
 
 type TabName = 'overview' | 'analytics' | 'transactions' | 'categories';
 
@@ -133,7 +133,7 @@ export default function App() {
         )}
 
         {activeTab === 'categories' && (
-          <CategoryManagementScreen onCategoriesUpdated={loadData} />
+          <ManagementScreen onCategoriesUpdated={loadData} />
         )}
       </View>
       {/* Floating Action Button — visible on Overview and History only */}
@@ -163,9 +163,9 @@ export default function App() {
           style={[styles.navTab, activeTab === 'categories' && styles.navTabActive]}
           onPress={() => setActiveTab('categories')}
         >
-          <Layers size={18} color={activeTab === 'categories' ? '#38BDF8' : '#64748B'} />
+          <SlidersHorizontal size={18} color={activeTab === 'categories' ? '#38BDF8' : '#64748B'} />
           <Text style={[styles.navText, activeTab === 'categories' && styles.navTextActive]}>
-            Categories
+            Management
           </Text>
         </TouchableOpacity>
 
