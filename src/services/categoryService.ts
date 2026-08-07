@@ -89,6 +89,27 @@ class CategoryService {
   }
 
   public async getCategories(type?: TransactionType): Promise<CategoryItem[]> {
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/categories', {
+          method: 'GET',
+          headers: tursoService.getApiHeaders(),
+        });
+        if (res.ok) {
+          const items: CategoryItem[] = await res.json();
+          this.categories = items;
+          this.saveToCache();
+          if (type) {
+            return this.categories.filter((c) => c.type === type);
+          }
+          return [...this.categories];
+        }
+      }
+    } catch (e) {
+      // Fall through to LibSQL client execution below
+    }
+
     // If Turso is connected, attempt to load from Turso categories table
     const client = tursoService.getClient();
     if (client) {
@@ -155,7 +176,24 @@ class CategoryService {
     this.categories = [...this.categories, newCategory];
     this.saveToCache();
 
-    // Persist to Turso Cloud DB if connected
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/categories', {
+          method: 'POST',
+          headers: tursoService.getApiHeaders(),
+          body: JSON.stringify(cat),
+        });
+        if (res.ok) {
+          const created: CategoryItem = await res.json();
+          return created;
+        }
+      }
+    } catch (e) {
+      // Fall through
+    }
+
+    // Persist to Turso Cloud DB if connected directly
     const client = tursoService.getClient();
     if (client) {
       try {
@@ -211,7 +249,24 @@ class CategoryService {
     this.categories[index] = nextCategory;
     this.saveToCache();
 
-    // Update in Turso DB if connected
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/categories', {
+          method: 'PUT',
+          headers: tursoService.getApiHeaders(),
+          body: JSON.stringify({ id, ...updated }),
+        });
+        if (res.ok) {
+          const updatedCat: CategoryItem = await res.json();
+          return updatedCat;
+        }
+      }
+    } catch (e) {
+      // Fall through
+    }
+
+    // Update in Turso DB if connected directly
     const client = tursoService.getClient();
     if (client) {
       try {
@@ -237,6 +292,21 @@ class CategoryService {
     this.categories = this.categories.filter((c) => c.id !== id);
     this.saveToCache();
 
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch(`/api/categories?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: tursoService.getApiHeaders(),
+        });
+        if (res.ok) {
+          return true;
+        }
+      }
+    } catch (e) {
+      // Fall through
+    }
+
     const client = tursoService.getClient();
     if (client) {
       try {
@@ -255,6 +325,24 @@ class CategoryService {
   public async resetToDefaults(): Promise<CategoryItem[]> {
     this.categories = [...DEFAULT_CATEGORIES];
     this.saveToCache();
+
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/categories?action=reset', {
+          method: 'POST',
+          headers: tursoService.getApiHeaders(),
+        });
+        if (res.ok) {
+          const resetItems: CategoryItem[] = await res.json();
+          this.categories = resetItems;
+          this.saveToCache();
+          return [...this.categories];
+        }
+      }
+    } catch (e) {
+      // Fall through
+    }
 
     const client = tursoService.getClient();
     if (client) {

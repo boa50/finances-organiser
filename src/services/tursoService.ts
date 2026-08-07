@@ -154,7 +154,42 @@ class TursoDatabaseService {
     return testRes;
   }
 
+  public getApiHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (this.config.url) {
+      headers['x-turso-db-url'] = this.config.url;
+    }
+    if (this.config.authToken) {
+      headers['x-turso-auth-token'] = this.config.authToken;
+    }
+    return headers;
+  }
+
   public async testConnection(url: string, authToken: string): Promise<{ success: boolean; message: string }> {
+    // Attempt testing via Vercel serverless health function first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/health', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-turso-db-url': url.trim(),
+            'x-turso-auth-token': authToken.trim(),
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isConnected) {
+            return { success: true, message: data.message || 'Successfully connected to Turso Cloud Database via Serverless API!' };
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore API fetch error and fall back to direct LibSQL client check
+    }
+
     try {
       let cleanUrl = url.trim();
       if (!cleanUrl.startsWith('https://') && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('libsql://')) {
@@ -181,6 +216,27 @@ class TursoDatabaseService {
   }
 
   public async initDatabase(): Promise<boolean> {
+    // Try initializing via Vercel serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/health', {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.isConnected) {
+            this.config.isConnected = true;
+            this.config.lastSyncedAt = new Date().toISOString();
+            await this.fetchFromTurso();
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback to client-side LibSQL initialization below
+    }
+
     if (!this.config.url || !this.config.authToken) {
       return false;
     }
@@ -246,6 +302,25 @@ class TursoDatabaseService {
   }
 
   private async fetchFromTurso(): Promise<Transaction[]> {
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/transactions', {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (res.ok) {
+          const items: Transaction[] = await res.json();
+          this.localMemoryTx = items;
+          this.saveLocalCache();
+          this.config.isConnected = true;
+          return items;
+        }
+      }
+    } catch (e) {
+      // Fall through to LibSQL client execution
+    }
+
     if (!this.client) return this.localMemoryTx;
 
     try {
@@ -276,16 +351,7 @@ class TursoDatabaseService {
   }
 
   public async getTransactions(): Promise<Transaction[]> {
-    if (this.client) {
-      try {
-        return await this.fetchFromTurso();
-      } catch (e) {
-        return this.localMemoryTx;
-      }
-    }
-    return [...this.localMemoryTx].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    return await this.fetchFromTurso();
   }
 
   public async addTransaction(
@@ -301,7 +367,25 @@ class TursoDatabaseService {
     this.localMemoryTx = [newTx, ...this.localMemoryTx];
     this.saveLocalCache();
 
-    // Persist to Turso Cloud DB if connected
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: this.getApiHeaders(),
+          body: JSON.stringify(txData),
+        });
+        if (res.ok) {
+          const created: Transaction = await res.json();
+          this.config.isConnected = true;
+          return created;
+        }
+      }
+    } catch (e) {
+      // Fall through to LibSQL client fallback
+    }
+
+    // Persist to Turso Cloud DB directly if connected
     if (this.client) {
       try {
         await this.client.execute({
@@ -331,6 +415,22 @@ class TursoDatabaseService {
   public async deleteTransaction(id: string): Promise<boolean> {
     this.localMemoryTx = this.localMemoryTx.filter((t) => t.id !== id);
     this.saveLocalCache();
+
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: this.getApiHeaders(),
+        });
+        if (res.ok) {
+          this.config.isConnected = true;
+          return true;
+        }
+      }
+    } catch (e) {
+      // Fall through
+    }
 
     if (this.client) {
       try {
@@ -364,6 +464,24 @@ class TursoDatabaseService {
     );
     this.saveLocalCache();
 
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/transactions', {
+          method: 'PUT',
+          headers: this.getApiHeaders(),
+          body: JSON.stringify({ id, ...txData }),
+        });
+        if (res.ok) {
+          const updated: Transaction = await res.json();
+          this.config.isConnected = true;
+          return updated;
+        }
+      }
+    } catch (e) {
+      // Fall through
+    }
+
     if (this.client) {
       try {
         await this.client.execute({
@@ -394,6 +512,18 @@ class TursoDatabaseService {
   public async clearAllTransactions(): Promise<Transaction[]> {
     this.localMemoryTx = [];
     this.saveLocalCache();
+
+    // Try Vercel Serverless API first
+    try {
+      if (typeof window !== 'undefined') {
+        await fetch('/api/transactions?id=all', {
+          method: 'DELETE',
+          headers: this.getApiHeaders(),
+        });
+      }
+    } catch (e) {
+      // Fall through
+    }
 
     if (this.client) {
       try {
