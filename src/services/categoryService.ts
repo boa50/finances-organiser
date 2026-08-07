@@ -36,7 +36,7 @@ export const PRESET_CATEGORY_COLORS = [
   '#059669', '#14B8A6', '#0284C7', '#7C3AED',
 ];
 
-const DEFAULT_CATEGORIES: CategoryItem[] = [
+export const DEFAULT_CATEGORIES: CategoryItem[] = [
   ...EXPENSE_CATEGORIES.map((c, i) => ({
     id: `cat-exp-${i}`,
     name: c.name,
@@ -104,6 +104,17 @@ class CategoryService {
             isDefault: Boolean(row.is_default),
           }));
           this.categories = dbCategories;
+          this.saveToCache();
+        } else {
+          // Table is empty, insert default categories to database
+          for (const cat of DEFAULT_CATEGORIES) {
+            await client.execute({
+              sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
+                    VALUES (?, ?, ?, ?, ?, ?)`,
+              args: [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.isDefault ? 1 : 0],
+            });
+          }
+          this.categories = [...DEFAULT_CATEGORIES];
           this.saveToCache();
         }
       } catch (e) {

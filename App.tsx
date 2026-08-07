@@ -17,7 +17,7 @@ import { CategoryManagementScreen } from './src/screens/CategoryManagementScreen
 import { TursoConfigModal } from './src/components/TursoConfigModal';
 import { refreshCurrencyRates } from './src/utils/currencies';
 import { TransactionEditModal } from './src/components/TransactionEditModal';
-import { ChartNoAxesCombined, House, Layers, List, Plus, RefreshCw, Trash2, Zap } from 'lucide-react-native';
+import { ChartNoAxesCombined, House, Layers, List, Plus, Trash2, Zap } from 'lucide-react-native';
 
 type TabName = 'overview' | 'analytics' | 'transactions' | 'categories';
 
@@ -62,13 +62,6 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, []);
-
-  const handleSeedData = async () => {
-    if (confirm('Reset transactions and reload sample dataset?')) {
-      const fresh = await tursoService.seedSampleData();
-      setTransactions(fresh);
-    }
-  };
 
   const handleClearAll = async () => {
     if (
@@ -127,11 +120,6 @@ export default function App() {
               <Text style={styles.clearBtnText}>Clear All</Text>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity style={styles.seedBtn} onPress={handleSeedData}>
-            <RefreshCw size={14} color="#94A3B8" />
-            <Text style={styles.seedBtnText}>Sample Data</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -299,20 +287,6 @@ const styles = StyleSheet.create({
     color: '#F43F5E',
     fontSize: 11,
     fontWeight: '700',
-  },
-  seedBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  seedBtnText: {
-    color: '#94A3B8',
-    fontSize: 11,
-    fontWeight: '600',
   },
   screenContainer: {
     flex: 1,

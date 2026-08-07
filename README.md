@@ -64,7 +64,7 @@ npm run ios
 
 On first launch the app will:
 1. Attempt to connect to Turso if credentials are available.
-2. If the database is empty, offer to seed it with sample data.
+2. Automatically populate default expense and income categories if the categories table is empty.
 3. Fetch the latest currency exchange rates.
 
 ## 🏗️ Project Architecture
@@ -86,8 +86,7 @@ finances-organiser/
     │
     ├── services/
     │   ├── tursoService.ts   # Turso DB client — CRUD, sync, offline fallback
-    │   ├── categoryService.ts# Category CRUD with local cache + cloud sync
-    │   └── sampleData.ts     # Seed dataset (24 realistic sample transactions)
+    │   └── categoryService.ts# Category CRUD with local cache + cloud sync
     │
     ├── utils/
     │   └── currencies.ts     # Currency definitions, formatting, live exchange rates

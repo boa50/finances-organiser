@@ -1,6 +1,6 @@
 import { createClient, Client } from '@libsql/client/web';
 import { Transaction, TursoConfig } from '../types';
-import { INITIAL_SAMPLE_TRANSACTIONS } from './sampleData';
+import { DEFAULT_CATEGORIES } from './categoryService';
 
 const CONFIG_KEY = 'finances_turso_config';
 const LOCAL_TX_KEY = 'finances_local_transactions';
@@ -84,8 +84,8 @@ class TursoDatabaseService {
     } catch (e) {
       console.warn('Failed to load local transactions', e);
     }
-    // Default fallback to initial sample data
-    this.localMemoryTx = [...INITIAL_SAMPLE_TRANSACTIONS];
+    // Default fallback to empty array
+    this.localMemoryTx = [];
     this.saveLocalCache();
   }
 
@@ -221,27 +221,16 @@ class TursoDatabaseService {
       this.config.isConnected = true;
       this.config.lastSyncedAt = new Date().toISOString();
 
-      // Check if table has data. If empty, seed initial sample data into Turso!
-      const countRes = await this.client.execute('SELECT COUNT(*) as count FROM transactions');
-      const count = Number(countRes.rows[0]?.count || 0);
+      // Check if categories table has data. If empty, insert default categories into Turso DB!
+      const catCountRes = await this.client.execute('SELECT COUNT(*) as count FROM categories');
+      const catCount = Number(catCountRes.rows[0]?.count || 0);
 
-      if (count === 0 && this.localMemoryTx.length > 0) {
-        // Seed database
-        for (const tx of this.localMemoryTx) {
+      if (catCount === 0) {
+        for (const cat of DEFAULT_CATEGORIES) {
           await this.client.execute({
-            sql: `INSERT INTO transactions (id, type, title, amount, currency, category, date, notes, created_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
-              tx.id,
-              tx.type,
-              tx.title,
-              tx.amount,
-              tx.currency,
-              tx.category,
-              tx.date,
-              tx.notes || '',
-              tx.createdAt,
-            ],
+            sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
+                  VALUES (?, ?, ?, ?, ?, ?)`,
+            args: [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.isDefault ? 1 : 0],
           });
         }
       }
@@ -415,38 +404,6 @@ class TursoDatabaseService {
     }
 
     return [];
-  }
-
-  public async seedSampleData(): Promise<Transaction[]> {
-    this.localMemoryTx = [...INITIAL_SAMPLE_TRANSACTIONS];
-    this.saveLocalCache();
-
-    if (this.client) {
-      try {
-        await this.client.execute('DELETE FROM transactions');
-        for (const tx of this.localMemoryTx) {
-          await this.client.execute({
-            sql: `INSERT INTO transactions (id, type, title, amount, currency, category, date, notes, created_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [
-              tx.id,
-              tx.type,
-              tx.title,
-              tx.amount,
-              tx.currency,
-              tx.category,
-              tx.date,
-              tx.notes || '',
-              tx.createdAt,
-            ],
-          });
-        }
-      } catch (e) {
-        console.error('Failed to seed Turso database', e);
-      }
-    }
-
-    return this.localMemoryTx;
   }
 }
 
