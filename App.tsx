@@ -119,7 +119,6 @@ export default function App() {
             transactions={transactions}
             tursoConfig={tursoConfig}
             onNavigateAdd={() => setAddTransactionModalVisible(true)}
-            onNavigateAnalytics={() => setActiveTab('analytics')}
             onNavigateTransactions={() => setActiveTab('transactions')}
             onRefresh={loadData}
           />

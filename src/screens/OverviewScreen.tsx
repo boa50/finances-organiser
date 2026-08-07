@@ -9,14 +9,13 @@ import {
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY, formatMoney, convertCurrency } from '../utils/currencies';
 import { TransactionEditModal } from '../components/TransactionEditModal';
-import { ChartNoAxesCombined, Pencil, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { Pencil, TrendingDown, TrendingUp } from 'lucide-react-native';
 import theme from '../theme';
 
 interface OverviewScreenProps {
   transactions: Transaction[];
   tursoConfig: TursoConfig;
   onNavigateAdd?: () => void;
-  onNavigateAnalytics: () => void;
   onNavigateTransactions: () => void;
   onRefresh: () => void;
 }
@@ -24,7 +23,6 @@ interface OverviewScreenProps {
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   transactions,
   tursoConfig,
-  onNavigateAnalytics,
   onNavigateTransactions,
   onRefresh,
 }) => {
@@ -108,13 +106,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
           </View>
         </View>
       </View>
-
-      {/* Quick Action */}
-      <TouchableOpacity style={[styles.actionBtn, styles.actionGraphBtn]} onPress={onNavigateAnalytics}>
-        <ChartNoAxesCombined size={24} color={theme.colors.accent} strokeWidth={2} />
-        <Text style={styles.actionTitle}>D3.js Analytics</Text>
-        <Text style={styles.actionSubtitle}>View evolution graphs & donut breakdown</Text>
-      </TouchableOpacity>
 
       {/* Recent Activity Section */}
       <View style={styles.section}>
