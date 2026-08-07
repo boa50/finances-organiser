@@ -120,7 +120,6 @@ finances-organiser/
         ├── D3CurrentMonthCharts.tsx     # Donut chart + category bar chart (D3 + SVG)
         ├── D3EvolutionChart.tsx         # Monthly income/expense trend lines (D3 + SVG)
         ├── TransactionEditModal.tsx     # Add/edit transaction form
-        ├── TursoConfigModal.tsx         # Turso credentials & connection tester
         ├── TransactionDatePicker.tsx    # Platform-resolved date picker barrel
         ├── TransactionDatePicker.native.tsx  # iOS/Android date picker
         └── TransactionDatePicker.web.tsx     # HTML5 date input for web

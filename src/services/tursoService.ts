@@ -26,45 +26,17 @@ class TursoDatabaseService {
   }
 
   private loadSavedConfig() {
-    try {
-      let savedConfig: Partial<TursoConfig> = {};
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const saved = localStorage.getItem(CONFIG_KEY);
-        if (saved) {
-          savedConfig = JSON.parse(saved);
-        }
-      }
+    const isEnvConfigured = Boolean(ENV_TURSO_URL && ENV_TURSO_AUTH_TOKEN);
 
-      const isEnvConfigured = Boolean(ENV_TURSO_URL && ENV_TURSO_AUTH_TOKEN);
+    this.config = {
+      url: ENV_TURSO_URL,
+      authToken: ENV_TURSO_AUTH_TOKEN,
+      isConnected: false,
+      isEnvConfigured,
+    };
 
-      // Environment values take precedence. If only one is supplied, retain
-      // the other runtime value so the user only has to complete the missing
-      // field in the configuration modal.
-      this.config = {
-        url: ENV_TURSO_URL || savedConfig.url || '',
-        authToken: ENV_TURSO_AUTH_TOKEN || savedConfig.authToken || '',
-        isConnected: false,
-        isEnvConfigured,
-        lastSyncedAt: savedConfig.lastSyncedAt,
-      };
-
-      if (this.config.url && this.config.authToken) {
-        this.initClient(this.config.url, this.config.authToken);
-      }
-    } catch (e) {
-      console.warn('Failed to load Turso config from localStorage', e);
-
-      // A malformed local value should not prevent a valid environment
-      // configuration from being used.
-      this.config = {
-        url: ENV_TURSO_URL,
-        authToken: ENV_TURSO_AUTH_TOKEN,
-        isConnected: false,
-        isEnvConfigured: Boolean(ENV_TURSO_URL && ENV_TURSO_AUTH_TOKEN),
-      };
-      if (this.config.url && this.config.authToken) {
-        this.initClient(this.config.url, this.config.authToken);
-      }
+    if (this.config.url && this.config.authToken) {
+      this.initClient(this.config.url, this.config.authToken);
     }
   }
 
@@ -121,37 +93,6 @@ class TursoDatabaseService {
 
   public getConfig(): TursoConfig {
     return { ...this.config };
-  }
-
-  public async saveConfig(url: string, authToken: string): Promise<{ success: boolean; message: string }> {
-    const cleanUrl = url.trim();
-    const cleanToken = authToken.trim();
-
-    if (!cleanUrl || !cleanToken) {
-      this.client = null;
-      this.config = { url: '', authToken: '', isConnected: false };
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.removeItem(CONFIG_KEY);
-      }
-      return { success: false, message: 'Turso URL and Auth Token cleared' };
-    }
-
-    const testRes = await this.testConnection(cleanUrl, cleanToken);
-    if (testRes.success) {
-      this.config = {
-        url: cleanUrl,
-        authToken: cleanToken,
-        isConnected: true,
-        lastSyncedAt: new Date().toISOString(),
-      };
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(CONFIG_KEY, JSON.stringify(this.config));
-      }
-      await this.initDatabase();
-    } else {
-      this.config.isConnected = false;
-    }
-    return testRes;
   }
 
   public getApiHeaders(): Record<string, string> {

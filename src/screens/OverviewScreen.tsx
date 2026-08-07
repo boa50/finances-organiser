@@ -14,7 +14,6 @@ import { ChartNoAxesCombined, Pencil, Plus, TrendingDown, TrendingUp } from 'luc
 interface OverviewScreenProps {
   transactions: Transaction[];
   tursoConfig: TursoConfig;
-  onOpenTursoModal: () => void;
   onNavigateAdd: () => void;
   onNavigateAnalytics: () => void;
   onNavigateTransactions: () => void;
@@ -24,7 +23,6 @@ interface OverviewScreenProps {
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   transactions,
   tursoConfig,
-  onOpenTursoModal,
   onNavigateAdd,
   onNavigateAnalytics,
   onNavigateTransactions,
@@ -72,7 +70,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
         </View>
 
         {/* Turso Database Connection Pill */}
-        <TouchableOpacity style={styles.tursoPill} onPress={onOpenTursoModal}>
+        <View style={styles.tursoPill}>
           <View
             style={[
               styles.statusDot,
@@ -80,9 +78,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
             ]}
           />
           <Text style={styles.tursoPillText}>
-            {tursoConfig.isConnected ? 'Turso Cloud DB' : 'Config Turso DB'}
+            {tursoConfig.isConnected ? 'Turso Cloud DB' : 'Turso Offline'}
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       {/* Main Net Balance Hero Card */}

@@ -14,7 +14,6 @@ import { OverviewScreen } from './src/screens/OverviewScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { CategoryManagementScreen } from './src/screens/CategoryManagementScreen';
-import { TursoConfigModal } from './src/components/TursoConfigModal';
 import { refreshCurrencyRates } from './src/utils/currencies';
 import { TransactionEditModal } from './src/components/TransactionEditModal';
 import { ChartNoAxesCombined, House, Layers, List, Plus, Trash2, Zap } from 'lucide-react-native';
@@ -29,25 +28,16 @@ export default function App() {
     authToken: '',
     isConnected: false,
   });
-  const [tursoModalVisible, setTursoModalVisible] = useState(false);
   const [addTransactionModalVisible, setAddTransactionModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
-      const cfg = tursoService.getConfig();
-
       // Fetch current exchange rates before calculating dashboard totals.
       await refreshCurrencyRates();
 
-      // Attempt DB init if configured
-      if (cfg.url && cfg.authToken) {
-        await tursoService.initDatabase();
-      } else {
-        // Neither a complete environment configuration nor a saved runtime
-        // configuration exists, so ask for it when the app starts.
-        setTursoModalVisible(true);
-      }
+      // Attempt DB init
+      await tursoService.initDatabase();
 
       const items = await tursoService.getTransactions();
       setTransactions(items);
@@ -86,7 +76,7 @@ export default function App() {
         </View>
 
         <View style={styles.topActions}>
-          <TouchableOpacity
+          <View
             style={[
               styles.tursoStatusBtn,
               {
@@ -96,7 +86,6 @@ export default function App() {
                 borderColor: tursoConfig.isConnected ? '#10B981' : '#F59E0B',
               },
             ]}
-            onPress={() => setTursoModalVisible(true)}
           >
             <View
               style={[
@@ -112,7 +101,7 @@ export default function App() {
             >
               {tursoConfig.isConnected ? 'Turso Connected' : 'Turso Offline'}
             </Text>
-          </TouchableOpacity>
+          </View>
 
           {transactions.length > 0 && (
             <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll}>
@@ -129,7 +118,6 @@ export default function App() {
           <OverviewScreen
             transactions={transactions}
             tursoConfig={tursoConfig}
-            onOpenTursoModal={() => setTursoModalVisible(true)}
             onNavigateAdd={() => setAddTransactionModalVisible(true)}
             onNavigateAnalytics={() => setActiveTab('analytics')}
             onNavigateTransactions={() => setActiveTab('transactions')}
@@ -202,13 +190,6 @@ export default function App() {
           </Text>
         </TouchableOpacity>
       </View>
-
-      {/* Turso Cloud Config Modal */}
-      <TursoConfigModal
-        visible={tursoModalVisible}
-        onClose={() => setTursoModalVisible(false)}
-        onConfigSaved={loadData}
-      />
 
       <TransactionEditModal
         visible={addTransactionModalVisible}
