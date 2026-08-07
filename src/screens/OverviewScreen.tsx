@@ -206,6 +206,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: theme.spacing['4xl'],
+    paddingBottom: 88,
     gap: theme.spacing['3xl'],
     maxWidth: 720,
     alignSelf: 'center',
