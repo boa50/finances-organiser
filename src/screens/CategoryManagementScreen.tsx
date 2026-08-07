@@ -45,6 +45,7 @@ import {
   X,
   Zap,
 } from 'lucide-react-native';
+import theme from '../theme';
 
 interface CategoryManagementScreenProps {
   onCategoriesUpdated?: () => void;
@@ -152,13 +153,13 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
     };
 
     if (Platform.OS === 'web') {
-      if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
+      if (confirm(`Delete category "${cat.name}"? Existing transactions will retain the name.`)) {
         performDelete();
       }
     } else {
       Alert.alert(
         'Delete Category',
-        `Are you sure you want to delete "${cat.name}"?`,
+        `Delete category "${cat.name}"? Existing transactions will retain the name.`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Delete', style: 'destructive', onPress: performDelete },
@@ -167,25 +168,28 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
     }
   };
 
-  const handleResetDefaults = () => {
+  const handleResetDefaults = async () => {
     const performReset = async () => {
+      setLoading(true);
       try {
         await categoryService.resetToDefaults();
         await loadCategoriesData();
         if (onCategoriesUpdated) onCategoriesUpdated();
       } catch (err: any) {
         alert(err?.message || 'Failed to reset categories');
+      } finally {
+        setLoading(false);
       }
     };
 
     if (Platform.OS === 'web') {
-      if (confirm('Reset all categories back to initial default values?')) {
+      if (confirm('Reset all categories to factory defaults? Your custom categories will be lost.')) {
         performReset();
       }
     } else {
       Alert.alert(
-        'Reset to Defaults',
-        'Reset all categories back to default values?',
+        'Reset Defaults',
+        'Reset all categories to factory defaults? Your custom categories will be lost.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Reset', style: 'destructive', onPress: performReset },
@@ -209,12 +213,12 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.resetBtn} onPress={handleResetDefaults}>
-            <RotateCcw size={14} color="#94A3B8" />
+            <RotateCcw size={14} color={theme.colors.textSecondary} />
             <Text style={styles.resetBtnText}>Reset Defaults</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.addBtn} onPress={openAddModal}>
-            <Plus size={16} color="#0F172A" />
+            <Plus size={16} color={theme.colors.background} />
             <Text style={styles.addBtnText}>New Category</Text>
           </TouchableOpacity>
         </View>
@@ -228,7 +232,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
         >
           <TrendingDown
             size={18}
-            color={activeTab === 'expense' ? '#F43F5E' : '#64748B'}
+            color={activeTab === 'expense' ? theme.colors.danger : theme.colors.textTertiary}
           />
           <Text
             style={[
@@ -246,7 +250,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
         >
           <TrendingUp
             size={18}
-            color={activeTab === 'income' ? '#10B981' : '#64748B'}
+            color={activeTab === 'income' ? theme.colors.success : theme.colors.textTertiary}
           />
           <Text
             style={[
@@ -262,7 +266,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
       {/* Category Grid */}
       {loading ? (
         <View style={styles.loaderBox}>
-          <ActivityIndicator size="large" color="#38BDF8" />
+          <ActivityIndicator size="large" color={theme.colors.accent} />
           <Text style={styles.loadingText}>Loading categories...</Text>
         </View>
       ) : filteredCategories.length === 0 ? (
@@ -306,14 +310,14 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                   style={styles.iconBtn}
                   onPress={() => openEditModal(cat)}
                 >
-                  <Pencil size={15} color="#38BDF8" />
+                  <Pencil size={15} color={theme.colors.accent} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[styles.iconBtn, styles.deleteIconBtn]}
                   onPress={() => handleDeleteCategory(cat)}
                 >
-                  <Trash2 size={15} color="#F43F5E" />
+                  <Trash2 size={15} color={theme.colors.danger} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -343,7 +347,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                 onPress={() => setModalVisible(false)}
                 style={styles.closeBtn}
               >
-                <X size={20} color="#94A3B8" />
+                <X size={20} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -354,7 +358,7 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                 <TextInput
                   style={styles.textInput}
                   placeholder="e.g. Subscriptions, Pet Care, Bonuses"
-                  placeholderTextColor="#64748B"
+                  placeholderTextColor={theme.colors.textTertiary}
                   value={nameInput}
                   onChangeText={setNameInput}
                   autoCapitalize="words"
@@ -424,8 +428,8 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
                   <Text style={styles.previewName}>
                     {nameInput.trim() || 'Category Name'}
                   </Text>
-                  <View style={[styles.typeBadge, { backgroundColor: activeTab === 'income' ? '#10B98120' : '#F43F5E20' }]}>
-                    <Text style={{ color: activeTab === 'income' ? '#10B981' : '#F43F5E', fontSize: 11, fontWeight: '700' }}>
+                  <View style={[styles.typeBadge, { backgroundColor: activeTab === 'income' ? theme.colors.successBg : theme.colors.dangerBg }]}>
+                    <Text style={{ color: activeTab === 'income' ? theme.colors.success : theme.colors.danger, fontSize: 11, fontWeight: '700' }}>
                       {activeTab.toUpperCase()}
                     </Text>
                   </View>
@@ -440,15 +444,15 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
 
               {/* Submit */}
               <TouchableOpacity
-                style={[styles.saveSubmitBtn, { backgroundColor: activeTab === 'income' ? '#10B981' : '#38BDF8' }]}
+                style={[styles.saveSubmitBtn, { backgroundColor: activeTab === 'income' ? theme.colors.success : theme.colors.accent }]}
                 onPress={handleSaveCategory}
                 disabled={saving}
               >
                 {saving ? (
-                  <ActivityIndicator color="#0F172A" />
+                  <ActivityIndicator color={theme.colors.background} />
                 ) : (
                   <Text style={styles.saveSubmitText}>
-                    {editingCategory ? 'Save Category Changes' : 'Create Category'}
+                    {editingCategory ? 'Save Category' : 'Create Category'}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -460,10 +464,10 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
   );
 };
 
-export const CategoryIcon: React.FC<{ iconName: string; color: string; size?: number }> = ({
+const CategoryIcon: React.FC<{ iconName: string; color: string; size?: number }> = ({
   iconName,
   color,
-  size = 18,
+  size = 20,
 }) => {
   switch (iconName) {
     case 'utensils':
@@ -512,193 +516,193 @@ export const CategoryIcon: React.FC<{ iconName: string; color: string; size?: nu
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   content: {
-    padding: 20,
-    gap: 20,
+    padding: theme.spacing['4xl'],
+    gap: theme.spacing['4xl'],
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: theme.spacing.lg,
   },
   headerLeft: {
     flex: 1,
     minWidth: 200,
   },
   title: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.5,
   },
   subtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 13,
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: theme.spacing.md,
     alignItems: 'center',
   },
   resetBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: 9,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: theme.radii.base,
+    backgroundColor: theme.colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: theme.colors.borderLight,
   },
   resetBtnText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xl,
     paddingVertical: 9,
-    borderRadius: 10,
-    backgroundColor: '#38BDF8',
+    borderRadius: theme.radii.base,
+    backgroundColor: theme.colors.accent,
   },
   addBtnText: {
-    color: '#0F172A',
+    color: theme.colors.background,
     fontSize: 13,
     fontWeight: '700',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1E293B',
-    borderRadius: 14,
-    padding: 4,
-    gap: 4,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.xl,
+    padding: theme.spacing.xs,
+    gap: theme.spacing.xs,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.radii.base,
   },
   tabActiveExpense: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    backgroundColor: theme.colors.dangerBg,
     borderWidth: 1,
-    borderColor: 'rgba(244, 63, 94, 0.3)',
+    borderColor: theme.colors.dangerBgLight,
   },
   tabActiveIncome: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    backgroundColor: theme.colors.successBg,
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.3)',
   },
   tabText: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 13,
     fontWeight: '600',
   },
   tabTextActiveExpense: {
-    color: '#F43F5E',
+    color: theme.colors.danger,
     fontWeight: '700',
   },
   tabTextActiveIncome: {
-    color: '#10B981',
+    color: theme.colors.success,
     fontWeight: '700',
   },
   loaderBox: {
-    padding: 40,
+    padding: theme.spacing['7xl'],
     alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing.lg,
   },
   loadingText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
   emptyBox: {
-    padding: 40,
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
+    padding: theme.spacing['7xl'],
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['2xl'],
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.md,
   },
   emptyTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
   emptySubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     textAlign: 'center',
   },
   grid: {
-    gap: 10,
+    gap: theme.spacing.base,
   },
   catCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.xl,
+    padding: theme.spacing.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: theme.colors.borderAccent,
   },
   catInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing.lg,
     flex: 1,
   },
   iconBadge: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: theme.radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
   },
   catTextGroup: {
     flex: 1,
-    gap: 2,
+    gap: theme.spacing.xxs,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.md,
   },
   catName: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   defaultBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    backgroundColor: theme.colors.surfaceHighlight,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xxs,
+    borderRadius: theme.radii.sm,
   },
   defaultText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 10,
     fontWeight: '600',
   },
   catMeta: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 12,
   },
   actionRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: theme.spacing.sm,
   },
   iconBtn: {
     width: 34,
@@ -709,69 +713,69 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteIconBtn: {
-    backgroundColor: 'rgba(244, 63, 94, 0.12)',
+    backgroundColor: theme.colors.dangerBgLight,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing['4xl'],
   },
   modalCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['4xl'],
     maxWidth: 520,
     width: '100%',
     maxHeight: '90%',
-    padding: 22,
+    padding: theme.spacing['5xl'],
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: theme.colors.borderLight,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: theme.spacing['2xl'],
   },
   modalTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 20,
     fontWeight: '800',
   },
   modalSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   closeBtn: {
-    padding: 4,
+    padding: theme.spacing.xs,
   },
   modalBody: {
-    gap: 16,
+    gap: theme.spacing['2xl'],
   },
   formGroup: {
-    gap: 8,
+    gap: theme.spacing.md,
   },
   formLabel: {
-    color: '#E2E8F0',
+    color: theme.colors.textLight,
     fontSize: 13,
     fontWeight: '700',
   },
   textInput: {
-    backgroundColor: '#0F172A',
-    color: '#F8FAFC',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: theme.colors.background,
+    color: theme.colors.textPrimary,
+    borderRadius: theme.radii.base,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: theme.colors.borderStrong,
     fontSize: 14,
   },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: theme.spacing.base,
   },
   colorDot: {
     width: 32,
@@ -780,72 +784,72 @@ const styles = StyleSheet.create({
   },
   colorDotSelected: {
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: theme.colors.white,
   },
   iconList: {
-    gap: 8,
-    paddingVertical: 4,
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
   },
   iconChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: theme.colors.borderLight,
   },
   emojiText: {
     fontSize: 14,
   },
   iconChipText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
   previewBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#0F172A',
-    padding: 12,
-    borderRadius: 12,
+    gap: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
+    borderRadius: theme.radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: theme.colors.border,
   },
   previewName: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
     flex: 1,
   },
   typeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radii.sm,
   },
   errorBox: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-    borderColor: '#F43F5E',
+    backgroundColor: theme.colors.dangerBg,
+    borderColor: theme.colors.danger,
     borderWidth: 1,
-    padding: 12,
-    borderRadius: 10,
+    padding: theme.spacing.lg,
+    borderRadius: theme.radii.base,
   },
   errorText: {
-    color: '#F43F5E',
+    color: theme.colors.danger,
     fontSize: 13,
     fontWeight: '600',
   },
   saveSubmitBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: theme.radii.lg,
+    paddingVertical: theme.spacing.xl,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   saveSubmitText: {
-    color: '#0F172A',
+    color: theme.colors.background,
     fontSize: 14,
     fontWeight: '800',
   },

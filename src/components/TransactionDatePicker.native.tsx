@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import theme from '../theme';
 
 interface TransactionDatePickerProps {
   visible: boolean;
@@ -43,9 +44,9 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: 'rgba(15, 23, 42, 0.75)' },
-  card: { width: '100%', maxWidth: 360, alignItems: 'center', backgroundColor: '#1E293B', borderRadius: 18, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  title: { color: '#F8FAFC', alignSelf: 'flex-start', fontSize: 16, fontWeight: '800', marginBottom: 10 },
-  doneButton: { alignSelf: 'flex-end', paddingHorizontal: 14, paddingBottom: 8 },
-  doneText: { color: '#38BDF8', fontWeight: '700' },
+  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing['4xl'], backgroundColor: theme.colors.overlay },
+  card: { width: '100%', maxWidth: 360, alignItems: 'center', backgroundColor: theme.colors.surface, borderRadius: theme.radii['3xl'], padding: theme.spacing['4xl'], borderWidth: 1, borderColor: theme.colors.borderLight },
+  title: { color: theme.colors.textPrimary, alignSelf: 'flex-start', fontSize: 16, fontWeight: '800', marginBottom: theme.spacing.base },
+  doneButton: { alignSelf: 'flex-end', paddingHorizontal: theme.spacing.xl, paddingBottom: theme.spacing.md },
+  doneText: { color: theme.colors.accent, fontWeight: '700' },
 });

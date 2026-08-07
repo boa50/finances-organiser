@@ -10,6 +10,7 @@ import { Transaction } from '../types';
 import { D3EvolutionChart } from '../components/D3EvolutionChart';
 import { D3CurrentMonthCharts } from '../components/D3CurrentMonthCharts';
 import { CURRENCIES, DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
+import theme from '../theme';
 
 interface AnalyticsScreenProps {
   transactions: Transaction[];
@@ -52,7 +53,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 6 }}
+            contentContainerStyle={{ gap: theme.spacing.sm }}
           >
             {CURRENCIES.slice(0, 5).map((c) => {
               const selected = selectedCurrency === c.code;
@@ -85,14 +86,14 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
       <View style={styles.kpiRow}>
         <View style={styles.kpiCard}>
           <Text style={styles.kpiLabel}>Lifetime Incomes</Text>
-          <Text style={[styles.kpiValue, { color: '#10B981' }]}>
+          <Text style={[styles.kpiValue, { color: theme.colors.success }]}>
             +{formatMoney(totalIncomeConverted, selectedCurrency)}
           </Text>
         </View>
 
         <View style={styles.kpiCard}>
           <Text style={styles.kpiLabel}>Lifetime Expenses</Text>
-          <Text style={[styles.kpiValue, { color: '#F43F5E' }]}>
+          <Text style={[styles.kpiValue, { color: theme.colors.danger }]}>
             -{formatMoney(totalExpenseConverted, selectedCurrency)}
           </Text>
         </View>
@@ -102,7 +103,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
           <Text
             style={[
               styles.kpiValue,
-              { color: netOverall >= 0 ? '#38BDF8' : '#F43F5E' },
+              { color: netOverall >= 0 ? theme.colors.accent : theme.colors.danger },
             ]}
           >
             {formatMoney(netOverall, selectedCurrency)}
@@ -122,85 +123,85 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   contentContainer: {
-    padding: 20,
-    gap: 12,
+    padding: theme.spacing['4xl'],
+    gap: theme.spacing.lg,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
   },
   headerRow: {
-    marginBottom: 8,
-    gap: 12,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.lg,
   },
   headerTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
   },
   headerSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 14,
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   currencyFilterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 6,
+    gap: theme.spacing.base,
+    marginTop: theme.spacing.sm,
   },
   filterLabel: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
   currencyChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.base,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    gap: 4,
+    borderColor: theme.colors.border,
+    gap: theme.spacing.xs,
   },
   currencyChipActive: {
-    backgroundColor: 'rgba(56, 189, 248, 0.2)',
-    borderColor: '#38BDF8',
+    backgroundColor: theme.colors.accentBgStrong,
+    borderColor: theme.colors.accent,
   },
   currencyFlag: {
     fontSize: 12,
   },
   currencyText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
   currencyTextActive: {
-    color: '#38BDF8',
+    color: theme.colors.accent,
     fontWeight: '700',
   },
   kpiRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginVertical: 4,
+    gap: theme.spacing.base,
+    marginVertical: theme.spacing.xs,
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: '#1E293B',
-    borderRadius: 14,
-    padding: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.xl,
+    padding: theme.spacing.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: theme.colors.border,
   },
   kpiLabel: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   kpiValue: {
     fontSize: 15,

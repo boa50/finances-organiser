@@ -12,6 +12,7 @@ import { formatMoney, getCurrencyInfo } from '../utils/currencies';
 import { tursoService } from '../services/tursoService';
 import { TransactionEditModal } from '../components/TransactionEditModal';
 import { Pencil, Trash2, TrendingDown, TrendingUp } from 'lucide-react-native';
+import theme from '../theme';
 
 interface TransactionsScreenProps {
   transactions: Transaction[];
@@ -55,12 +56,12 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
         <View
           style={[
             styles.typeIconBox,
-            { backgroundColor: transaction.type === 'income' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)' },
+            { backgroundColor: transaction.type === 'income' ? theme.colors.successBg : theme.colors.dangerBg },
           ]}
         >
           {transaction.type === 'income'
-            ? <TrendingUp size={20} color="#10B981" />
-            : <TrendingDown size={20} color="#F43F5E" />}
+            ? <TrendingUp size={20} color={theme.colors.success} />
+            : <TrendingDown size={20} color={theme.colors.danger} />}
         </View>
         <View style={styles.txMainInfo}>
           <Text style={styles.txTitle}>{transaction.title}</Text>
@@ -72,7 +73,7 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
           {transaction.notes ? <Text style={styles.txNotes}>{transaction.notes}</Text> : null}
         </View>
         <View style={styles.txRightCol}>
-          <Text style={[styles.txAmount, { color: transaction.type === 'income' ? '#10B981' : '#F43F5E' }]}>
+          <Text style={[styles.txAmount, { color: transaction.type === 'income' ? theme.colors.success : theme.colors.danger }]}>
             {transaction.type === 'income' ? '+' : '-'}{formatMoney(transaction.amount, transaction.currency)}
           </Text>
           <View style={styles.actionsRow}>
@@ -80,10 +81,10 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
               <Text style={styles.currencyBadgeText}>{currencyInfo.flag} {transaction.currency}</Text>
             </View>
             <TouchableOpacity onPress={() => onEdit(transaction)} style={styles.editBtn} accessibilityLabel={`Edit ${transaction.title}`}>
-              <Pencil size={14} color="#38BDF8" />
+              <Pencil size={14} color={theme.colors.accent} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => onDelete(transaction.id, transaction.title)} style={styles.deleteBtn}>
-              <Trash2 size={14} color="#F43F5E" />
+              <Trash2 size={14} color={theme.colors.danger} />
             </TouchableOpacity>
           </View>
         </View>
@@ -147,7 +148,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
         {transactions.length > 0 && (
           <TouchableOpacity style={styles.clearAllBtn} onPress={handleClearAll}>
-            <Trash2 size={14} color="#F43F5E" />
+            <Trash2 size={14} color={theme.colors.danger} />
             <Text style={styles.clearAllBtnText}>Clear All</Text>
           </TouchableOpacity>
         )}
@@ -158,7 +159,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <TextInput
           style={styles.searchInput}
           placeholder="Search by title, category or notes..."
-          placeholderTextColor="#64748B"
+          placeholderTextColor={theme.colors.textTertiary}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -236,11 +237,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   contentContainer: {
-    padding: 20,
-    gap: 16,
+    padding: theme.spacing['4xl'],
+    gap: theme.spacing['2xl'],
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
@@ -249,144 +250,144 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   headerTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
   },
   headerSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 14,
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   clearAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.dangerBg,
     borderWidth: 1,
-    borderColor: '#F43F5E',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    borderColor: theme.colors.danger,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.radii.base,
   },
   clearAllBtnText: {
-    color: '#F43F5E',
+    color: theme.colors.danger,
     fontSize: 13,
     fontWeight: '700',
   },
   filterCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 14,
-    gap: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['2xl'],
+    padding: theme.spacing.xl,
+    gap: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: theme.colors.border,
   },
   searchInput: {
-    backgroundColor: '#0F172A',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: '#F8FAFC',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radii.base,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.base,
+    color: theme.colors.textPrimary,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: theme.colors.borderLight,
   },
   filterTabs: {
     flexDirection: 'row',
-    gap: 8,
+    gap: theme.spacing.md,
   },
   filterTab: {
     flex: 1,
-    paddingVertical: 8,
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
+    paddingVertical: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.radii.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: theme.colors.border,
   },
   filterTabActive: {
-    backgroundColor: '#38BDF8',
-    borderColor: '#38BDF8',
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
   filterTabIncomeActive: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: theme.colors.success,
+    borderColor: theme.colors.success,
   },
   filterTabExpenseActive: {
-    backgroundColor: '#F43F5E',
-    borderColor: '#F43F5E',
+    backgroundColor: theme.colors.danger,
+    borderColor: theme.colors.danger,
   },
   filterTabText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
   },
   filterTabTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.white,
     fontWeight: '700',
   },
   emptyCard: {
-    backgroundColor: '#1E293B',
-    padding: 40,
-    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing['7xl'],
+    borderRadius: theme.radii['2xl'],
     alignItems: 'center',
-    gap: 6,
+    gap: theme.spacing.sm,
   },
   emptyTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
   emptySubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 13,
   },
   list: {
-    gap: 22,
+    gap: theme.spacing['5xl'],
   },
   monthGroup: {
-    gap: 10,
+    gap: theme.spacing.base,
   },
   monthEntry: {
-    gap: 10,
+    gap: theme.spacing.base,
   },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    paddingHorizontal: 2,
-    paddingBottom: 8,
+    paddingHorizontal: theme.spacing.xxs,
+    paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: theme.colors.borderLight,
   },
   monthTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 17,
     fontWeight: '800',
   },
   monthCount: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 12,
     fontWeight: '600',
   },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    padding: 16,
-    borderRadius: 14,
-    gap: 14,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing['2xl'],
+    borderRadius: theme.radii.xl,
+    gap: theme.spacing.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: theme.colors.border,
   },
   typeIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: theme.radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -395,40 +396,40 @@ const styles = StyleSheet.create({
   },
   txMainInfo: {
     flex: 1,
-    gap: 2,
+    gap: theme.spacing.xxs,
   },
   txTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   txMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: theme.spacing.sm,
   },
   txCategory: {
-    color: '#38BDF8',
+    color: theme.colors.accent,
     fontSize: 12,
     fontWeight: '600',
   },
   dotSeparator: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 12,
   },
   txDate: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
   },
   txNotes: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 12,
     fontStyle: 'italic',
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   txRightCol: {
     alignItems: 'flex-end',
-    gap: 6,
+    gap: theme.spacing.sm,
   },
   txAmount: {
     fontSize: 16,
@@ -437,32 +438,32 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.md,
   },
   currencyBadge: {
-    backgroundColor: '#0F172A',
-    paddingHorizontal: 8,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.md,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: theme.radii.sm,
   },
   currencyBadgeText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     fontWeight: '600',
   },
   editBtn: {
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    backgroundColor: theme.colors.accentBg,
     borderWidth: 1,
-    borderColor: '#38BDF8',
-    borderRadius: 8,
+    borderColor: theme.colors.accent,
+    borderRadius: theme.radii.md,
     paddingHorizontal: 7,
-    paddingVertical: 4,
+    paddingVertical: theme.spacing.xs,
   },
   editBtnText: {
     fontSize: 14,
   },
   deleteBtn: {
-    padding: 2,
+    padding: theme.spacing.xxs,
   },
   deleteBtnText: {
     fontSize: 14,

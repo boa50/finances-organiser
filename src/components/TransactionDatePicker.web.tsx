@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import theme from '../theme';
 
 interface TransactionDatePickerProps {
   visible: boolean;
@@ -40,20 +41,20 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: 'rgba(15, 23, 42, 0.75)' },
-  card: { width: '100%', maxWidth: 360, backgroundColor: '#1E293B', borderRadius: 18, padding: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  title: { color: '#F8FAFC', fontSize: 16, fontWeight: '800', marginBottom: 14 },
-  doneButton: { alignSelf: 'flex-end', marginTop: 14, paddingHorizontal: 14, paddingVertical: 8 },
-  doneText: { color: '#38BDF8', fontWeight: '700' },
+  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing['4xl'], backgroundColor: theme.colors.overlay },
+  card: { width: '100%', maxWidth: 360, backgroundColor: theme.colors.surface, borderRadius: theme.radii['3xl'], padding: theme.spacing['4xl'], borderWidth: 1, borderColor: theme.colors.borderLight },
+  title: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: theme.spacing.xl },
+  doneButton: { alignSelf: 'flex-end', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.md },
+  doneText: { color: theme.colors.accent, fontWeight: '700' },
 });
 
 const browserDateInputStyle = {
   width: '100%',
   boxSizing: 'border-box',
-  backgroundColor: '#0F172A',
-  color: '#F8FAFC',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 10,
-  padding: 12,
+  backgroundColor: theme.colors.background,
+  color: theme.colors.textPrimary,
+  border: `1px solid ${theme.colors.borderLight}`,
+  borderRadius: theme.radii.base,
+  padding: theme.spacing.lg,
   fontSize: 15,
 };

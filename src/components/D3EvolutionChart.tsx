@@ -4,6 +4,7 @@ import Svg, { Path, Circle, Line, Text as SvgText, G, Defs, LinearGradient, Stop
 import * as d3 from 'd3';
 import { Transaction, MonthlyAggregate } from '../types';
 import { convertCurrency, formatMoney } from '../utils/currencies';
+import theme from '../theme';
 
 interface D3EvolutionChartProps {
   transactions: Transaction[];
@@ -305,7 +306,7 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
               <Text
                 style={[
                   styles.detailValue,
-                  { color: activeMonth.net >= 0 ? '#38BDF8' : '#F43F5E' },
+                  { color: activeMonth.net >= 0 ? theme.colors.accent : theme.colors.danger },
                 ]}
               >
                 {formatMoney(activeMonth.net, targetCurrency)}
@@ -320,12 +321,12 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 20,
-    marginVertical: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['2xl'],
+    padding: theme.spacing['4xl'],
+    marginVertical: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: theme.colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -333,41 +334,41 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     padding: 30,
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['2xl'],
     alignItems: 'center',
   },
   emptyText: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 14,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: theme.spacing['2xl'],
     flexWrap: 'wrap',
-    gap: 10,
+    gap: theme.spacing.base,
   },
   cardTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     fontWeight: '700',
   },
   cardSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   legendContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: theme.spacing['2xl'],
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: theme.spacing.sm,
   },
   legendDot: {
     width: 10,
@@ -375,30 +376,30 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendText: {
-    color: '#CBD5E1',
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: '500',
   },
   chartWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 4,
+    marginVertical: theme.spacing.xs,
   },
   monthDetailCard: {
-    marginTop: 16,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    borderRadius: 12,
-    padding: 14,
+    marginTop: theme.spacing['2xl'],
+    backgroundColor: theme.colors.surfaceSubtle,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: theme.colors.borderSubtle,
   },
   detailTitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: 10,
+    marginBottom: theme.spacing.base,
   },
   detailRow: {
     flexDirection: 'row',
@@ -412,12 +413,12 @@ const styles = StyleSheet.create({
   detailDivider: {
     width: 1,
     height: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: theme.colors.borderLight,
   },
   detailLabel: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 11,
-    marginBottom: 2,
+    marginBottom: theme.spacing.xxs,
   },
   detailValue: {
     fontSize: 15,

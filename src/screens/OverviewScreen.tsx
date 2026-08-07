@@ -10,10 +10,12 @@ import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY, formatMoney, convertCurrency } from '../utils/currencies';
 import { TransactionEditModal } from '../components/TransactionEditModal';
 import { ChartNoAxesCombined, Pencil, TrendingDown, TrendingUp } from 'lucide-react-native';
+import theme from '../theme';
 
 interface OverviewScreenProps {
   transactions: Transaction[];
   tursoConfig: TursoConfig;
+  onNavigateAdd?: () => void;
   onNavigateAnalytics: () => void;
   onNavigateTransactions: () => void;
   onRefresh: () => void;
@@ -72,7 +74,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
           <View
             style={[
               styles.statusDot,
-              { backgroundColor: tursoConfig.isConnected ? '#10B981' : '#F59E0B' },
+              { backgroundColor: tursoConfig.isConnected ? theme.colors.success : theme.colors.warning },
             ]}
           />
           <Text style={styles.tursoPillText}>
@@ -91,7 +93,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
         <View style={styles.heroMetaRow}>
           <View style={styles.metaBox}>
             <Text style={styles.metaLabel}>{monthName} Income</Text>
-            <Text style={[styles.metaValue, { color: '#10B981' }]}>
+            <Text style={[styles.metaValue, { color: theme.colors.success }]}>
               +{formatMoney(currentMonthIncome, DEFAULT_CURRENCY)}
             </Text>
           </View>
@@ -100,7 +102,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 
           <View style={styles.metaBox}>
             <Text style={styles.metaLabel}>{monthName} Expense</Text>
-            <Text style={[styles.metaValue, { color: '#F43F5E' }]}>
+            <Text style={[styles.metaValue, { color: theme.colors.danger }]}>
               -{formatMoney(currentMonthExpense, DEFAULT_CURRENCY)}
             </Text>
           </View>
@@ -109,7 +111,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 
       {/* Quick Action */}
       <TouchableOpacity style={[styles.actionBtn, styles.actionGraphBtn]} onPress={onNavigateAnalytics}>
-        <ChartNoAxesCombined size={24} color="#38BDF8" strokeWidth={2} />
+        <ChartNoAxesCombined size={24} color={theme.colors.accent} strokeWidth={2} />
         <Text style={styles.actionTitle}>D3.js Analytics</Text>
         <Text style={styles.actionSubtitle}>View evolution graphs & donut breakdown</Text>
       </TouchableOpacity>
@@ -143,14 +145,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                       {
                         backgroundColor:
                           tx.type === 'income'
-                            ? 'rgba(16, 185, 129, 0.15)'
-                            : 'rgba(244, 63, 94, 0.15)',
+                            ? theme.colors.successBg
+                            : theme.colors.dangerBg,
                       },
                     ]}
                   >
                     {tx.type === 'income'
-                      ? <TrendingUp size={16} color="#10B981" />
-                      : <TrendingDown size={16} color="#F43F5E" />}
+                      ? <TrendingUp size={16} color={theme.colors.success} />
+                      : <TrendingDown size={16} color={theme.colors.danger} />}
                   </View>
 
                   <View style={styles.recentInfo}>
@@ -164,7 +166,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                     <Text
                       style={[
                         styles.recentAmount,
-                        { color: tx.type === 'income' ? '#10B981' : '#F43F5E' },
+                        { color: tx.type === 'income' ? theme.colors.success : theme.colors.danger },
                       ]}
                     >
                       {tx.type === 'income' ? '+' : '-'}
@@ -175,7 +177,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                       style={styles.editButton}
                       accessibilityLabel={`Edit ${tx.title}`}
                     >
-                      <Pencil size={12} color="#38BDF8" />
+                      <Pencil size={12} color={theme.colors.accent} />
                       <Text style={styles.editButtonText}>Edit</Text>
                     </TouchableOpacity>
                   </View>
@@ -200,11 +202,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   contentContainer: {
-    padding: 20,
-    gap: 18,
+    padding: theme.spacing['4xl'],
+    gap: theme.spacing['3xl'],
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
@@ -215,25 +217,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 24,
     fontWeight: '800',
   },
   welcomeSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 13,
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   tursoPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.radii['4xl'],
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    gap: 8,
+    borderColor: theme.colors.borderLight,
+    gap: theme.spacing.md,
   },
   statusDot: {
     width: 8,
@@ -241,40 +243,40 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tursoPillText: {
-    color: '#E2E8F0',
+    color: theme.colors.textLight,
     fontSize: 12,
     fontWeight: '600',
   },
   heroCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['4xl'],
+    padding: theme.spacing['6xl'],
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: theme.colors.borderLight,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
   },
   heroLabel: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   heroValue: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 36,
     fontWeight: '900',
-    marginVertical: 8,
+    marginVertical: theme.spacing.md,
   },
   heroMetaRow: {
     flexDirection: 'row',
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: theme.spacing['2xl'],
+    paddingTop: theme.spacing['2xl'],
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: theme.colors.border,
   },
   metaBox: {
     flex: 1,
@@ -282,45 +284,45 @@ const styles = StyleSheet.create({
   metaDivider: {
     width: 1,
     height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginHorizontal: 16,
+    backgroundColor: theme.colors.borderLight,
+    marginHorizontal: theme.spacing['2xl'],
   },
   metaLabel: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 12,
   },
   metaValue: {
     fontSize: 17,
     fontWeight: '700',
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   actionBtn: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 18,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['2xl'],
+    padding: theme.spacing['3xl'],
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    gap: 4,
+    borderColor: theme.colors.border,
+    gap: theme.spacing.xs,
   },
   actionGraphBtn: {
     borderLeftWidth: 4,
-    borderLeftColor: '#38BDF8',
+    borderLeftColor: theme.colors.accent,
   },
   actionEmoji: {
     fontSize: 24,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   actionTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 15,
     fontWeight: '700',
   },
   actionSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 11,
   },
   section: {
-    gap: 12,
+    gap: theme.spacing.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -328,42 +330,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 18,
     fontWeight: '700',
   },
   seeAllText: {
-    color: '#38BDF8',
+    color: theme.colors.accent,
     fontSize: 13,
     fontWeight: '600',
   },
   emptyBox: {
-    backgroundColor: '#1E293B',
-    padding: 20,
-    borderRadius: 14,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing['4xl'],
+    borderRadius: theme.radii.xl,
     alignItems: 'center',
   },
   emptyText: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 13,
   },
   recentList: {
-    gap: 8,
+    gap: theme.spacing.md,
   },
   recentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
-    padding: 14,
-    borderRadius: 14,
-    gap: 12,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.xl,
+    borderRadius: theme.radii.xl,
+    gap: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: theme.colors.borderSubtle,
   },
   recentIcon: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: theme.radii.base,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -371,12 +373,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recentTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '600',
   },
   recentSub: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
   },
   recentAmount: {
@@ -385,20 +387,20 @@ const styles = StyleSheet.create({
   },
   recentActions: {
     alignItems: 'flex-end',
-    gap: 6,
+    gap: theme.spacing.sm,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: '#38BDF8',
+    borderColor: theme.colors.accent,
     borderRadius: 7,
-    paddingHorizontal: 8,
+    paddingHorizontal: theme.spacing.md,
     paddingVertical: 3,
   },
   editButtonText: {
-    color: '#38BDF8',
+    color: theme.colors.accent,
     fontSize: 11,
     fontWeight: '700',
   },

@@ -15,6 +15,7 @@ import { categoryService } from '../services/categoryService';
 import { tursoService } from '../services/tursoService';
 import { CalendarDays, TrendingDown, TrendingUp, X } from 'lucide-react-native';
 import { TransactionDatePicker } from './TransactionDatePicker';
+import theme from '../theme';
 
 interface TransactionEditModalProps {
   visible: boolean;
@@ -135,7 +136,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} disabled={saving} style={styles.closeButton}>
-              <X size={20} color="#CBD5E1" />
+              <X size={20} color={theme.colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -148,18 +149,18 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                   style={[styles.typeButton, type === option && (option === 'income' ? styles.incomeActive : styles.expenseActive)]}
                 >
                   {option === 'income'
-                    ? <TrendingUp size={16} color="#F8FAFC" />
-                    : <TrendingDown size={16} color="#F8FAFC" />}
+                    ? <TrendingUp size={16} color={theme.colors.textPrimary} />
+                    : <TrendingDown size={16} color={theme.colors.textPrimary} />}
                   <Text style={styles.typeText}>{option === 'income' ? 'Income' : 'Expense'}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <Field label="Title">
-              <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Description" placeholderTextColor="#64748B" />
+              <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Description" placeholderTextColor={theme.colors.textTertiary} />
             </Field>
             <Field label="Amount">
-              <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#64748B" />
+              <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={theme.colors.textTertiary} />
             </Field>
             <Field label="Currency">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
@@ -182,17 +183,17 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             <Field label="Date">
               <View style={styles.pickerRow}>
                 <TouchableOpacity style={styles.pickerButton} onPress={() => setDatePickerVisible(true)}>
-                  <CalendarDays size={16} color="#94A3B8" />
+                  <CalendarDays size={16} color={theme.colors.textSecondary} />
                   <Text style={styles.pickerText}>{date.toLocaleDateString()}</Text>
                 </TouchableOpacity>
               </View>
             </Field>
             <Field label="Notes (optional)">
-              <TextInput style={[styles.input, styles.notesInput]} value={notes} onChangeText={setNotes} placeholder="Add a note" placeholderTextColor="#64748B" multiline />
+              <TextInput style={[styles.input, styles.notesInput]} value={notes} onChangeText={setNotes} placeholder="Add a note" placeholderTextColor={theme.colors.textTertiary} multiline />
             </Field>
 
             <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-              {saving ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.saveText}>{transaction ? 'Save Changes' : 'Add Transaction'}</Text>}
+              {saving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.saveText}>{transaction ? 'Save Changes' : 'Add Transaction'}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -221,30 +222,30 @@ function dateFromTransaction(value: string): Date {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.85)', justifyContent: 'center', padding: 20 },
-  card: { backgroundColor: '#1E293B', borderRadius: 20, maxWidth: 560, width: '100%', maxHeight: '90%', alignSelf: 'center', padding: 22 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
-  title: { color: '#F8FAFC', fontSize: 20, fontWeight: '800' },
-  subtitle: { color: '#94A3B8', fontSize: 13, marginTop: 2 },
-  closeButton: { padding: 4 },
-  closeText: { color: '#CBD5E1', fontSize: 20 },
-  body: { gap: 14 },
-  typeRow: { flexDirection: 'row', gap: 10 },
-  typeButton: { flex: 1, flexDirection: 'row', gap: 6, borderRadius: 10, backgroundColor: '#0F172A', padding: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  expenseActive: { backgroundColor: '#F43F5E', borderColor: '#F43F5E' },
-  incomeActive: { backgroundColor: '#10B981', borderColor: '#10B981' },
-  typeText: { color: '#F8FAFC', fontWeight: '700' },
-  field: { gap: 6 },
-  label: { color: '#CBD5E1', fontSize: 13, fontWeight: '700' },
-  input: { backgroundColor: '#0F172A', color: '#F8FAFC', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 10 },
+  overlay: { flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'center', padding: theme.spacing['4xl'] },
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.radii['4xl'], maxWidth: 560, width: '100%', maxHeight: '90%', alignSelf: 'center', padding: theme.spacing['5xl'] },
+  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing['2xl'] },
+  title: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  subtitle: { color: theme.colors.textSecondary, fontSize: 13, marginTop: theme.spacing.xxs },
+  closeButton: { padding: theme.spacing.xs },
+  closeText: { color: theme.colors.textMuted, fontSize: 20 },
+  body: { gap: theme.spacing.xl },
+  typeRow: { flexDirection: 'row', gap: theme.spacing.base },
+  typeButton: { flex: 1, flexDirection: 'row', gap: theme.spacing.sm, borderRadius: theme.radii.base, backgroundColor: theme.colors.background, padding: theme.spacing.base, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.borderLight },
+  expenseActive: { backgroundColor: theme.colors.danger, borderColor: theme.colors.danger },
+  incomeActive: { backgroundColor: theme.colors.success, borderColor: theme.colors.success },
+  typeText: { color: theme.colors.textPrimary, fontWeight: '700' },
+  field: { gap: theme.spacing.sm },
+  label: { color: theme.colors.textMuted, fontSize: 13, fontWeight: '700' },
+  input: { backgroundColor: theme.colors.background, color: theme.colors.textPrimary, borderRadius: theme.radii.base, borderWidth: 1, borderColor: theme.colors.borderLight, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.base },
   pickerRow: { flexDirection: 'row' },
-  pickerButton: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#0F172A', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 11 },
-  pickerText: { color: '#F8FAFC', fontSize: 13, fontWeight: '600' },
+  pickerButton: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, backgroundColor: theme.colors.background, borderRadius: theme.radii.base, borderWidth: 1, borderColor: theme.colors.borderLight, paddingHorizontal: theme.spacing.lg, paddingVertical: 11 },
+  pickerText: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: '600' },
   notesInput: { minHeight: 72, textAlignVertical: 'top' },
-  chipList: { gap: 7, paddingVertical: 2 },
-  chip: { backgroundColor: '#0F172A', borderRadius: 18, paddingHorizontal: 10, paddingVertical: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  chipActive: { backgroundColor: '#0369A1', borderColor: '#38BDF8' },
-  chipText: { color: '#E2E8F0', fontSize: 12, fontWeight: '600' },
-  saveButton: { backgroundColor: '#0284C7', borderRadius: 10, padding: 13, alignItems: 'center', marginTop: 4 },
-  saveText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  chipList: { gap: 7, paddingVertical: theme.spacing.xxs },
+  chip: { backgroundColor: theme.colors.background, borderRadius: theme.radii['3xl'], paddingHorizontal: theme.spacing.base, paddingVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.borderLight },
+  chipActive: { backgroundColor: theme.colors.accentDark, borderColor: theme.colors.accent },
+  chipText: { color: theme.colors.textLight, fontSize: 12, fontWeight: '600' },
+  saveButton: { backgroundColor: theme.colors.accentMid, borderRadius: theme.radii.base, padding: 13, alignItems: 'center', marginTop: theme.spacing.xs },
+  saveText: { color: theme.colors.white, fontSize: 15, fontWeight: '800' },
 });

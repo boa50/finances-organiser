@@ -4,6 +4,7 @@ import Svg, { Path, G, Rect, Text as SvgText, Defs, LinearGradient, Stop } from 
 import * as d3 from 'd3';
 import { Transaction, CategoryAggregate } from '../types';
 import { convertCurrency, formatMoney, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/currencies';
+import theme from '../theme';
 
 interface D3CurrentMonthChartsProps {
   transactions: Transaction[];
@@ -50,8 +51,8 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
 
   // Prepare D3 Donut Data
   const pieData = [
-    { label: 'Income', value: totalIncome, color: '#10B981' },
-    { label: 'Expense', value: totalExpense, color: '#F43F5E' },
+    { label: 'Income', value: totalIncome, color: theme.colors.success },
+    { label: 'Expense', value: totalExpense, color: theme.colors.danger },
   ];
 
   // Donut chart D3 calculations
@@ -237,51 +238,51 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 4,
+    marginVertical: theme.spacing.xs,
   },
   sectionHeader: {
-    marginBottom: 12,
+    marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 20,
     fontWeight: '700',
   },
   sectionSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 13,
-    marginTop: 2,
+    marginTop: theme.spacing.xxs,
   },
   card: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 20,
-    marginVertical: 10,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['2xl'],
+    padding: theme.spacing['4xl'],
+    marginVertical: theme.spacing.base,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: theme.colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
   },
   cardTitle: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 17,
     fontWeight: '700',
   },
   cardSubtitle: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
-    marginTop: 2,
-    marginBottom: 16,
+    marginTop: theme.spacing.xxs,
+    marginBottom: theme.spacing['2xl'],
   },
   donutRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     flexWrap: 'wrap',
-    gap: 20,
-    marginTop: 12,
+    gap: theme.spacing['4xl'],
+    marginTop: theme.spacing.lg,
   },
   donutWrapper: {
     position: 'relative',
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   donutCenterLabel: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -304,13 +305,13 @@ const styles = StyleSheet.create({
   donutCenterValue: {
     fontSize: 18,
     fontWeight: '800',
-    marginVertical: 2,
+    marginVertical: theme.spacing.xxs,
   },
   savingsBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: theme.spacing.md,
     paddingVertical: 3,
-    borderRadius: 12,
-    marginTop: 4,
+    borderRadius: theme.radii.lg,
+    marginTop: theme.spacing.xs,
   },
   savingsBadgeText: {
     fontSize: 10,
@@ -319,17 +320,17 @@ const styles = StyleSheet.create({
   statsColumn: {
     flex: 1,
     minWidth: 200,
-    gap: 12,
+    gap: theme.spacing.lg,
   },
   statBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    padding: 12,
-    borderRadius: 12,
-    gap: 12,
+    backgroundColor: theme.colors.surfaceSubtle,
+    padding: theme.spacing.lg,
+    borderRadius: theme.radii.lg,
+    gap: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: theme.colors.borderSubtle,
   },
   statBadge: {
     width: 36,
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statLabel: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
   },
   statValue: {
@@ -356,16 +357,16 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   emptyCatText: {
-    color: '#64748B',
+    color: theme.colors.textTertiary,
     fontSize: 13,
     fontStyle: 'italic',
-    marginVertical: 10,
+    marginVertical: theme.spacing.base,
   },
   categoryList: {
-    gap: 14,
+    gap: theme.spacing.xl,
   },
   catItem: {
-    gap: 6,
+    gap: theme.spacing.sm,
   },
   catHeader: {
     flexDirection: 'row',
@@ -373,28 +374,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   catName: {
-    color: '#E2E8F0',
+    color: theme.colors.textLight,
     fontSize: 14,
     fontWeight: '600',
   },
   catAmount: {
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     fontWeight: '700',
   },
   catPercent: {
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '400',
   },
   barTrack: {
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 4,
+    backgroundColor: theme.colors.surfaceHighlight,
+    borderRadius: theme.spacing.xs,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: theme.spacing.xs,
   },
 });
