@@ -7,6 +7,7 @@ export interface Transaction {
   amount: number;
   currency: string; // e.g. 'USD', 'EUR', 'BRL', 'GBP'
   category: string;
+  paymentMethod?: string;
   date: string; // ISO 8601 string: YYYY-MM-DDTHH:mm:ss.sssZ
   notes?: string;
   createdAt: string;
@@ -26,6 +27,12 @@ export interface CategoryItem {
   icon: string;
   color: string;
   type: TransactionType;
+  isDefault?: boolean;
+}
+
+export interface PaymentMethodItem {
+  id: string;
+  name: string;
   isDefault?: boolean;
 }
 

@@ -9,11 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { CategoryItem, Transaction, TransactionType } from '../types';
+import { CategoryItem, PaymentMethodItem, Transaction, TransactionType } from '../types';
 import { CURRENCIES, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
+import { paymentMethodService } from '../services/paymentMethodService';
 import { tursoService } from '../services/tursoService';
-import { CalendarDays, TrendingDown, TrendingUp, X } from 'lucide-react-native';
+import { CalendarDays, CreditCard, TrendingDown, TrendingUp, X } from 'lucide-react-native';
 import { TransactionDatePicker } from './TransactionDatePicker';
 import theme from '../theme';
 
@@ -36,6 +37,8 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [currency, setCurrency] = useState('BRL');
   const [category, setCategory] = useState('');
   const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<string>('Credit Card');
+  const [availablePaymentMethods, setAvailablePaymentMethods] = useState<PaymentMethodItem[]>([]);
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -47,6 +50,12 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     return cats;
   };
 
+  const loadPaymentMethods = async () => {
+    const pms = await paymentMethodService.getPaymentMethods();
+    setAvailablePaymentMethods(pms);
+    return pms;
+  };
+
   useEffect(() => {
     if (!visible) return;
 
@@ -55,12 +64,14 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       setType(activeType);
 
       const cats = await loadCategories(activeType);
+      const pms = await loadPaymentMethods();
 
       if (transaction) {
         setTitle(transaction.title);
         setAmount(String(transaction.amount));
         setCurrency(transaction.currency);
         setCategory(transaction.category);
+        setPaymentMethod(transaction.paymentMethod || pms[0]?.name || 'Credit Card');
         setDate(dateFromTransaction(transaction.date));
         setNotes(transaction.notes || '');
       } else {
@@ -68,6 +79,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         setAmount('');
         setCurrency('BRL');
         setCategory(cats[0]?.name || '');
+        setPaymentMethod(pms[0]?.name || 'Credit Card');
         setDate(new Date());
         setNotes('');
       }
@@ -104,6 +116,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         amount: parsedAmount,
         currency,
         category: category.trim(),
+        paymentMethod: paymentMethod.trim() || undefined,
         date: date.toISOString(),
         notes: notes.trim() || undefined,
       };
@@ -176,6 +189,15 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 {availableCategories.map((item) => (
                   <TouchableOpacity key={item.id || item.name} onPress={() => setCategory(item.name)} style={[styles.chip, category === item.name && styles.chipActive]}>
                     <Text style={styles.chipText}>{item.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Field>
+            <Field label="Way of Payment">
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
+                {availablePaymentMethods.map((item) => (
+                  <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
+                    <Text style={styles.chipText}>💳 {item.name}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>

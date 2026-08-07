@@ -149,7 +149,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                   <View style={styles.recentInfo}>
                     <Text style={styles.recentTitle}>{tx.title}</Text>
                     <Text style={styles.recentSub}>
-                      {tx.category} • {dateStr}
+                      {tx.category}{tx.paymentMethod ? ` • 💳 ${tx.paymentMethod}` : ''} • {dateStr}
                     </Text>
                   </View>
 

@@ -11,18 +11,20 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { CategoryItem, TransactionType } from '../types';
+import { CategoryItem, PaymentMethodItem, TransactionType } from '../types';
 import {
   AVAILABLE_CATEGORY_ICONS,
   PRESET_CATEGORY_COLORS,
   categoryService,
 } from '../services/categoryService';
+import { paymentMethodService } from '../services/paymentMethodService';
 import {
   Activity,
   Book,
   Briefcase,
   Car,
   Coffee,
+  CreditCard,
   Dumbbell,
   Gift,
   Heart,
@@ -67,6 +69,14 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // Payment Method State
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
+  const [pmModalVisible, setPmModalVisible] = useState(false);
+  const [editingPm, setEditingPm] = useState<PaymentMethodItem | null>(null);
+  const [pmNameInput, setPmNameInput] = useState('');
+  const [pmSaving, setPmSaving] = useState(false);
+  const [pmErrorMsg, setPmErrorMsg] = useState<string | null>(null);
+
   const loadCategoriesData = async () => {
     setLoading(true);
     try {
@@ -79,8 +89,18 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
     }
   };
 
+  const loadPaymentMethods = async () => {
+    try {
+      const items = await paymentMethodService.getPaymentMethods();
+      setPaymentMethods(items);
+    } catch (e) {
+      console.warn('Error loading payment methods:', e);
+    }
+  };
+
   useEffect(() => {
     loadCategoriesData();
+    loadPaymentMethods();
   }, []);
 
   const openAddModal = () => {
@@ -190,6 +210,95 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
       Alert.alert(
         'Reset Defaults',
         'Reset all categories to factory defaults? Your custom categories will be lost.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Reset', style: 'destructive', onPress: performReset },
+        ]
+      );
+    }
+  };
+
+  // ── Payment Method Handlers ──
+  const openAddPmModal = () => {
+    setEditingPm(null);
+    setPmNameInput('');
+    setPmErrorMsg(null);
+    setPmModalVisible(true);
+  };
+
+  const openEditPmModal = (pm: PaymentMethodItem) => {
+    setEditingPm(pm);
+    setPmNameInput(pm.name);
+    setPmErrorMsg(null);
+    setPmModalVisible(true);
+  };
+
+  const handleSavePm = async () => {
+    if (!pmNameInput.trim()) {
+      setPmErrorMsg('Please enter a payment method name.');
+      return;
+    }
+    setPmSaving(true);
+    setPmErrorMsg(null);
+    try {
+      if (editingPm) {
+        await paymentMethodService.updatePaymentMethod(editingPm.id, pmNameInput.trim());
+      } else {
+        await paymentMethodService.addPaymentMethod(pmNameInput.trim());
+      }
+      await loadPaymentMethods();
+      setPmModalVisible(false);
+    } catch (err: any) {
+      setPmErrorMsg(err?.message || 'Failed to save payment method.');
+    } finally {
+      setPmSaving(false);
+    }
+  };
+
+  const handleDeletePm = (pm: PaymentMethodItem) => {
+    const performDelete = async () => {
+      try {
+        await paymentMethodService.deletePaymentMethod(pm.id);
+        await loadPaymentMethods();
+      } catch (err: any) {
+        alert(err?.message || 'Failed to delete payment method');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm(`Delete payment method "${pm.name}"? Existing transactions will retain the name.`)) {
+        performDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Payment Method',
+        `Delete payment method "${pm.name}"? Existing transactions will retain the name.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: performDelete },
+        ]
+      );
+    }
+  };
+
+  const handleResetPmDefaults = async () => {
+    const performReset = async () => {
+      try {
+        await paymentMethodService.resetToDefaults();
+        await loadPaymentMethods();
+      } catch (err: any) {
+        alert(err?.message || 'Failed to reset payment methods');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm('Reset payment methods to defaults? Your custom payment methods will be lost.')) {
+        performReset();
+      }
+    } else {
+      Alert.alert(
+        'Reset Defaults',
+        'Reset payment methods to defaults? Your custom payment methods will be lost.',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Reset', style: 'destructive', onPress: performReset },
@@ -325,7 +434,88 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
         </View>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* ── Payment Methods Section ── */}
+      <View style={styles.pmSection}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.pmTitleRow}>
+              <CreditCard size={22} color={theme.colors.accent} />
+              <Text style={styles.title}>Ways of Payment</Text>
+            </View>
+            <Text style={styles.subtitle}>
+              Manage how you pay for your transactions
+            </Text>
+          </View>
+
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.resetBtn} onPress={handleResetPmDefaults}>
+              <RotateCcw size={14} color={theme.colors.textSecondary} />
+              <Text style={styles.resetBtnText}>Reset Defaults</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.addBtn} onPress={openAddPmModal}>
+              <Plus size={16} color={theme.colors.background} />
+              <Text style={styles.addBtnText}>New Method</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {paymentMethods.length === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No payment methods</Text>
+            <Text style={styles.emptySubtitle}>
+              Tap "New Method" to create your first way of payment.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {paymentMethods.map((pm) => (
+              <View key={pm.id} style={styles.catCard}>
+                <View style={styles.catInfo}>
+                  <View
+                    style={[
+                      styles.iconBadge,
+                      { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent },
+                    ]}
+                  >
+                    <CreditCard size={20} color={theme.colors.accent} />
+                  </View>
+
+                  <View style={styles.catTextGroup}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.catName}>{pm.name}</Text>
+                      {pm.isDefault && (
+                        <View style={styles.defaultBadge}>
+                          <Text style={styles.defaultText}>Default</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.catMeta}>Payment Method</Text>
+                  </View>
+                </View>
+
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={styles.iconBtn}
+                    onPress={() => openEditPmModal(pm)}
+                  >
+                    <Pencil size={15} color={theme.colors.accent} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.iconBtn, styles.deleteIconBtn]}
+                    onPress={() => handleDeletePm(pm)}
+                  >
+                    <Trash2 size={15} color={theme.colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Add/Edit Category Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -460,6 +650,87 @@ export const CategoryManagementScreen: React.FC<CategoryManagementScreenProps> =
           </View>
         </View>
       </Modal>
+
+      {/* Add/Edit Payment Method Modal */}
+      <Modal
+        visible={pmModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setPmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {editingPm ? 'Edit Payment Method' : 'New Payment Method'}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  {editingPm ? 'Rename this way of payment' : 'Add a new way of payment'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setPmModalVisible(false)}
+                style={styles.closeBtn}
+              >
+                <X size={20} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Payment Method Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g. Pix, Apple Pay, Cash"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  value={pmNameInput}
+                  onChangeText={setPmNameInput}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              {/* Live Preview */}
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Preview</Text>
+                <View style={styles.previewBox}>
+                  <View
+                    style={[
+                      styles.iconBadge,
+                      { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent },
+                    ]}
+                  >
+                    <CreditCard size={22} color={theme.colors.accent} />
+                  </View>
+                  <Text style={styles.previewName}>
+                    {pmNameInput.trim() || 'Payment Method Name'}
+                  </Text>
+                </View>
+              </View>
+
+              {pmErrorMsg && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{pmErrorMsg}</Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveSubmitBtn, { backgroundColor: theme.colors.accent }]}
+                onPress={handleSavePm}
+                disabled={pmSaving}
+              >
+                {pmSaving ? (
+                  <ActivityIndicator color={theme.colors.background} />
+                ) : (
+                  <Text style={styles.saveSubmitText}>
+                    {editingPm ? 'Save Changes' : 'Create Payment Method'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -521,6 +792,17 @@ const styles = StyleSheet.create({
   content: {
     padding: theme.spacing['4xl'],
     gap: theme.spacing['4xl'],
+  },
+  pmSection: {
+    gap: theme.spacing['4xl'],
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: theme.spacing['4xl'],
+  },
+  pmTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
   },
   header: {
     flexDirection: 'row',

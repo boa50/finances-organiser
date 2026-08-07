@@ -20,6 +20,12 @@ export const DEFAULT_CATEGORIES = [
   { id: 'cat-inc-4', name: 'Rental Income', icon: 'key', color: '#F59E0B', type: 'income', isDefault: true },
 ];
 
+export const DEFAULT_PAYMENT_METHODS = [
+  { id: 'pm-1', name: 'Credit Card', isDefault: true },
+  { id: 'pm-2', name: 'Debit Card', isDefault: true },
+  { id: 'pm-3', name: 'Money Transfer', isDefault: true },
+];
+
 export function getTursoClient(req?: VercelRequest): Client | null {
   const reqUrl = (req?.headers?.['x-turso-db-url'] as string) || '';
   const reqToken = (req?.headers?.['x-turso-auth-token'] as string) || '';
@@ -65,11 +71,18 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       amount REAL NOT NULL,
       currency TEXT NOT NULL,
       category TEXT NOT NULL,
+      payment_method TEXT,
       date TEXT NOT NULL,
       notes TEXT,
       created_at TEXT NOT NULL
     );
   `);
+
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN payment_method TEXT');
+  } catch (e) {
+    // Column already exists
+  }
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS categories (
@@ -78,6 +91,14 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       icon TEXT NOT NULL,
       color TEXT NOT NULL,
       type TEXT CHECK (type IN ('income', 'expense')),
+      is_default INTEGER DEFAULT 0
+    );
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS payment_methods (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
       is_default INTEGER DEFAULT 0
     );
   `);
@@ -92,6 +113,19 @@ export async function ensureTablesExist(client: Client): Promise<void> {
         sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
               VALUES (?, ?, ?, ?, ?, ?)`,
         args: [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.isDefault ? 1 : 0],
+      });
+    }
+  }
+
+  // If payment_methods table is empty, insert default payment methods
+  const pmCountRes = await client.execute('SELECT COUNT(*) as count FROM payment_methods');
+  const pmCount = Number(pmCountRes.rows[0]?.count || 0);
+
+  if (pmCount === 0) {
+    for (const pm of DEFAULT_PAYMENT_METHODS) {
+      await client.execute({
+        sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
+        args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
       });
     }
   }

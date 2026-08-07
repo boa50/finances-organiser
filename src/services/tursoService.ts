@@ -95,6 +95,10 @@ class TursoDatabaseService {
     return { ...this.config };
   }
 
+  public isDatabaseConnected(): boolean {
+    return Boolean(this.config.isConnected);
+  }
+
   public getApiHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -198,11 +202,19 @@ class TursoDatabaseService {
           amount REAL NOT NULL,
           currency TEXT NOT NULL,
           category TEXT NOT NULL,
+          payment_method TEXT,
           date TEXT NOT NULL,
           notes TEXT,
           created_at TEXT NOT NULL
         );
       `);
+
+      // Migration: Add payment_method column if existing table lacks it
+      try {
+        await this.client.execute('ALTER TABLE transactions ADD COLUMN payment_method TEXT');
+      } catch (e) {
+        // Column already exists
+      }
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS categories (
@@ -211,6 +223,14 @@ class TursoDatabaseService {
           icon TEXT NOT NULL,
           color TEXT NOT NULL,
           type TEXT CHECK (type IN ('income', 'expense')),
+          is_default INTEGER DEFAULT 0
+        );
+      `);
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS payment_methods (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE,
           is_default INTEGER DEFAULT 0
         );
       `);
@@ -228,6 +248,24 @@ class TursoDatabaseService {
             sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
                   VALUES (?, ?, ?, ?, ?, ?)`,
             args: [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.isDefault ? 1 : 0],
+          });
+        }
+      }
+
+      // Check if payment_methods table has data. If empty, insert defaults!
+      const pmCountRes = await this.client.execute('SELECT COUNT(*) as count FROM payment_methods');
+      const pmCount = Number(pmCountRes.rows[0]?.count || 0);
+
+      if (pmCount === 0) {
+        const defaults = [
+          { id: 'pm-1', name: 'Credit Card', isDefault: 1 },
+          { id: 'pm-2', name: 'Debit Card', isDefault: 1 },
+          { id: 'pm-3', name: 'Money Transfer', isDefault: 1 },
+        ];
+        for (const pm of defaults) {
+          await this.client.execute({
+            sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
+            args: [pm.id, pm.name, pm.isDefault],
           });
         }
       }
@@ -265,16 +303,15 @@ class TursoDatabaseService {
     if (!this.client) return this.localMemoryTx;
 
     try {
-      const res = await this.client.execute(
-        'SELECT * FROM transactions ORDER BY date DESC'
-      );
+      const res = await this.client.execute('SELECT * FROM transactions ORDER BY date DESC');
       const items: Transaction[] = res.rows.map((row: any) => ({
         id: String(row.id),
-        type: row.type as 'income' | 'expense',
+        type: row.type as any,
         title: String(row.title),
         amount: Number(row.amount),
         currency: String(row.currency),
         category: String(row.category),
+        paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
         date: String(row.date),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at || row.date),
@@ -330,8 +367,8 @@ class TursoDatabaseService {
     if (this.client) {
       try {
         await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, date, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, date, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newTx.id,
             newTx.type,
@@ -339,6 +376,7 @@ class TursoDatabaseService {
             newTx.amount,
             newTx.currency,
             newTx.category,
+            newTx.paymentMethod || null,
             newTx.date,
             newTx.notes || '',
             newTx.createdAt,
@@ -427,7 +465,7 @@ class TursoDatabaseService {
       try {
         await this.client.execute({
           sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, date = ?, notes = ?
+                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, date = ?, notes = ?
                 WHERE id = ?`,
           args: [
             updatedTx.type,
@@ -435,6 +473,7 @@ class TursoDatabaseService {
             updatedTx.amount,
             updatedTx.currency,
             updatedTx.category,
+            updatedTx.paymentMethod || null,
             updatedTx.date,
             updatedTx.notes || '',
             id,
@@ -448,6 +487,57 @@ class TursoDatabaseService {
     }
 
     return updatedTx;
+  }
+
+  // Payment Methods DB Operations
+  public async getPaymentMethods(): Promise<Array<{ id: string; name: string; isDefault?: boolean }>> {
+    if (!this.client) return [];
+    try {
+      const res = await this.client.execute('SELECT * FROM payment_methods ORDER BY name ASC');
+      return res.rows.map((row: any) => ({
+        id: String(row.id),
+        name: String(row.name),
+        isDefault: Boolean(row.is_default),
+      }));
+    } catch (e) {
+      console.error('Error fetching payment methods from Turso:', e);
+      return [];
+    }
+  }
+
+  public async addPaymentMethod(pm: { id: string; name: string; isDefault?: boolean }): Promise<void> {
+    if (!this.client) return;
+    await this.client.execute({
+      sql: 'INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)',
+      args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
+    });
+  }
+
+  public async updatePaymentMethod(id: string, name: string): Promise<void> {
+    if (!this.client) return;
+    await this.client.execute({
+      sql: 'UPDATE payment_methods SET name = ? WHERE id = ?',
+      args: [name, id],
+    });
+  }
+
+  public async deletePaymentMethod(id: string): Promise<void> {
+    if (!this.client) return;
+    await this.client.execute({
+      sql: 'DELETE FROM payment_methods WHERE id = ?',
+      args: [id],
+    });
+  }
+
+  public async resetPaymentMethods(defaults: Array<{ id: string; name: string; isDefault?: boolean }>): Promise<void> {
+    if (!this.client) return;
+    await this.client.execute('DELETE FROM payment_methods');
+    for (const pm of defaults) {
+      await this.client.execute({
+        sql: 'INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)',
+        args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
+      });
+    }
   }
 
   public async clearAllTransactions(): Promise<Transaction[]> {
