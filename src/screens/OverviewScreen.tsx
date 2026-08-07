@@ -9,12 +9,11 @@ import {
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY, formatMoney, convertCurrency } from '../utils/currencies';
 import { TransactionEditModal } from '../components/TransactionEditModal';
-import { ChartNoAxesCombined, Pencil, Plus, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { ChartNoAxesCombined, Pencil, TrendingDown, TrendingUp } from 'lucide-react-native';
 
 interface OverviewScreenProps {
   transactions: Transaction[];
   tursoConfig: TursoConfig;
-  onNavigateAdd: () => void;
   onNavigateAnalytics: () => void;
   onNavigateTransactions: () => void;
   onRefresh: () => void;
@@ -23,7 +22,6 @@ interface OverviewScreenProps {
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   transactions,
   tursoConfig,
-  onNavigateAdd,
   onNavigateAnalytics,
   onNavigateTransactions,
   onRefresh,
@@ -109,20 +107,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
         </View>
       </View>
 
-      {/* Quick Action Grid */}
-      <View style={styles.actionGrid}>
-        <TouchableOpacity style={[styles.actionBtn, styles.actionAddBtn]} onPress={onNavigateAdd}>
-          <Plus size={24} color="#10B981" strokeWidth={2} />
-          <Text style={styles.actionTitle}>Add Expense / Income</Text>
-          <Text style={styles.actionSubtitle}>Include transaction with date & currency</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.actionBtn, styles.actionGraphBtn]} onPress={onNavigateAnalytics}>
-          <ChartNoAxesCombined size={24} color="#38BDF8" strokeWidth={2} />
-          <Text style={styles.actionTitle}>D3.js Analytics</Text>
-          <Text style={styles.actionSubtitle}>View evolution graphs & donut breakdown</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Quick Action */}
+      <TouchableOpacity style={[styles.actionBtn, styles.actionGraphBtn]} onPress={onNavigateAnalytics}>
+        <ChartNoAxesCombined size={24} color="#38BDF8" strokeWidth={2} />
+        <Text style={styles.actionTitle}>D3.js Analytics</Text>
+        <Text style={styles.actionSubtitle}>View evolution graphs & donut breakdown</Text>
+      </TouchableOpacity>
 
       {/* Recent Activity Section */}
       <View style={styles.section}>
@@ -304,22 +294,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
   },
-  actionGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
   actionBtn: {
-    flex: 1,
     backgroundColor: '#1E293B',
     borderRadius: 16,
     padding: 18,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
     gap: 4,
-  },
-  actionAddBtn: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#10B981',
   },
   actionGraphBtn: {
     borderLeftWidth: 4,

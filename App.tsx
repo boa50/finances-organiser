@@ -137,6 +137,16 @@ export default function App() {
           <CategoryManagementScreen onCategoriesUpdated={loadData} />
         )}
       </View>
+      {/* Floating Action Button — visible on Overview and History only */}
+      {(activeTab === 'overview' || activeTab === 'transactions') && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setAddTransactionModalVisible(true)}
+          activeOpacity={0.85}
+        >
+          <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
+      )}
 
       {/* Bottom Navigation Tab Bar */}
       <View style={styles.navTabBar}>
@@ -147,16 +157,6 @@ export default function App() {
           <House size={18} color={activeTab === 'overview' ? '#38BDF8' : '#64748B'} />
           <Text style={[styles.navText, activeTab === 'overview' && styles.navTextActive]}>
             Overview
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.navTab}
-          onPress={() => setAddTransactionModalVisible(true)}
-        >
-          <Plus size={18} color="#64748B" />
-          <Text style={styles.navText}>
-            Add Entry
           </Text>
         </TouchableOpacity>
 
@@ -271,6 +271,23 @@ const styles = StyleSheet.create({
   },
   screenContainer: {
     flex: 1,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 80,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 10,
   },
   navTabBar: {
     flexDirection: 'row',
