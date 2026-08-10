@@ -10,6 +10,9 @@ export interface Transaction {
   paymentMethod?: string;
   bank?: string;
   store?: string;
+  installments?: number;
+  installmentNumber?: number;
+  installmentGroupId?: string;
   date: string; // ISO 8601 string: YYYY-MM-DDTHH:mm:ss.sssZ
   notes?: string;
   createdAt: string;
@@ -36,6 +39,7 @@ export interface PaymentMethodItem {
   id: string;
   name: string;
   isDefault?: boolean;
+  allowInstallments?: boolean;
 }
 
 export interface BankItem {

@@ -114,6 +114,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   const [pmModalVisible, setPmModalVisible] = useState(false);
   const [editingPm, setEditingPm] = useState<PaymentMethodItem | null>(null);
   const [pmNameInput, setPmNameInput] = useState('');
+  const [pmAllowInstallments, setPmAllowInstallments] = useState(false);
   const [pmSaving, setPmSaving] = useState(false);
   const [pmErrorMsg, setPmErrorMsg] = useState<string | null>(null);
 
@@ -295,6 +296,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   const openAddPmModal = () => {
     setEditingPm(null);
     setPmNameInput('');
+    setPmAllowInstallments(false);
     setPmErrorMsg(null);
     setPmModalVisible(true);
   };
@@ -302,6 +304,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   const openEditPmModal = (pm: PaymentMethodItem) => {
     setEditingPm(pm);
     setPmNameInput(pm.name);
+    setPmAllowInstallments(pm.allowInstallments ?? false);
     setPmErrorMsg(null);
     setPmModalVisible(true);
   };
@@ -315,9 +318,9 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     setPmErrorMsg(null);
     try {
       if (editingPm) {
-        await paymentMethodService.updatePaymentMethod(editingPm.id, pmNameInput.trim());
+        await paymentMethodService.updatePaymentMethod(editingPm.id, pmNameInput.trim(), pmAllowInstallments);
       } else {
-        await paymentMethodService.addPaymentMethod(pmNameInput.trim());
+        await paymentMethodService.addPaymentMethod(pmNameInput.trim(), pmAllowInstallments);
       }
       await loadPaymentMethodsData();
       if (onCategoriesUpdated) onCategoriesUpdated();
@@ -990,6 +993,24 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               </View>
 
               <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Allow Installments</Text>
+                <TouchableOpacity
+                  style={[styles.toggleRow, pmAllowInstallments && styles.toggleRowActive]}
+                  onPress={() => setPmAllowInstallments(!pmAllowInstallments)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.toggleTrack, pmAllowInstallments && styles.toggleTrackActive]}>
+                    <View style={[styles.toggleThumb, pmAllowInstallments && styles.toggleThumbActive]} />
+                  </View>
+                  <Text style={styles.toggleLabel}>
+                    {pmAllowInstallments
+                      ? 'Users can split expenses into monthly installments'
+                      : 'No installment option for this payment method'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Preview</Text>
                 <View style={styles.previewBox}>
                   <View
@@ -1573,5 +1594,43 @@ const styles = StyleSheet.create({
     color: theme.colors.background,
     fontSize: 14,
     fontWeight: '800',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
+    borderRadius: theme.radii.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+  },
+  toggleRowActive: {
+    borderColor: theme.colors.accent,
+  },
+  toggleTrack: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.colors.borderStrong,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleTrackActive: {
+    backgroundColor: theme.colors.accent,
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: theme.colors.white,
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  toggleLabel: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    flex: 1,
   },
 });

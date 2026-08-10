@@ -21,9 +21,9 @@ export const DEFAULT_CATEGORIES = [
 ];
 
 export const DEFAULT_PAYMENT_METHODS = [
-  { id: 'pm-1', name: 'Credit Card', isDefault: true },
-  { id: 'pm-2', name: 'Debit Card', isDefault: true },
-  { id: 'pm-3', name: 'Money Transfer', isDefault: true },
+  { id: 'pm-1', name: 'Credit Card', isDefault: true, allowInstallments: true },
+  { id: 'pm-2', name: 'Debit Card', isDefault: true, allowInstallments: false },
+  { id: 'pm-3', name: 'Money Transfer', isDefault: true, allowInstallments: false },
 ];
 
 export const DEFAULT_BANKS = [
@@ -79,7 +79,11 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       currency TEXT NOT NULL,
       category TEXT NOT NULL,
       payment_method TEXT,
+      bank TEXT,
       store TEXT,
+      installments INTEGER DEFAULT 0,
+      installment_number INTEGER DEFAULT 0,
+      installment_group_id TEXT,
       date TEXT NOT NULL,
       notes TEXT,
       created_at TEXT NOT NULL
@@ -104,6 +108,24 @@ export async function ensureTablesExist(client: Client): Promise<void> {
     // Column already exists
   }
 
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN installments INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN installment_number INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN installment_group_id TEXT');
+  } catch (e) {
+    // Column already exists
+  }
+
   await client.execute(`
     CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,
@@ -119,9 +141,16 @@ export async function ensureTablesExist(client: Client): Promise<void> {
     CREATE TABLE IF NOT EXISTS payment_methods (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
-      is_default INTEGER DEFAULT 0
+      is_default INTEGER DEFAULT 0,
+      allow_installments INTEGER DEFAULT 0
     );
   `);
+
+  try {
+    await client.execute('ALTER TABLE payment_methods ADD COLUMN allow_installments INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS banks (
@@ -152,8 +181,8 @@ export async function ensureTablesExist(client: Client): Promise<void> {
   if (pmCount === 0) {
     for (const pm of DEFAULT_PAYMENT_METHODS) {
       await client.execute({
-        sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
-        args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
+        sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
+        args: [pm.id, pm.name, pm.isDefault ? 1 : 0, pm.allowInstallments ? 1 : 0],
       });
     }
   }

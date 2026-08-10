@@ -4,9 +4,9 @@ import { tursoService } from './tursoService';
 const PAYMENT_METHODS_STORAGE_KEY = 'finances_custom_payment_methods';
 
 export const DEFAULT_PAYMENT_METHODS: PaymentMethodItem[] = [
-  { id: 'pm-1', name: 'Credit Card', isDefault: true },
-  { id: 'pm-2', name: 'Debit Card', isDefault: true },
-  { id: 'pm-3', name: 'Money Transfer', isDefault: true },
+  { id: 'pm-1', name: 'Credit Card', isDefault: true, allowInstallments: true },
+  { id: 'pm-2', name: 'Debit Card', isDefault: true, allowInstallments: false },
+  { id: 'pm-3', name: 'Money Transfer', isDefault: true, allowInstallments: false },
 ];
 
 class PaymentMethodService {
@@ -78,6 +78,7 @@ class PaymentMethodService {
             id: String(row.id),
             name: String(row.name),
             isDefault: Boolean(row.is_default),
+            allowInstallments: Boolean(row.allow_installments),
           }));
           this.paymentMethods = dbItems;
           this.saveToLocalStorage();
@@ -86,8 +87,8 @@ class PaymentMethodService {
           // Table is empty, insert default payment methods to database
           for (const pm of DEFAULT_PAYMENT_METHODS) {
             await client.execute({
-              sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
-              args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
+              sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
+              args: [pm.id, pm.name, pm.isDefault ? 1 : 0, pm.allowInstallments ? 1 : 0],
             });
           }
           this.paymentMethods = [...DEFAULT_PAYMENT_METHODS];
@@ -106,7 +107,7 @@ class PaymentMethodService {
     return [...this.paymentMethods];
   }
 
-  public async addPaymentMethod(name: string): Promise<PaymentMethodItem> {
+  public async addPaymentMethod(name: string, allowInstallments: boolean = false): Promise<PaymentMethodItem> {
     const trimmed = name.trim();
     if (!trimmed) {
       throw new Error('Payment method name cannot be empty.');
@@ -121,6 +122,7 @@ class PaymentMethodService {
       id: `pm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       name: trimmed,
       isDefault: false,
+      allowInstallments: Boolean(allowInstallments),
     };
 
     this.paymentMethods = [...this.paymentMethods, newMethod];
@@ -132,7 +134,7 @@ class PaymentMethodService {
         const res = await fetch('/api/payment-methods', {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
-          body: JSON.stringify({ name: trimmed }),
+          body: JSON.stringify({ name: trimmed, allowInstallments: Boolean(allowInstallments) }),
         });
         if (res.ok) {
           const created: PaymentMethodItem = await res.json();
@@ -148,8 +150,8 @@ class PaymentMethodService {
     if (client) {
       try {
         await client.execute({
-          sql: 'INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)',
-          args: [newMethod.id, newMethod.name, 0],
+          sql: 'INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)',
+          args: [newMethod.id, newMethod.name, 0, allowInstallments ? 1 : 0],
         });
       } catch (err) {
         console.error('Failed to sync added payment method to Turso DB:', err);
@@ -159,7 +161,7 @@ class PaymentMethodService {
     return newMethod;
   }
 
-  public async updatePaymentMethod(id: string, name: string): Promise<PaymentMethodItem> {
+  public async updatePaymentMethod(id: string, name: string, allowInstallments?: boolean): Promise<PaymentMethodItem> {
     const trimmed = name.trim();
     if (!trimmed) {
       throw new Error('Payment method name cannot be empty.');
@@ -178,6 +180,7 @@ class PaymentMethodService {
     const updated: PaymentMethodItem = {
       ...this.paymentMethods[index],
       name: trimmed,
+      allowInstallments: allowInstallments !== undefined ? Boolean(allowInstallments) : Boolean(this.paymentMethods[index].allowInstallments),
     };
 
     this.paymentMethods[index] = updated;
@@ -189,7 +192,7 @@ class PaymentMethodService {
         const res = await fetch('/api/payment-methods', {
           method: 'PUT',
           headers: tursoService.getApiHeaders(),
-          body: JSON.stringify({ id, name: trimmed }),
+          body: JSON.stringify({ id, name: trimmed, allowInstallments: updated.allowInstallments }),
         });
         if (res.ok) {
           const updatedPm: PaymentMethodItem = await res.json();
@@ -205,8 +208,8 @@ class PaymentMethodService {
     if (client) {
       try {
         await client.execute({
-          sql: 'UPDATE payment_methods SET name = ? WHERE id = ?',
-          args: [trimmed, id],
+          sql: 'UPDATE payment_methods SET name = ?, allow_installments = ? WHERE id = ?',
+          args: [trimmed, updated.allowInstallments ? 1 : 0, id],
         });
       } catch (err) {
         console.error('Failed to sync payment method update to Turso DB:', err);
@@ -280,8 +283,8 @@ class PaymentMethodService {
         await client.execute('DELETE FROM payment_methods');
         for (const pm of DEFAULT_PAYMENT_METHODS) {
           await client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
-            args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
+            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
+            args: [pm.id, pm.name, pm.isDefault ? 1 : 0, pm.allowInstallments ? 1 : 0],
           });
         }
       } catch (err) {

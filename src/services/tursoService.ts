@@ -205,6 +205,9 @@ class TursoDatabaseService {
           payment_method TEXT,
           bank TEXT,
           store TEXT,
+          installments INTEGER DEFAULT 0,
+          installment_number INTEGER DEFAULT 0,
+          installment_group_id TEXT,
           date TEXT NOT NULL,
           notes TEXT,
           created_at TEXT NOT NULL
@@ -232,6 +235,27 @@ class TursoDatabaseService {
         // Column already exists
       }
 
+      // Migration: Add installments column if existing table lacks it
+      try {
+        await this.client.execute('ALTER TABLE transactions ADD COLUMN installments INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column already exists
+      }
+
+      // Migration: Add installment_number column if existing table lacks it
+      try {
+        await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_number INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column already exists
+      }
+
+      // Migration: Add installment_group_id column if existing table lacks it
+      try {
+        await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_group_id TEXT');
+      } catch (e) {
+        // Column already exists
+      }
+
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS categories (
           id TEXT PRIMARY KEY,
@@ -247,9 +271,16 @@ class TursoDatabaseService {
         CREATE TABLE IF NOT EXISTS payment_methods (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL UNIQUE,
-          is_default INTEGER DEFAULT 0
+          is_default INTEGER DEFAULT 0,
+          allow_installments INTEGER DEFAULT 0
         );
       `);
+
+      try {
+        await this.client.execute('ALTER TABLE payment_methods ADD COLUMN allow_installments INTEGER DEFAULT 0');
+      } catch (e) {
+        // Column already exists
+      }
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS banks (
@@ -282,14 +313,14 @@ class TursoDatabaseService {
 
       if (pmCount === 0) {
         const defaults = [
-          { id: 'pm-1', name: 'Credit Card', isDefault: 1 },
-          { id: 'pm-2', name: 'Debit Card', isDefault: 1 },
-          { id: 'pm-3', name: 'Money Transfer', isDefault: 1 },
+          { id: 'pm-1', name: 'Credit Card', isDefault: 1, allowInstallments: 1 },
+          { id: 'pm-2', name: 'Debit Card', isDefault: 1, allowInstallments: 0 },
+          { id: 'pm-3', name: 'Money Transfer', isDefault: 1, allowInstallments: 0 },
         ];
         for (const pm of defaults) {
           await this.client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
-            args: [pm.id, pm.name, pm.isDefault],
+            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
+            args: [pm.id, pm.name, pm.isDefault, pm.allowInstallments],
           });
         }
       }
@@ -338,6 +369,9 @@ class TursoDatabaseService {
         paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
         bank: row.bank ? String(row.bank) : undefined,
         store: row.store ? String(row.store) : undefined,
+        installments: Number(row.installments) || 0,
+        installmentNumber: Number(row.installment_number) || 0,
+        installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
         date: String(row.date),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at || row.date),
@@ -393,8 +427,8 @@ class TursoDatabaseService {
     if (this.client) {
       try {
         await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, bank, store, date, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, bank, store, installments, installment_number, installment_group_id, date, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newTx.id,
             newTx.type,
@@ -405,6 +439,9 @@ class TursoDatabaseService {
             newTx.paymentMethod || null,
             newTx.bank || null,
             newTx.store || null,
+            newTx.installments || 0,
+            newTx.installmentNumber || 0,
+            newTx.installmentGroupId || null,
             newTx.date,
             newTx.notes || '',
             newTx.createdAt,
@@ -452,6 +489,89 @@ class TursoDatabaseService {
     return true;
   }
 
+  public async deleteTransactionGroup(groupId: string, targetTx?: Transaction): Promise<boolean> {
+    const baseTitle = targetTx ? targetTx.title.replace(/\s*\(\d+\/\d+\)$/, '').trim().toLowerCase() : '';
+    const totalInst = targetTx?.installments || 0;
+
+    // 1. Identify all sibling transactions in local memory
+    const siblingTx = this.localMemoryTx.filter((t) => {
+      if (groupId && t.installmentGroupId === groupId) return true;
+      if (targetTx && t.id === targetTx.id) return true;
+      if (baseTitle && totalInst > 1 && t.installments === totalInst) {
+        const tBase = t.title.replace(/\s*\(\d+\/\d+\)$/, '').trim().toLowerCase();
+        if (tBase === baseTitle) return true;
+      }
+      return false;
+    });
+
+    const siblingIds = Array.from(new Set(siblingTx.map((t) => t.id)));
+
+    // 2. Remove all matched siblings from local memory immediately
+    this.localMemoryTx = this.localMemoryTx.filter((t) => {
+      if (siblingIds.includes(t.id)) return false;
+      if (groupId && t.installmentGroupId === groupId) return false;
+      return true;
+    });
+    this.saveLocalCache();
+
+    // 3. Delete from Vercel Serverless API if online
+    if (groupId) {
+      try {
+        if (typeof window !== 'undefined') {
+          await fetch(`/api/transactions?groupId=${encodeURIComponent(groupId)}`, {
+            method: 'DELETE',
+            headers: this.getApiHeaders(),
+          });
+        }
+      } catch (e) {
+        // Fall through
+      }
+    }
+
+    // 4. Delete from Turso Cloud DB directly if client connected
+    if (this.client) {
+      if (groupId) {
+        try {
+          await this.client.execute({
+            sql: 'DELETE FROM transactions WHERE installment_group_id = ?',
+            args: [groupId],
+          });
+          this.config.isConnected = true;
+        } catch (err) {
+          console.error('Failed to delete transaction group from Turso:', err);
+        }
+      }
+
+      // Also ensure all sibling IDs are deleted explicitly from Turso DB
+      for (const id of siblingIds) {
+        try {
+          await this.client.execute({
+            sql: 'DELETE FROM transactions WHERE id = ?',
+            args: [id],
+          });
+        } catch (err) {
+          // Ignore if already deleted by group query
+        }
+      }
+    }
+
+    // 5. Also issue DELETE requests for sibling IDs via API as safety fallback
+    if (typeof window !== 'undefined' && siblingIds.length > 0) {
+      for (const id of siblingIds) {
+        try {
+          await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: this.getApiHeaders(),
+          });
+        } catch (e) {
+          // Ignore
+        }
+      }
+    }
+
+    return true;
+  }
+
   public async updateTransaction(
     id: string,
     txData: Omit<Transaction, 'id' | 'createdAt'>
@@ -493,7 +613,7 @@ class TursoDatabaseService {
       try {
         await this.client.execute({
           sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, date = ?, notes = ?
+                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, date = ?, notes = ?
                 WHERE id = ?`,
           args: [
             updatedTx.type,
@@ -504,6 +624,9 @@ class TursoDatabaseService {
             updatedTx.paymentMethod || null,
             updatedTx.bank || null,
             updatedTx.store || null,
+            updatedTx.installments || 0,
+            updatedTx.installmentNumber || 0,
+            updatedTx.installmentGroupId || null,
             updatedTx.date,
             updatedTx.notes || '',
             id,

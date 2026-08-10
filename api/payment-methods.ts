@@ -28,8 +28,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!result.rows || result.rows.length === 0) {
         for (const pm of DEFAULT_PAYMENT_METHODS) {
           await client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
-            args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
+            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
+            args: [pm.id, pm.name, pm.isDefault ? 1 : 0, pm.allowInstallments ? 1 : 0],
           });
         }
         return res.status(200).json(DEFAULT_PAYMENT_METHODS);
@@ -39,20 +39,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: String(row.id),
         name: String(row.name),
         isDefault: Boolean(row.is_default),
+        allowInstallments: Boolean(row.allow_installments),
       }));
       return res.status(200).json(paymentMethods);
     }
 
     // POST /api/payment-methods - Add a new payment method or reset defaults
     if (req.method === 'POST') {
-      const { action, name } = req.body || {};
+      const { action, name, allowInstallments } = req.body || {};
 
       if (action === 'reset' || req.query.action === 'reset') {
         await client.execute('DELETE FROM payment_methods');
         for (const pm of DEFAULT_PAYMENT_METHODS) {
           await client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
-            args: [pm.id, pm.name, 1],
+            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
+            args: [pm.id, pm.name, 1, pm.allowInstallments ? 1 : 0],
           });
         }
         return res.status(200).json(DEFAULT_PAYMENT_METHODS);
@@ -74,22 +75,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const id = 'pm-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
+      const allowInstVal = Boolean(allowInstallments);
+
       await client.execute({
-        sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, 0)`,
-        args: [id, trimmedName],
+        sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, 0, ?)`,
+        args: [id, trimmedName, allowInstVal ? 1 : 0],
       });
 
       const newPm = {
         id,
         name: trimmedName,
         isDefault: false,
+        allowInstallments: allowInstVal,
       };
       return res.status(201).json(newPm);
     }
 
     // PUT /api/payment-methods - Update payment method
     if (req.method === 'PUT') {
-      const { id, name } = req.body || {};
+      const { id, name, allowInstallments } = req.body || {};
       if (!id || !name || !name.trim()) {
         return res.status(400).json({ error: 'Missing required fields for payment method update' });
       }
@@ -105,14 +109,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: `A payment method named "${trimmedName}" already exists.` });
       }
 
+      const allowInstVal = Boolean(allowInstallments);
+
       await client.execute({
-        sql: `UPDATE payment_methods SET name = ? WHERE id = ?`,
-        args: [trimmedName, id],
+        sql: `UPDATE payment_methods SET name = ?, allow_installments = ? WHERE id = ?`,
+        args: [trimmedName, allowInstVal ? 1 : 0, id],
       });
 
       const updatedPm = {
         id,
         name: trimmedName,
+        allowInstallments: allowInstVal,
       };
       return res.status(200).json(updatedPm);
     }

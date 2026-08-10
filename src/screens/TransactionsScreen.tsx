@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import {
+  Alert,
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -23,7 +25,7 @@ interface HistoryTransactionItemProps {
   transaction: Transaction;
   showMonthHeader: boolean;
   onEdit: (transaction: Transaction) => void;
-  onDelete: (id: string, title: string) => void;
+  onDelete: (transaction: Transaction) => void;
 }
 
 const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
@@ -79,6 +81,14 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
                 <Text style={styles.txPaymentMethod}>💳 {transaction.paymentMethod}</Text>
               </>
             ) : null}
+            {transaction.installments && transaction.installments > 1 ? (
+              <>
+                <Text style={styles.dotSeparator}>•</Text>
+                <Text style={styles.txInstallment}>
+                  📅 {transaction.installmentNumber}/{transaction.installments}
+                </Text>
+              </>
+            ) : null}
             <Text style={styles.dotSeparator}>•</Text>
             <Text style={styles.txDate}>{formattedDate} {formattedTime}</Text>
           </View>
@@ -95,7 +105,7 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
             <TouchableOpacity onPress={() => onEdit(transaction)} style={styles.editBtn} accessibilityLabel={`Edit ${transaction.title}`}>
               <Pencil size={14} color={theme.colors.accent} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => onDelete(transaction.id, transaction.title)} style={styles.deleteBtn}>
+            <TouchableOpacity onPress={() => onDelete(transaction)} style={styles.deleteBtn}>
               <Trash2 size={14} color={theme.colors.danger} />
             </TouchableOpacity>
           </View>
@@ -129,11 +139,55 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     return matchesSearch && matchesType;
   });
 
-  const handleDelete = async (id: string, title: string) => {
-    if (confirm(`Are you sure you want to delete "${title}"?`)) {
-      await tursoService.deleteTransaction(id);
-      onRefresh();
+  const handleDelete = async (transaction: Transaction) => {
+    if (transaction.installments && transaction.installments > 1) {
+      if (Platform.OS === 'web') {
+        const choice = confirm(
+          `"${transaction.title}" is part of an installment plan (${transaction.installmentNumber}/${transaction.installments}).\n\nClick OK to delete ALL installments in this group, or Cancel to delete ONLY this single installment.`
+        );
+        if (choice) {
+          await tursoService.deleteTransactionGroup(transaction.installmentGroupId || '', transaction);
+        } else {
+          if (confirm(`Delete ONLY installment ${transaction.installmentNumber}/${transaction.installments}?`)) {
+            await tursoService.deleteTransaction(transaction.id);
+          } else {
+            return;
+          }
+        }
+      } else {
+        Alert.alert(
+          'Delete Installment',
+          `"${transaction.title}" is installment ${transaction.installmentNumber} of ${transaction.installments}.`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete Only This',
+              style: 'destructive',
+              onPress: async () => {
+                await tursoService.deleteTransaction(transaction.id);
+                onRefresh();
+              },
+            },
+            {
+              text: 'Delete All Installments',
+              style: 'destructive',
+              onPress: async () => {
+                await tursoService.deleteTransactionGroup(transaction.installmentGroupId || '', transaction);
+                onRefresh();
+              },
+            },
+          ]
+        );
+        return;
+      }
+    } else {
+      if (confirm(`Are you sure you want to delete "${transaction.title}"?`)) {
+        await tursoService.deleteTransaction(transaction.id);
+      } else {
+        return;
+      }
     }
+    onRefresh();
   };
 
   const handleClearAll = async () => {
@@ -433,6 +487,11 @@ const styles = StyleSheet.create({
   },
   txPaymentMethod: {
     color: theme.colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  txInstallment: {
+    color: theme.colors.accent,
     fontSize: 12,
     fontWeight: '600',
   },

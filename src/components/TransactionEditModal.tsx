@@ -43,6 +43,8 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [bank, setBank] = useState<string>('');
   const [availableBanks, setAvailableBanks] = useState<BankItem[]>([]);
   const [store, setStore] = useState('');
+  const [installments, setInstallments] = useState<number>(0);
+  const [installmentInputText, setInstallmentInputText] = useState<string>('1');
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -78,30 +80,73 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       const bks = await loadBanks();
 
       if (transaction) {
-        setTitle(transaction.title);
-        setAmount(String(transaction.amount));
         setCurrency(transaction.currency);
         setCategory(transaction.category);
-        setPaymentMethod(transaction.paymentMethod || pms[0]?.name || 'Credit Card');
+        const pmName = transaction.paymentMethod || pms[0]?.name || 'Credit Card';
+        setPaymentMethod(pmName);
         setBank(transaction.bank || '');
         setStore(transaction.store || '');
-        setDate(dateFromTransaction(transaction.date));
         setNotes(transaction.notes || '');
+
+        if (transaction.installments && transaction.installments > 1) {
+          const totalAmount = transaction.amount * transaction.installments;
+          setAmount(String(totalAmount));
+
+          const originalTitle = transaction.title.replace(/\s*\(\d+\/\d+\)$/, '');
+          setTitle(originalTitle);
+
+          const thisDate = dateFromTransaction(transaction.date);
+          const baseDate = new Date(thisDate);
+          baseDate.setMonth(baseDate.getMonth() - ((transaction.installmentNumber || 1) - 1));
+          setDate(baseDate);
+
+          setInstallments(transaction.installments);
+          setInstallmentInputText(String(transaction.installments));
+        } else {
+          setTitle(transaction.title);
+          setAmount(String(transaction.amount));
+          setDate(dateFromTransaction(transaction.date));
+          setInstallments(transaction.installments || 0);
+          setInstallmentInputText(String(transaction.installments || 1));
+        }
       } else {
         setTitle('');
         setAmount('');
         setCurrency('BRL');
         setCategory(cats[0]?.name || '');
-        setPaymentMethod(pms[0]?.name || 'Credit Card');
+        const defaultPmName = pms[0]?.name || 'Credit Card';
+        setPaymentMethod(defaultPmName);
         setBank('');
         setStore('');
         setDate(new Date());
         setNotes('');
+
+        const defaultPm = pms.find((p) => p.name === defaultPmName) || pms[0];
+        const initInst = defaultPm?.allowInstallments ? 1 : 0;
+        setInstallments(initInst);
+        setInstallmentInputText(String(initInst || 1));
       }
     };
 
     initModal();
   }, [visible, transaction]);
+
+  const currentPmItem = availablePaymentMethods.find((pm) => pm.name === paymentMethod);
+  const pmSupportsInstallments = currentPmItem?.allowInstallments ?? false;
+
+  const selectPaymentMethod = (pmName: string) => {
+    setPaymentMethod(pmName);
+    const targetPm = availablePaymentMethods.find((pm) => pm.name === pmName);
+    if (targetPm?.allowInstallments) {
+      if (installments === 0) {
+        setInstallments(1);
+        setInstallmentInputText('1');
+      }
+    } else {
+      setInstallments(0);
+      setInstallmentInputText('1');
+    }
+  };
 
   const changeType = async (nextType: TransactionType) => {
     setType(nextType);
@@ -125,6 +170,8 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
     setSaving(true);
     try {
+      const finalInstallments = type === 'expense' && pmSupportsInstallments ? Math.max(1, installments) : 0;
+
       const transactionData = {
         type,
         title: title.trim(),
@@ -138,11 +185,69 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         notes: notes.trim() || undefined,
       };
 
-      if (transaction) {
-        await tursoService.updateTransaction(transaction.id, transactionData);
+      if (!transaction && finalInstallments > 1) {
+        const perAmount = parsedAmount / finalInstallments;
+        const groupId = `inst-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const baseDate = new Date(date);
+
+        for (let i = 1; i <= finalInstallments; i++) {
+          const installmentDate = new Date(baseDate);
+          installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+
+          await tursoService.addTransaction({
+            ...transactionData,
+            title: `${title.trim()} (${i}/${finalInstallments})`,
+            amount: perAmount,
+            date: installmentDate.toISOString(),
+            installments: finalInstallments,
+            installmentNumber: i,
+            installmentGroupId: groupId,
+          });
+        }
+      } else if (transaction && finalInstallments > 1) {
+        // Reuse existing group ID or generate new one if converting single transaction
+        const groupId = transaction.installmentGroupId || `inst-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+        await tursoService.deleteTransactionGroup(groupId, transaction);
+
+        const perAmount = parsedAmount / finalInstallments;
+        const baseDate = new Date(date);
+
+        for (let i = 1; i <= finalInstallments; i++) {
+          const installmentDate = new Date(baseDate);
+          installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+
+          await tursoService.addTransaction({
+            ...transactionData,
+            title: `${title.trim()} (${i}/${finalInstallments})`,
+            amount: perAmount,
+            date: installmentDate.toISOString(),
+            installments: finalInstallments,
+            installmentNumber: i,
+            installmentGroupId: groupId,
+          });
+        }
       } else {
-        await tursoService.addTransaction(transactionData);
+        const txWithInstallments = {
+          ...transactionData,
+          installments: finalInstallments,
+          installmentNumber: finalInstallments > 0 ? 1 : 0,
+          installmentGroupId: undefined,
+        };
+
+        if (transaction) {
+          if (transaction.installments && transaction.installments > 1) {
+            const oldGroupId = transaction.installmentGroupId || '';
+            await tursoService.deleteTransactionGroup(oldGroupId, transaction);
+            await tursoService.addTransaction(txWithInstallments);
+          } else {
+            await tursoService.updateTransaction(transaction.id, txWithInstallments);
+          }
+        } else {
+          await tursoService.addTransaction(txWithInstallments);
+        }
       }
+
       onSaved();
       onClose();
     } catch (error: any) {
@@ -152,7 +257,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     }
   };
 
-  const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const parsedAmountNum = Number(amount.replace(',', '.')) || 0;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -189,7 +294,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             <Field label="Title">
               <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Description" placeholderTextColor={theme.colors.textTertiary} />
             </Field>
-            <Field label="Amount">
+            <Field label={type === 'expense' && pmSupportsInstallments && installments > 1 ? "Total Amount" : "Amount"}>
               <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={theme.colors.textTertiary} />
             </Field>
             <Field label="Currency">
@@ -215,12 +320,59 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 <Field label="Way of Payment">
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
                     {availablePaymentMethods.map((item) => (
-                      <TouchableOpacity key={item.id} onPress={() => setPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
+                      <TouchableOpacity key={item.id} onPress={() => selectPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
                         <Text style={styles.chipText}>💳 {item.name}</Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
                 </Field>
+                {pmSupportsInstallments && (
+                  <Field label="Installments">
+                    <View style={styles.installmentRow}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const n = Math.max(1, (installments || 1) - 1);
+                          setInstallments(n);
+                          setInstallmentInputText(String(n));
+                        }}
+                        style={styles.installmentBtn}
+                      >
+                        <Text style={styles.installmentBtnText}>−</Text>
+                      </TouchableOpacity>
+
+                      <TextInput
+                        style={styles.installmentInput}
+                        value={installmentInputText}
+                        onChangeText={(text) => {
+                          setInstallmentInputText(text);
+                          const parsed = parseInt(text, 10);
+                          if (!isNaN(parsed) && parsed >= 1) {
+                            setInstallments(parsed);
+                          }
+                        }}
+                        keyboardType="number-pad"
+                        textAlign="center"
+                      />
+
+                      <TouchableOpacity
+                        onPress={() => {
+                          const n = (installments || 1) + 1;
+                          setInstallments(n);
+                          setInstallmentInputText(String(n));
+                        }}
+                        style={styles.installmentBtn}
+                      >
+                        <Text style={styles.installmentBtnText}>+</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {installments > 1 && parsedAmountNum > 0 && (
+                      <Text style={styles.installmentHint}>
+                        {installments}× of {currency} {(parsedAmountNum / installments).toFixed(2)} / month
+                      </Text>
+                    )}
+                  </Field>
+                )}
                 <Field label="Bank (optional)">
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
                     {availableBanks.map((item) => (
@@ -304,6 +456,11 @@ const styles = StyleSheet.create({
   chip: { backgroundColor: theme.colors.background, borderRadius: theme.radii['3xl'], paddingHorizontal: theme.spacing.base, paddingVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.borderLight },
   chipActive: { backgroundColor: theme.colors.accentDark, borderColor: theme.colors.accent },
   chipText: { color: theme.colors.textLight, fontSize: 12, fontWeight: '600' },
+  installmentRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  installmentBtn: { width: 42, height: 42, borderRadius: theme.radii.base, backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.borderLight, alignItems: 'center', justifyContent: 'center' },
+  installmentBtnText: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700' },
+  installmentInput: { width: 70, height: 42, backgroundColor: theme.colors.background, color: theme.colors.textPrimary, borderRadius: theme.radii.base, borderWidth: 1, borderColor: theme.colors.borderLight, fontSize: 16, fontWeight: '700' },
+  installmentHint: { color: theme.colors.accent, fontSize: 12, fontWeight: '600', marginTop: theme.spacing.xxs },
   saveButton: { backgroundColor: theme.colors.accentMid, borderRadius: theme.radii.base, padding: 13, alignItems: 'center', marginTop: theme.spacing.xs },
   saveText: { color: theme.colors.white, fontSize: 15, fontWeight: '800' },
 });
