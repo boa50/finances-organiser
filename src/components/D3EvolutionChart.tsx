@@ -4,6 +4,7 @@ import Svg, { Path, Circle, Line, Text as SvgText, G, Defs, LinearGradient, Stop
 import * as d3 from 'd3';
 import { Transaction, MonthlyAggregate } from '../types';
 import { convertCurrency, formatMoney } from '../utils/currencies';
+import { aggregateTransactionsByMonth } from '../utils/financials';
 import theme from '../theme';
 
 interface D3EvolutionChartProps {
@@ -17,49 +18,8 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
 }) => {
   const [selectedMonth, setSelectedMonth] = useState<MonthlyAggregate | null>(null);
 
-  // Group transactions by YYYY-MM
-  const monthMap: { [key: string]: { income: number; expense: number; date: Date } } = {};
+  const monthlyData: MonthlyAggregate[] = aggregateTransactionsByMonth(transactions, targetCurrency);
 
-  transactions.forEach((tx) => {
-    const txDate = new Date(tx.date);
-    if (isNaN(txDate.getTime())) return;
-
-    const year = txDate.getFullYear();
-    const month = String(txDate.getMonth() + 1).padStart(2, '0');
-    const key = `${year}-${month}`;
-
-    if (!monthMap[key]) {
-      monthMap[key] = {
-        income: 0,
-        expense: 0,
-        date: new Date(year, txDate.getMonth(), 1),
-      };
-    }
-
-    const convertedAmount = convertCurrency(tx.amount, tx.currency, targetCurrency);
-
-    if (tx.type === 'income') {
-      monthMap[key].income += convertedAmount;
-    } else {
-      monthMap[key].expense += convertedAmount;
-    }
-  });
-
-  // Sort months chronologically
-  const sortedKeys = Object.keys(monthMap).sort();
-  const monthlyData: MonthlyAggregate[] = sortedKeys.map((key) => {
-    const item = monthMap[key];
-    const monthName = item.date.toLocaleString('default', { month: 'short' });
-    const yearShort = item.date.getFullYear().toString().slice(-2);
-    return {
-      monthKey: key,
-      monthLabel: `${monthName} '${yearShort}`,
-      income: item.income,
-      expense: item.expense,
-      net: item.income - item.expense,
-      date: item.date,
-    };
-  });
 
   if (monthlyData.length === 0) {
     return (

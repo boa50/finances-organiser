@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Transaction, TursoConfig } from '../types';
-import { DEFAULT_CURRENCY, formatMoney, convertCurrency } from '../utils/currencies';
+import { DEFAULT_CURRENCY, formatMoney } from '../utils/currencies';
+import { calculateFinancialSummary, groupRecentTransactions, GroupedRecentItem } from '../utils/financials';
 import { TransactionEditModal } from '../components/TransactionEditModal';
 import { Pencil, TrendingDown, TrendingUp } from 'lucide-react-native';
 import theme from '../theme';
@@ -20,84 +21,6 @@ interface OverviewScreenProps {
   onRefresh: () => void;
 }
 
-interface GroupedRecentItem {
-  id: string;
-  representativeTx: Transaction;
-  type: 'income' | 'expense';
-  title: string;
-  totalAmount: number;
-  currency: string;
-  category: string;
-  paymentMethod?: string;
-  store?: string;
-  installments?: number;
-  date: string;
-}
-
-function getGroupedRecentTransactions(allTx: Transaction[], limit: number = 4): GroupedRecentItem[] {
-  const groupsMap = new Map<string, Transaction[]>();
-  const standaloneItems: Transaction[] = [];
-
-  allTx.forEach((tx) => {
-    if (tx.type === 'expense' && tx.installments && tx.installments > 1) {
-      const groupKey = tx.installmentGroupId
-        ? tx.installmentGroupId
-        : `${tx.title.replace(/\s*\(\d+\/\d+\)$/, '').trim().toLowerCase()}_${tx.installments}`;
-
-      if (!groupsMap.has(groupKey)) {
-        groupsMap.set(groupKey, []);
-      }
-      groupsMap.get(groupKey)!.push(tx);
-    } else {
-      standaloneItems.push(tx);
-    }
-  });
-
-  const result: GroupedRecentItem[] = [];
-
-  groupsMap.forEach((txList) => {
-    txList.sort((a, b) => (a.installmentNumber || 1) - (b.installmentNumber || 1));
-    const firstInst = txList.find((t) => t.installmentNumber === 1) || txList[0];
-
-    const baseTitle = firstInst.title.replace(/\s*\(\d+\/\d+\)$/, '').trim();
-    const installments = firstInst.installments || txList.length;
-    const totalAmount = txList.reduce((sum, t) => sum + t.amount, 0);
-
-    result.push({
-      id: firstInst.installmentGroupId || firstInst.id,
-      representativeTx: firstInst,
-      type: firstInst.type,
-      title: baseTitle,
-      totalAmount: totalAmount > 0 ? totalAmount : firstInst.amount * installments,
-      currency: firstInst.currency,
-      category: firstInst.category,
-      paymentMethod: firstInst.paymentMethod,
-      store: firstInst.store,
-      installments,
-      date: firstInst.date, // Date of the FIRST installment
-    });
-  });
-
-  standaloneItems.forEach((tx) => {
-    result.push({
-      id: tx.id,
-      representativeTx: tx,
-      type: tx.type,
-      title: tx.title,
-      totalAmount: tx.amount,
-      currency: tx.currency,
-      category: tx.category,
-      paymentMethod: tx.paymentMethod,
-      store: tx.store,
-      installments: tx.installments,
-      date: tx.date,
-    });
-  });
-
-  result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  return result.slice(0, limit);
-}
-
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   transactions,
   tursoConfig,
@@ -105,35 +28,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   onRefresh,
 }) => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  const { totalNetBalance, currentMonthIncome, currentMonthExpense } =
+    calculateFinancialSummary(transactions, DEFAULT_CURRENCY);
+
+  const recentItems = groupRecentTransactions(transactions, 4);
   const currentMonthDate = new Date();
-  const currentYear = currentMonthDate.getFullYear();
-  const currentMonth = currentMonthDate.getMonth();
-
-  let currentMonthIncome = 0;
-  let currentMonthExpense = 0;
-  let totalNetBalance = 0;
-
-  transactions.forEach((tx) => {
-    const val = convertCurrency(tx.amount, tx.currency, DEFAULT_CURRENCY);
-    if (tx.type === 'income') {
-      totalNetBalance += val;
-    } else {
-      totalNetBalance -= val;
-    }
-
-    const txDate = new Date(tx.date);
-    if (!isNaN(txDate.getTime()) && txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth) {
-      if (tx.type === 'income') {
-        currentMonthIncome += val;
-      } else {
-        currentMonthExpense += val;
-      }
-    }
-  });
-
-  const monthNet = currentMonthIncome - currentMonthExpense;
   const monthName = currentMonthDate.toLocaleString('default', { month: 'long' });
-  const recentItems = getGroupedRecentTransactions(transactions, 4);
 
   return (
     <>
