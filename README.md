@@ -1,15 +1,18 @@
 # FinanceCloud
 
-A cross-platform personal finance tracker built with **React Native** and **Expo**. It connects to a [Turso](https://turso.tech/) SQLite cloud database via **Vercel Serverless Functions** for dynamic server-side persistence, while providing an offline-first local fallback via `localStorage`. The app features interactive D3.js charts, multi-currency support with live exchange rates, and full CRUD for transactions and categories.
+A cross-platform personal finance tracker built with **React Native** and **Expo**. It connects to a [Turso](https://turso.tech/) SQLite cloud database via **Vercel Serverless Functions** for dynamic server-side persistence, while providing an offline-first local fallback via `localStorage`. The app features password authentication, interactive D3.js charts, multi-currency support with live exchange rates, a centralized design system, unit test coverage, and full CRUD for transactions, categories, payment methods, and banks.
 
 ## ✨ Features
 
+- **Password authentication** — Password-based access control with `sessionStorage` session persistence and server timing-safe verification.
 - **Dashboard overview** — Net balance, monthly income/expense summary, and recent activity at a glance.
 - **D3.js analytics** — Interactive donut charts, category breakdown bars, and monthly trend line/area charts rendered with `react-native-svg`.
-- **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and keep data dynamically updated.
+- **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and handle authentication, transactions, categories, payment methods, and banks.
 - **Multi-currency** — 9 supported currencies (BRL, USD, EUR, GBP, CAD, AUD, JPY, CHF, INR) with live exchange rates from [AwesomeAPI](https://docs.awesomeapi.com.br/api-de-moedas).
-- **Transaction management** — Full create, edit, delete, and search/filter capabilities with monthly grouping.
-- **Category management** — Customisable expense and income categories with icon and colour pickers; automatic default category seeding.
+- **Transaction & Installment management** — Full create, edit, delete, search, and filter capabilities with monthly grouping, merchant tracking, and multi-month installment support.
+- **Comprehensive management hub** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), and Banks.
+- **Design system & UI primitives** — Centralized design tokens (`theme.ts`) and 10 reusable UI primitive components.
+- **Unit testing** — Jest test suite covering financial calculations, currency conversion, and authentication services.
 - **Cross-platform & Cloud sync** — Runs on Web, Android, and iOS via Expo with seamless offline/online fallback.
 
 ## 📋 Prerequisites
@@ -36,7 +39,7 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 
 3. **Configure environment variables**
 
-   Copy `.env.example` to `.env` and fill in your Turso credentials:
+   Copy `.env.example` to `.env` and fill in your credentials:
 
    ```sh
    cp .env.example .env
@@ -45,6 +48,10 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
    ```dotenv
    TURSO_DATABASE_URL=libsql://your-database-name-org.turso.io
    TURSO_AUTH_TOKEN=your-turso-auth-token
+   EXPO_PUBLIC_TURSO_DATABASE_URL=libsql://your-database-name-org.turso.io
+   EXPO_PUBLIC_TURSO_AUTH_TOKEN=your-turso-auth-token
+   APP_PASSWORD=your-app-password
+   EXPO_PUBLIC_APP_PASSWORD=your-app-password
    ```
 
 ## ▶️ Getting Started
@@ -65,6 +72,26 @@ To test Vercel Serverless Functions locally:
 npx vercel dev
 ```
 
+To run unit tests:
+
+```sh
+npm test
+```
+
+## 🧪 Running Tests
+
+Run the unit test suite using Jest and ts-jest:
+
+```sh
+npm test
+```
+
+The test suite covers:
+- **Financial calculations** — Income/expense aggregation, net balance, monthly grouping, and search filtering (`financials.test.ts`).
+- **Currency utilities** — Formatting, pivot conversion, and exchange rate caching (`currencies.test.ts`).
+- **Authentication utilities** — Password validation and timing-safe comparison (`authUtils.test.ts`).
+- **Authentication service** — Session storage persistence, server verification, and Metro fallback (`authService.test.ts`).
+
 ## 🌐 Deploying to Vercel
 
 1. **Import the repository into Vercel**
@@ -74,6 +101,7 @@ npx vercel dev
 2. **Configure Environment Variables in Vercel**
    - Add `TURSO_DATABASE_URL` (e.g. `libsql://your-database.turso.io`)
    - Add `TURSO_AUTH_TOKEN` (your Turso database auth token)
+   - Add `APP_PASSWORD` (your app access password)
 
 3. **Deploy**
    - Vercel automatically detects `vercel.json` and runs `npm run build` (`npx expo export -p web`).
@@ -83,59 +111,96 @@ npx vercel dev
 
 ```
 finances-organiser/
-├── api/                     # Vercel Serverless Functions
-│   ├── _db.ts               # Server-side LibSQL client helper & table auto-migration
-│   ├── health.ts            # GET /api/health — database ping & status check
-│   ├── transactions.ts      # CRUD /api/transactions — fetch, create, edit, delete
-│   └── categories.ts        # CRUD /api/categories — fetch, create, edit, delete, reset
+├── api/                             # Vercel Serverless Functions (Node.js)
+│   ├── _db.ts                       # Server-side LibSQL client helper & table auto-migration
+│   ├── auth.ts                      # POST /api/auth — timing-safe password verification
+│   ├── health.ts                    # GET /api/health — database ping & status check
+│   ├── transactions.ts              # CRUD /api/transactions — fetch, create, edit, delete
+│   ├── categories.ts                # CRUD /api/categories — fetch, create, edit, delete, reset
+│   ├── payment-methods.ts           # CRUD /api/payment-methods — fetch, create, edit, delete, reset
+│   └── banks.ts                     # CRUD /api/banks — fetch, create, edit, delete, reset
 │
-├── App.tsx                  # Root component — tab navigation, top bar, modals
-├── index.ts                 # Expo entry point (registerRootComponent)
-├── app.json                 # Expo configuration
-├── vercel.json              # Vercel deployment & rewrite rules
+├── App.tsx                          # Root component — auth gate, tab navigation, top bar, modals
+├── index.ts                         # Expo entry point (registerRootComponent)
+├── app.json                         # Expo configuration
+├── vercel.json                      # Vercel deployment & rewrite rules
+├── jest.config.js                   # Jest + ts-jest test runner config
 ├── package.json
 ├── tsconfig.json
-├── .env.example             # Environment variable template
+├── .env.example                     # Environment variable template
 │
-├── assets/                  # App icons, splash screen, favicon
+├── assets/                          # App icons, splash screen, favicon
 │
 └── src/
+    ├── theme.ts                     # Centralized design tokens (colors, palette, typography, spacing, radii)
+    │
     ├── types/
-    │   └── index.ts         # Shared TypeScript interfaces (Transaction, TursoConfig, etc.)
+    │   └── index.ts                 # Shared TypeScript interfaces (Transaction, CategoryItem, etc.)
     │
     ├── services/
-    │   ├── tursoService.ts   # Client DB service — serverless API calls + offline fallback
-    │   └── categoryService.ts# Category service — serverless API calls + offline fallback
+    │   ├── __tests__/
+    │   │   └── authService.test.ts  # Auth service test suite
+    │   ├── authService.ts           # Auth service — API check, session persistence, Metro fallback
+    │   ├── tursoService.ts          # Client DB service — serverless API calls + offline fallback
+    │   ├── categoryService.ts       # Category service — serverless API calls + offline fallback
+    │   ├── paymentMethodService.ts  # Payment method service — serverless API calls + offline fallback
+    │   └── bankService.ts           # Bank service — serverless API calls + offline fallback
     │
     ├── utils/
-    │   └── currencies.ts     # Currency definitions, formatting, live exchange rates
+    │   ├── __tests__/
+    │   │   ├── authUtils.test.ts    # Auth utils test suite
+    │   │   ├── currencies.test.ts   # Currency test suite
+    │   │   └── financials.test.ts   # Financial math test suite
+    │   ├── authUtils.ts             # Password validation & timing-safe string comparison
+    │   ├── currencies.ts            # Currency definitions, formatting, live exchange rates
+    │   └── financials.ts            # Pure functions for financial math & transaction grouping
     │
     ├── screens/
-    │   ├── OverviewScreen.tsx          # Dashboard with balance summary and recent transactions
-    │   ├── AnalyticsScreen.tsx         # D3 charts with currency filter
-    │   ├── TransactionsScreen.tsx      # Searchable/filterable transaction history
-    │   └── CategoryManagementScreen.tsx# Category editor with icon/colour pickers
+    │   ├── LoginScreen.tsx          # Password authentication screen
+    │   ├── OverviewScreen.tsx       # Dashboard with balance summary and recent transactions
+    │   ├── AnalyticsScreen.tsx      # D3 charts with currency filter
+    │   ├── TransactionsScreen.tsx   # Searchable/filterable transaction history
+    │   ├── ManagementScreen.tsx     # Tabbed management hub (Categories, Payment Methods, Banks)
+    │   └── CategoryManagementScreen.tsx # Legacy wrapper re-exporting ManagementScreen
     │
     └── components/
-        ├── D3CurrentMonthCharts.tsx     # Donut chart + category bar chart (D3 + SVG)
-        ├── D3EvolutionChart.tsx         # Monthly income/expense trend lines (D3 + SVG)
-        ├── TransactionEditModal.tsx     # Add/edit transaction form
-        ├── TransactionDatePicker.tsx    # Platform-resolved date picker barrel
-        ├── TransactionDatePicker.native.tsx  # iOS/Android date picker
-        └── TransactionDatePicker.web.tsx     # HTML5 date input for web
+        ├── ui/                      # Reusable UI primitive component library
+        │   ├── AppText.tsx          # Standardized text component enforcing typography tokens
+        │   ├── AppTextInput.tsx     # Styled text input with error state & clear button
+        │   ├── AppButton.tsx        # Variant button component (primary, secondary, outline, danger)
+        │   ├── AppCard.tsx          # Surface container card (default, elevated, outlined, glass)
+        │   ├── AppBadge.tsx         # Pill badge for status indicators and flags
+        │   ├── AppIconBadge.tsx     # Icon container badge with variant background
+        │   ├── AppSectionHeader.tsx # Standardized section title, subtitle & action header
+        │   ├── AppSegmentedControl.tsx # Segmented tab filter control
+        │   ├── AppEmptyState.tsx    # Reusable empty data state view
+        │   ├── FeedbackMessage.tsx  # Banner/toast message component
+        │   └── index.ts             # UI primitive barrel export
+        ├── CategoryIcon.tsx         # Lucide vector icon mapping for category display
+        ├── D3CurrentMonthCharts.tsx # Donut chart + category bar chart (D3 + SVG)
+        ├── D3EvolutionChart.tsx     # Monthly income/expense trend lines (D3 + SVG)
+        ├── TransactionEditModal.tsx # Add/edit transaction modal form
+        ├── TransactionDatePicker.tsx # Platform-resolved date picker barrel
+        ├── TransactionDatePicker.native.tsx # iOS/Android date picker
+        └── TransactionDatePicker.web.tsx # HTML5 date input for web
 ```
 
 ### Key Architectural Decisions
 
 | Concern | Approach |
 |---|---|
+| **Authentication** | Password-based access control via `APP_PASSWORD` env var; serverless `/api/auth` with timing-safe comparison (`crypto.timingSafeEqual`); `sessionStorage` session persistence; Metro dev server fallback to `EXPO_PUBLIC_APP_PASSWORD`. |
 | **Serverless API Layer** | Vercel Node.js Serverless Functions in `/api` handle database CRUD operations securely using server-side Turso credentials. |
-| **State management** | React `useState` / `useEffect` in the root `App` component; data flows down via props |
-| **Navigation** | Manual tab router in `App.tsx` (tabs switch rendered screens) |
-| **Data persistence** | Vercel Functions + Turso SQLite Cloud as primary store; `localStorage` as offline fallback |
-| **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths |
-| **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for the date picker |
-| **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60 s TTL) |
+| **State management** | React `useState` / `useEffect` in the root `App` component; data flows down via props. |
+| **Navigation** | Manual tab router in `App.tsx` (tabs switch rendered screens). |
+| **Design system** | Centralized `src/theme.ts` design tokens (palette, colors, spacing, radii, typography); 10 reusable UI primitive components in `src/components/ui/`. |
+| **Icons & Emojis** | Lucide React Native vector icons mapped via `CategoryIcon.tsx`; no emojis in the UI (country flags only for currency representations). |
+| **Data persistence** | Vercel Functions + Turso SQLite Cloud as primary store; `localStorage` as offline fallback. |
+| **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; payment methods support `allowInstallments` flag. |
+| **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography. |
+| **Unit testing** | Jest + ts-jest test runner covering pure utility functions and auth services (31 passing unit tests across 4 suites). |
+| **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |
+| **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60s TTL). |
 
 ## 📚 Useful Documentation
 
