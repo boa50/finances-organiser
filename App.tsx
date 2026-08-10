@@ -16,11 +16,16 @@ import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { ManagementScreen } from './src/screens/ManagementScreen';
 import { refreshCurrencyRates } from './src/utils/currencies';
 import { TransactionEditModal } from './src/components/TransactionEditModal';
-import { ChartNoAxesCombined, House, List, Plus, SlidersHorizontal, Trash2, Zap } from 'lucide-react-native';
+import { ChartNoAxesCombined, House, List, LogOut, Plus, SlidersHorizontal, Trash2, Zap } from 'lucide-react-native';
+import { authService } from './src/services/authService';
+import { LoginScreen } from './src/screens/LoginScreen';
 
 type TabName = 'overview' | 'analytics' | 'transactions' | 'categories';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() =>
+    authService.isAuthenticated()
+  );
   const [activeTab, setActiveTab] = useState<TabName>('overview');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [tursoConfig, setTursoConfig] = useState<TursoConfig>({
@@ -50,8 +55,15 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isAuthenticated) {
+      loadData();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogout = () => {
+    authService.logout();
+    setIsAuthenticated(false);
+  };
 
   const handleClearAll = async () => {
     if (
@@ -63,6 +75,10 @@ export default function App() {
       setTransactions(empty);
     }
   };
+
+  if (!isAuthenticated) {
+    return <LoginScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -109,8 +125,13 @@ export default function App() {
               <Text style={styles.clearBtnText}>Clear All</Text>
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <LogOut size={14} color="#94A3B8" />
+          </TouchableOpacity>
         </View>
       </View>
+
 
       {/* Screen Router */}
       <View style={styles.screenContainer}>
@@ -267,6 +288,16 @@ const styles = StyleSheet.create({
     color: '#F43F5E',
     fontSize: 11,
     fontWeight: '700',
+  },
+  logoutBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
   screenContainer: {
     flex: 1,
