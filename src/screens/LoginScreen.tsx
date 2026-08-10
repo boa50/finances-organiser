@@ -144,13 +144,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: theme.colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: theme.fontSize['3xl'],
+    fontWeight: theme.fontWeight.extrabold,
     letterSpacing: -0.5,
   },
   subtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 14,
+    fontSize: theme.fontSize.md,
     textAlign: 'center',
   },
   form: {

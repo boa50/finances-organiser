@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   currencyFlag: {
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
   },
   kpiRow: {
     flexDirection: 'row',
@@ -145,12 +145,12 @@ const styles = StyleSheet.create({
   },
   kpiLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.medium,
     marginBottom: theme.spacing.xs,
   },
   kpiValue: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.extrabold,
   },
 });

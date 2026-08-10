@@ -56,17 +56,18 @@ const styles = StyleSheet.create({
   },
   title: {
     color: theme.colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: theme.fontSize['2xl'],
+    fontWeight: theme.fontWeight.extrabold,
     letterSpacing: -0.3,
   },
   subtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.medium,
   },
   actionText: {
     color: theme.colors.accent,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
   },
 });

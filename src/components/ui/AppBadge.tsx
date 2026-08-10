@@ -87,7 +87,7 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
     <>
       {statusDot && <View style={[styles.dot, { backgroundColor: colors.dot }]} />}
       {icon && <View style={styles.iconBox}>{icon}</View>}
-      <Text style={[styles.text, { color: colors.text, fontSize: isSm ? 10 : 11 }]}>
+      <Text style={[styles.text, { color: colors.text, fontSize: isSm ? 10 : theme.fontSize.xs }]}>
         {label}
       </Text>
     </>
@@ -123,6 +123,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   text: {
-    fontWeight: '700',
+    fontWeight: theme.fontWeight.bold,
   },
 });

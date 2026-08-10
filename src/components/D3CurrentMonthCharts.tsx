@@ -245,12 +245,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: theme.fontSize['3xl'],
+    fontWeight: theme.fontWeight.extrabold,
   },
   sectionSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
+    fontSize: theme.fontSize.base,
     marginTop: theme.spacing.xxs,
   },
   card: {
@@ -267,12 +267,12 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: theme.fontSize['2xl'],
+    fontWeight: theme.fontWeight.bold,
   },
   cardSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
     marginTop: theme.spacing.xxs,
     marginBottom: theme.spacing['2xl'],
   },
@@ -298,13 +298,13 @@ const styles = StyleSheet.create({
   },
   donutCenterLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
   },
   donutCenterValue: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: theme.fontSize['2xl'],
+    fontWeight: theme.fontWeight.extrabold,
     marginVertical: theme.spacing.xxs,
   },
   savingsBadge: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   savingsBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: theme.fontWeight.bold,
   },
   statsColumn: {
     flex: 1,
@@ -349,16 +349,16 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: theme.fontSize.xl,
+    fontWeight: theme.fontWeight.bold,
     marginTop: 1,
   },
   emptyCatText: {
     color: theme.colors.textTertiary,
-    fontSize: 13,
+    fontSize: theme.fontSize.base,
     fontStyle: 'italic',
     marginVertical: theme.spacing.base,
   },
@@ -375,18 +375,18 @@ const styles = StyleSheet.create({
   },
   catName: {
     color: theme.colors.textLight,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.fontSize.md,
+    fontWeight: theme.fontWeight.semibold,
   },
   catAmount: {
     color: theme.colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: theme.fontSize.md,
+    fontWeight: theme.fontWeight.bold,
   },
   catPercent: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.regular,
   },
   barTrack: {
     height: 8,

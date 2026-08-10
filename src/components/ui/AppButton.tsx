@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.bold,
   },
 });

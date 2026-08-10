@@ -1,8 +1,6 @@
 /**
- * Centralized app theme — single source of truth for colours, spacing, and
- * other visual tokens used across every screen and component.
- *
- * Semantic naming makes it easy to swap palettes or introduce light mode later.
+ * Centralized app theme — single source of truth for colours, spacing, radii,
+ * and standardized typography across every screen and component.
  */
 
 // ─── Base palette ────────────────────────────────────────────────────────────
@@ -127,8 +125,98 @@ export const radii = {
   '4xl': 20,
 } as const;
 
+// ─── Typography Tokens ───────────────────────────────────────────────────────
+
+export const fontSize = {
+  xs: 11,
+  sm: 12,
+  base: 13,
+  md: 14,
+  lg: 15,
+  xl: 16,
+  '2xl': 18,
+  '3xl': 24,
+  '4xl': 36,
+} as const;
+
+export const fontWeight = {
+  regular: '400',
+  medium: '500',
+  semibold: '600',
+  bold: '700',
+  extrabold: '800',
+  black: '900',
+} as const;
+
+export const fontFamily = {
+  sans: 'System',
+  mono: 'monospace',
+} as const;
+
+export const typography = {
+  h1: {
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.black,
+    color: colors.textPrimary,
+  },
+  h2: {
+    fontSize: fontSize['3xl'],
+    fontWeight: fontWeight.extrabold,
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  h3: {
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  h4: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    color: colors.textSecondary,
+  },
+  body: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.regular,
+    color: colors.textPrimary,
+  },
+  bodyMedium: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.textPrimary,
+  },
+  caption: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.textSecondary,
+  },
+  badge: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+  },
+  button: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+  },
+} as const;
+
 // ─── Convenience re-export ───────────────────────────────────────────────────
 
-const theme = { palette, colors, spacing, radii } as const;
+const theme = {
+  palette,
+  colors,
+  spacing,
+  radii,
+  fontSize,
+  fontWeight,
+  fontFamily,
+  typography,
+} as const;
 
 export default theme;

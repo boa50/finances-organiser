@@ -96,11 +96,11 @@ const styles = StyleSheet.create({
   },
   tabText: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
   },
   selectedTabText: {
     color: theme.colors.accent,
-    fontWeight: '700',
+    fontWeight: theme.fontWeight.bold,
   },
 });

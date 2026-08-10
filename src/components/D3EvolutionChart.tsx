@@ -142,8 +142,9 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
                   <SvgText
                     x={-10}
                     y={yPos + 4}
-                    fill="#94A3B8"
-                    fontSize="10"
+                    fill={theme.colors.textSecondary}
+                    fontSize={theme.fontSize.xs}
+                    fontFamily={theme.fontFamily.sans}
                     textAnchor="end"
                   >
                     {tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : tick}
@@ -218,9 +219,10 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
                   <SvgText
                     x={cx}
                     y={innerHeight + 24}
-                    fill={isSelected ? '#38BDF8' : '#94A3B8'}
-                    fontSize="11"
-                    fontWeight={isSelected ? 'bold' : 'normal'}
+                    fill={isSelected ? theme.colors.accent : theme.colors.textSecondary}
+                    fontSize={theme.fontSize.xs}
+                    fontWeight={isSelected ? theme.fontWeight.bold : theme.fontWeight.regular}
+                    fontFamily={theme.fontFamily.sans}
                     textAnchor="middle"
                   >
                     {d.monthLabel}
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: theme.colors.textSecondary,
-    fontSize: 14,
+    fontSize: theme.fontSize.md,
   },
   headerRow: {
     flexDirection: 'row',
@@ -312,12 +314,12 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: theme.fontSize['2xl'],
+    fontWeight: theme.fontWeight.bold,
   },
   cardSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
     marginTop: theme.spacing.xxs,
   },
   legendContainer: {
@@ -337,8 +339,8 @@ const styles = StyleSheet.create({
   },
   legendText: {
     color: theme.colors.textMuted,
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
   },
   chartWrapper: {
     alignItems: 'center',
@@ -355,8 +357,8 @@ const styles = StyleSheet.create({
   },
   detailTitle: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: theme.spacing.base,
@@ -377,11 +379,11 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     color: theme.colors.textTertiary,
-    fontSize: 11,
+    fontSize: theme.fontSize.xs,
     marginBottom: theme.spacing.xxs,
   },
   detailValue: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.bold,
   },
 });

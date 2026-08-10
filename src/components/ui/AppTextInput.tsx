@@ -84,8 +84,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.medium,
     padding: 0, // Reset default padding for clean cross-platform alignment
   },
 });

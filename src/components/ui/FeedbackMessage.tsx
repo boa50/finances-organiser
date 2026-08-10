@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
   },
 });

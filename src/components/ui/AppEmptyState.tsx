@@ -54,13 +54,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: theme.colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.fontSize.md,
+    fontWeight: theme.fontWeight.semibold,
     textAlign: 'center',
   },
   description: {
     color: theme.colors.textTertiary,
-    fontSize: 13,
+    fontSize: theme.fontSize.base,
     textAlign: 'center',
   },
   actionContainer: {

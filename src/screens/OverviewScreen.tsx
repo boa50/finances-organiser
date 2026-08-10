@@ -183,25 +183,25 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: theme.fontSize['3xl'],
+    fontWeight: theme.fontWeight.extrabold,
   },
   welcomeSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
+    fontSize: theme.fontSize.base,
     marginTop: theme.spacing.xxs,
   },
   heroLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
   heroValue: {
     color: theme.colors.textPrimary,
-    fontSize: 36,
-    fontWeight: '900',
+    fontSize: theme.fontSize['4xl'],
+    fontWeight: theme.fontWeight.black,
     marginVertical: theme.spacing.md,
   },
   heroMetaRow: {
@@ -222,11 +222,11 @@ const styles = StyleSheet.create({
   },
   metaLabel: {
     color: theme.colors.textTertiary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
   },
   metaValue: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: theme.fontSize.xl,
+    fontWeight: theme.fontWeight.bold,
     marginTop: theme.spacing.xxs,
   },
   section: {
@@ -250,16 +250,16 @@ const styles = StyleSheet.create({
   },
   recentTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.fontSize.md,
+    fontWeight: theme.fontWeight.semibold,
   },
   recentSub: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
   },
   recentAmount: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.bold,
   },
   recentActions: {
     alignItems: 'flex-end',
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     color: theme.colors.accent,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.bold,
   },
 });

@@ -330,8 +330,8 @@ const styles = StyleSheet.create({
   },
   clearAllBtnText: {
     color: theme.colors.danger,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.bold,
   },
   filterCard: {
     gap: theme.spacing.lg,
@@ -348,8 +348,8 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     color: theme.colors.accent,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
@@ -364,8 +364,8 @@ const styles = StyleSheet.create({
   },
   txTitle: {
     color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.bold,
   },
   txMetaRow: {
     flexDirection: 'row',
@@ -375,25 +375,25 @@ const styles = StyleSheet.create({
   },
   txCategory: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
   },
   txStore: {
     color: theme.colors.textTertiary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
   },
   txPaymentMethod: {
     color: theme.colors.textTertiary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
   },
   txInstallment: {
     color: theme.colors.accent,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
   },
   txDate: {
     color: theme.colors.textTertiary,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
   },
   dotSeparator: {
     color: theme.colors.textTertiary,
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   },
   txNotes: {
     color: theme.colors.textMuted,
-    fontSize: 12,
+    fontSize: theme.fontSize.sm,
     fontStyle: 'italic',
     marginTop: 2,
   },
@@ -410,8 +410,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   txAmount: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: theme.fontSize.xl,
+    fontWeight: theme.fontWeight.extrabold,
   },
   actionsRow: {
     flexDirection: 'row',
