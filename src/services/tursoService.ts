@@ -203,6 +203,8 @@ class TursoDatabaseService {
           currency TEXT NOT NULL,
           category TEXT NOT NULL,
           payment_method TEXT,
+          bank TEXT,
+          store TEXT,
           date TEXT NOT NULL,
           notes TEXT,
           created_at TEXT NOT NULL
@@ -212,6 +214,20 @@ class TursoDatabaseService {
       // Migration: Add payment_method column if existing table lacks it
       try {
         await this.client.execute('ALTER TABLE transactions ADD COLUMN payment_method TEXT');
+      } catch (e) {
+        // Column already exists
+      }
+
+      // Migration: Add store column if existing table lacks it
+      try {
+        await this.client.execute('ALTER TABLE transactions ADD COLUMN store TEXT');
+      } catch (e) {
+        // Column already exists
+      }
+
+      // Migration: Add bank column if existing table lacks it
+      try {
+        await this.client.execute('ALTER TABLE transactions ADD COLUMN bank TEXT');
       } catch (e) {
         // Column already exists
       }
@@ -229,6 +245,14 @@ class TursoDatabaseService {
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS payment_methods (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE,
+          is_default INTEGER DEFAULT 0
+        );
+      `);
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS banks (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL UNIQUE,
           is_default INTEGER DEFAULT 0
@@ -312,6 +336,7 @@ class TursoDatabaseService {
         currency: String(row.currency),
         category: String(row.category),
         paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
+        bank: row.bank ? String(row.bank) : undefined,
         store: row.store ? String(row.store) : undefined,
         date: String(row.date),
         notes: row.notes ? String(row.notes) : undefined,
@@ -368,8 +393,8 @@ class TursoDatabaseService {
     if (this.client) {
       try {
         await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, store, date, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, bank, store, date, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newTx.id,
             newTx.type,
@@ -378,6 +403,7 @@ class TursoDatabaseService {
             newTx.currency,
             newTx.category,
             newTx.paymentMethod || null,
+            newTx.bank || null,
             newTx.store || null,
             newTx.date,
             newTx.notes || '',
@@ -467,7 +493,7 @@ class TursoDatabaseService {
       try {
         await this.client.execute({
           sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, store = ?, date = ?, notes = ?
+                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, date = ?, notes = ?
                 WHERE id = ?`,
           args: [
             updatedTx.type,
@@ -476,6 +502,7 @@ class TursoDatabaseService {
             updatedTx.currency,
             updatedTx.category,
             updatedTx.paymentMethod || null,
+            updatedTx.bank || null,
             updatedTx.store || null,
             updatedTx.date,
             updatedTx.notes || '',

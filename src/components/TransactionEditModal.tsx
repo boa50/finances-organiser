@@ -9,10 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { CategoryItem, PaymentMethodItem, Transaction, TransactionType } from '../types';
+import { BankItem, CategoryItem, PaymentMethodItem, Transaction, TransactionType } from '../types';
 import { CURRENCIES, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
+import { bankService } from '../services/bankService';
 import { tursoService } from '../services/tursoService';
 import { CalendarDays, CreditCard, TrendingDown, TrendingUp, X } from 'lucide-react-native';
 import { TransactionDatePicker } from './TransactionDatePicker';
@@ -39,6 +40,8 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<string>('Credit Card');
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState<PaymentMethodItem[]>([]);
+  const [bank, setBank] = useState<string>('');
+  const [availableBanks, setAvailableBanks] = useState<BankItem[]>([]);
   const [store, setStore] = useState('');
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
@@ -57,6 +60,12 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     return pms;
   };
 
+  const loadBanks = async () => {
+    const bks = await bankService.getBanks();
+    setAvailableBanks(bks);
+    return bks;
+  };
+
   useEffect(() => {
     if (!visible) return;
 
@@ -66,6 +75,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
       const cats = await loadCategories(activeType);
       const pms = await loadPaymentMethods();
+      const bks = await loadBanks();
 
       if (transaction) {
         setTitle(transaction.title);
@@ -73,6 +83,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         setCurrency(transaction.currency);
         setCategory(transaction.category);
         setPaymentMethod(transaction.paymentMethod || pms[0]?.name || 'Credit Card');
+        setBank(transaction.bank || '');
         setStore(transaction.store || '');
         setDate(dateFromTransaction(transaction.date));
         setNotes(transaction.notes || '');
@@ -82,6 +93,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         setCurrency('BRL');
         setCategory(cats[0]?.name || '');
         setPaymentMethod(pms[0]?.name || 'Credit Card');
+        setBank('');
         setStore('');
         setDate(new Date());
         setNotes('');
@@ -120,6 +132,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         currency,
         category: category.trim(),
         paymentMethod: type === 'expense' ? (paymentMethod.trim() || undefined) : undefined,
+        bank: type === 'expense' ? (bank.trim() || undefined) : undefined,
         store: type === 'expense' ? (store.trim() || undefined) : undefined,
         date: date.toISOString(),
         notes: notes.trim() || undefined,
@@ -206,6 +219,18 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                         <Text style={styles.chipText}>💳 {item.name}</Text>
                       </TouchableOpacity>
                     ))}
+                  </ScrollView>
+                </Field>
+                <Field label="Bank (optional)">
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
+                    {availableBanks.map((item) => (
+                      <TouchableOpacity key={item.id} onPress={() => setBank(item.name)} style={[styles.chip, bank === item.name && styles.chipActive]}>
+                        <Text style={styles.chipText}>🏦 {item.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                    <TouchableOpacity onPress={() => setBank('')} style={[styles.chip, bank === '' && styles.chipActive]}>
+                      <Text style={styles.chipText}>None</Text>
+                    </TouchableOpacity>
                   </ScrollView>
                 </Field>
                 <Field label="Store / Merchant (optional)">

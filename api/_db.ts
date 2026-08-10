@@ -26,6 +26,13 @@ export const DEFAULT_PAYMENT_METHODS = [
   { id: 'pm-3', name: 'Money Transfer', isDefault: true },
 ];
 
+export const DEFAULT_BANKS = [
+  { id: 'bank-1', name: 'Nubank', isDefault: true },
+  { id: 'bank-2', name: 'Itaú', isDefault: true },
+  { id: 'bank-3', name: 'Bradesco', isDefault: true },
+  { id: 'bank-4', name: 'Caixa', isDefault: true },
+];
+
 export function getTursoClient(req?: VercelRequest): Client | null {
   const reqUrl = (req?.headers?.['x-turso-db-url'] as string) || '';
   const reqToken = (req?.headers?.['x-turso-auth-token'] as string) || '';
@@ -89,7 +96,12 @@ export async function ensureTablesExist(client: Client): Promise<void> {
     await client.execute('ALTER TABLE transactions ADD COLUMN store TEXT');
   } catch (e) {
     // Column already exists
-    
+  }
+
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN bank TEXT');
+  } catch (e) {
+    // Column already exists
   }
 
   await client.execute(`
@@ -105,6 +117,14 @@ export async function ensureTablesExist(client: Client): Promise<void> {
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS payment_methods (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      is_default INTEGER DEFAULT 0
+    );
+  `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS banks (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
       is_default INTEGER DEFAULT 0
@@ -134,6 +154,19 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       await client.execute({
         sql: `INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)`,
         args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
+      });
+    }
+  }
+
+  // If banks table is empty, insert default banks
+  const bankCountRes = await client.execute('SELECT COUNT(*) as count FROM banks');
+  const bankCount = Number(bankCountRes.rows[0]?.count || 0);
+
+  if (bankCount === 0) {
+    for (const bank of DEFAULT_BANKS) {
+      await client.execute({
+        sql: `INSERT INTO banks (id, name, is_default) VALUES (?, ?, ?)`,
+        args: [bank.id, bank.name, bank.isDefault ? 1 : 0],
       });
     }
   }

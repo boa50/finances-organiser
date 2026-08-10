@@ -11,17 +11,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { CategoryItem, PaymentMethodItem, TransactionType } from '../types';
+import { BankItem, CategoryItem, PaymentMethodItem, TransactionType } from '../types';
 import {
   AVAILABLE_CATEGORY_ICONS,
   PRESET_CATEGORY_COLORS,
   categoryService,
 } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
+import { bankService } from '../services/bankService';
 import {
   Activity,
   Book,
   Briefcase,
+  Building2,
   Car,
   Coffee,
   CreditCard,
@@ -51,7 +53,7 @@ import {
 } from 'lucide-react-native';
 import theme from '../theme';
 
-export type ManagementSectionId = 'categories' | 'payment_methods';
+export type ManagementSectionId = 'categories' | 'payment_methods' | 'banks';
 
 export interface ManagementSectionConfig {
   id: ManagementSectionId;
@@ -73,6 +75,12 @@ export const MANAGEMENT_SECTIONS: ManagementSectionConfig[] = [
     subtitle: 'Manage payment methods for your income and expenses',
     icon: ({ size, color }) => <CreditCard size={size} color={color} />,
   },
+  {
+    id: 'banks',
+    label: 'Banks',
+    subtitle: 'Manage banks associated with your expenses',
+    icon: ({ size, color }) => <Building2 size={size} color={color} />,
+  },
 ];
 
 interface ManagementScreenProps {
@@ -90,6 +98,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   // Data State
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
+  const [banks, setBanks] = useState<BankItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Category Modal State
@@ -108,15 +117,24 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   const [pmSaving, setPmSaving] = useState(false);
   const [pmErrorMsg, setPmErrorMsg] = useState<string | null>(null);
 
+  // Bank Modal State
+  const [bankModalVisible, setBankModalVisible] = useState(false);
+  const [editingBank, setEditingBank] = useState<BankItem | null>(null);
+  const [bankNameInput, setBankNameInput] = useState('');
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankErrorMsg, setBankErrorMsg] = useState<string | null>(null);
+
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [cats, pms] = await Promise.all([
+      const [cats, pms, bks] = await Promise.all([
         categoryService.getCategories(),
         paymentMethodService.getPaymentMethods(),
+        bankService.getBanks(),
       ]);
       setCategories(cats);
       setPaymentMethods(pms);
+      setBanks(bks);
     } catch (e) {
       console.warn('Error loading management data:', e);
     } finally {
@@ -139,6 +157,15 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       setPaymentMethods(items);
     } catch (e) {
       console.warn('Error loading payment methods:', e);
+    }
+  };
+
+  const loadBanksData = async () => {
+    try {
+      const items = await bankService.getBanks();
+      setBanks(items);
+    } catch (e) {
+      console.warn('Error loading banks:', e);
     }
   };
 
@@ -356,6 +383,98 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     }
   };
 
+  // ── Bank Handlers ──
+  const openAddBankModal = () => {
+    setEditingBank(null);
+    setBankNameInput('');
+    setBankErrorMsg(null);
+    setBankModalVisible(true);
+  };
+
+  const openEditBankModal = (bank: BankItem) => {
+    setEditingBank(bank);
+    setBankNameInput(bank.name);
+    setBankErrorMsg(null);
+    setBankModalVisible(true);
+  };
+
+  const handleSaveBank = async () => {
+    if (!bankNameInput.trim()) {
+      setBankErrorMsg('Please enter a bank name.');
+      return;
+    }
+    setBankSaving(true);
+    setBankErrorMsg(null);
+    try {
+      if (editingBank) {
+        await bankService.updateBank(editingBank.id, bankNameInput.trim());
+      } else {
+        await bankService.addBank(bankNameInput.trim());
+      }
+      await loadBanksData();
+      if (onCategoriesUpdated) onCategoriesUpdated();
+      setBankModalVisible(false);
+    } catch (err: any) {
+      setBankErrorMsg(err?.message || 'Failed to save bank.');
+    } finally {
+      setBankSaving(false);
+    }
+  };
+
+  const handleDeleteBank = (bank: BankItem) => {
+    const performDelete = async () => {
+      try {
+        await bankService.deleteBank(bank.id);
+        await loadBanksData();
+        if (onCategoriesUpdated) onCategoriesUpdated();
+      } catch (err: any) {
+        alert(err?.message || 'Failed to delete bank');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm(`Delete bank "${bank.name}"? Existing transactions will retain the name.`)) {
+        performDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Bank',
+        `Delete bank "${bank.name}"? Existing transactions will retain the name.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: performDelete },
+        ]
+      );
+    }
+  };
+
+  const handleResetBankDefaults = async () => {
+    const performReset = async () => {
+      try {
+        await bankService.resetToDefaults();
+        await loadBanksData();
+        if (onCategoriesUpdated) onCategoriesUpdated();
+      } catch (err: any) {
+        alert(err?.message || 'Failed to reset banks');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm('Reset banks to defaults? Your custom banks will be lost.')) {
+        performReset();
+      }
+    } else {
+      Alert.alert(
+        'Reset Defaults',
+        'Reset banks to defaults? Your custom banks will be lost.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Reset', style: 'destructive', onPress: performReset },
+        ]
+      );
+    }
+  };
+
   const filteredCategories = categories.filter((c) => c.type === activeCategoryType);
   const activeConfig = MANAGEMENT_SECTIONS.find((s) => s.id === activeSection)!;
 
@@ -374,7 +493,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
         <View style={styles.segmentedBar}>
           {MANAGEMENT_SECTIONS.map((sec) => {
             const isActive = activeSection === sec.id;
-            const count = sec.id === 'categories' ? categories.length : paymentMethods.length;
+            const count = sec.id === 'categories' ? categories.length : sec.id === 'payment_methods' ? paymentMethods.length : banks.length;
             const Icon = sec.icon;
 
             return (
@@ -409,7 +528,13 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.resetBtn}
-            onPress={activeSection === 'categories' ? handleResetCatDefaults : handleResetPmDefaults}
+            onPress={
+              activeSection === 'categories'
+                ? handleResetCatDefaults
+                : activeSection === 'payment_methods'
+                ? handleResetPmDefaults
+                : handleResetBankDefaults
+            }
           >
             <RotateCcw size={14} color={theme.colors.textSecondary} />
             <Text style={styles.resetBtnText}>Reset Defaults</Text>
@@ -417,11 +542,21 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
           <TouchableOpacity
             style={styles.addBtn}
-            onPress={activeSection === 'categories' ? openAddCatModal : openAddPmModal}
+            onPress={
+              activeSection === 'categories'
+                ? openAddCatModal
+                : activeSection === 'payment_methods'
+                ? openAddPmModal
+                : openAddBankModal
+            }
           >
             <Plus size={16} color={theme.colors.background} />
             <Text style={styles.addBtnText}>
-              {activeSection === 'categories' ? 'New Category' : 'New Method'}
+              {activeSection === 'categories'
+                ? 'New Category'
+                : activeSection === 'payment_methods'
+                ? 'New Method'
+                : 'New Bank'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -586,6 +721,70 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
                     <TouchableOpacity
                       style={[styles.iconBtn, styles.deleteIconBtn]}
                       onPress={() => handleDeletePm(pm)}
+                    >
+                      <Trash2 size={15} color={theme.colors.danger} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+
+      {/* ── Section Content: Banks ── */}
+      {activeSection === 'banks' && (
+        <>
+          {loading ? (
+            <View style={styles.loaderBox}>
+              <ActivityIndicator size="large" color={theme.colors.accent} />
+              <Text style={styles.loadingText}>Loading banks...</Text>
+            </View>
+          ) : banks.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyTitle}>No banks found</Text>
+              <Text style={styles.emptySubtitle}>
+                Tap "New Bank" to create your first bank.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.grid}>
+              {banks.map((bank) => (
+                <View key={bank.id} style={styles.catCard}>
+                  <View style={styles.catInfo}>
+                    <View
+                      style={[
+                        styles.iconBadge,
+                        { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent },
+                      ]}
+                    >
+                      <Building2 size={20} color={theme.colors.accent} />
+                    </View>
+
+                    <View style={styles.catTextGroup}>
+                      <View style={styles.nameRow}>
+                        <Text style={styles.catName}>{bank.name}</Text>
+                        {bank.isDefault && (
+                          <View style={styles.defaultBadge}>
+                            <Text style={styles.defaultText}>Default</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.catMeta}>Bank</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={styles.iconBtn}
+                      onPress={() => openEditBankModal(bank)}
+                    >
+                      <Pencil size={15} color={theme.colors.accent} />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.iconBtn, styles.deleteIconBtn]}
+                      onPress={() => handleDeleteBank(bank)}
                     >
                       <Trash2 size={15} color={theme.colors.danger} />
                     </TouchableOpacity>
@@ -823,6 +1022,86 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
                 ) : (
                   <Text style={styles.saveSubmitText}>
                     {editingPm ? 'Save Changes' : 'Create Payment Method'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add/Edit Bank Modal */}
+      <Modal
+        visible={bankModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setBankModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>
+                  {editingBank ? 'Edit Bank' : 'New Bank'}
+                </Text>
+                <Text style={styles.modalSubtitle}>
+                  {editingBank ? 'Rename this bank' : 'Add a new bank'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setBankModalVisible(false)}
+                style={styles.closeBtn}
+              >
+                <X size={20} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Bank Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g. Nubank, Itaú, Bradesco"
+                  placeholderTextColor={theme.colors.textTertiary}
+                  value={bankNameInput}
+                  onChangeText={setBankNameInput}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Preview</Text>
+                <View style={styles.previewBox}>
+                  <View
+                    style={[
+                      styles.iconBadge,
+                      { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent },
+                    ]}
+                  >
+                    <Building2 size={22} color={theme.colors.accent} />
+                  </View>
+                  <Text style={styles.previewName}>
+                    {bankNameInput.trim() || 'Bank Name'}
+                  </Text>
+                </View>
+              </View>
+
+              {bankErrorMsg && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{bankErrorMsg}</Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={[styles.saveSubmitBtn, { backgroundColor: theme.colors.accent }]}
+                onPress={handleSaveBank}
+                disabled={bankSaving}
+              >
+                {bankSaving ? (
+                  <ActivityIndicator color={theme.colors.background} />
+                ) : (
+                  <Text style={styles.saveSubmitText}>
+                    {editingBank ? 'Save Changes' : 'Create Bank'}
                   </Text>
                 )}
               </TouchableOpacity>
