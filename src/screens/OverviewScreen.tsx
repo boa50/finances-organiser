@@ -116,10 +116,10 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                       <Text style={styles.recentTitle}>{item.title}</Text>
                       <Text style={styles.recentSub}>
                         {item.category}
-                        {item.store ? ` • 🏪 ${item.store}` : ''}
-                        {item.paymentMethod ? ` • 💳 ${item.paymentMethod}` : ''}
+                        {item.store ? ` • ${item.store}` : ''}
+                        {item.paymentMethod ? ` • ${item.paymentMethod}` : ''}
                         {item.installments && item.installments > 1
-                          ? ` • 📅 Split in ${item.installments}x`
+                          ? ` • Split in ${item.installments}x`
                           : ''}
                         {' • '}
                         {dateStr}

@@ -83,20 +83,20 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
             {transaction.store ? (
               <>
                 <Text style={styles.dotSeparator}>•</Text>
-                <Text style={styles.txStore}>🏪 {transaction.store}</Text>
+                <Text style={styles.txStore}>{transaction.store}</Text>
               </>
             ) : null}
             {transaction.paymentMethod ? (
               <>
                 <Text style={styles.dotSeparator}>•</Text>
-                <Text style={styles.txPaymentMethod}>💳 {transaction.paymentMethod}</Text>
+                <Text style={styles.txPaymentMethod}>{transaction.paymentMethod}</Text>
               </>
             ) : null}
             {transaction.installments && transaction.installments > 1 ? (
               <>
                 <Text style={styles.dotSeparator}>•</Text>
                 <Text style={styles.txInstallment}>
-                  📅 {transaction.installmentNumber}/{transaction.installments}
+                  {transaction.installmentNumber}/{transaction.installments}
                 </Text>
               </>
             ) : null}

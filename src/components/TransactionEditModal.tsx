@@ -15,8 +15,9 @@ import { categoryService } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
 import { bankService } from '../services/bankService';
 import { tursoService } from '../services/tursoService';
-import { CalendarDays, CreditCard, TrendingDown, TrendingUp, X } from 'lucide-react-native';
+import { Building2, CalendarDays, CreditCard, TrendingDown, TrendingUp, X } from 'lucide-react-native';
 import { TransactionDatePicker } from './TransactionDatePicker';
+import { CategoryIcon } from './CategoryIcon';
 import theme from '../theme';
 
 interface TransactionEditModalProps {
@@ -308,22 +309,45 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             </Field>
             <Field label="Category">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                {availableCategories.map((item) => (
-                  <TouchableOpacity key={item.id || item.name} onPress={() => setCategory(item.name)} style={[styles.chip, category === item.name && styles.chipActive]}>
-                    <Text style={styles.chipText}>{item.name}</Text>
-                  </TouchableOpacity>
-                ))}
+                {availableCategories.map((item) => {
+                  const active = category === item.name;
+                  return (
+                    <TouchableOpacity
+                      key={item.id || item.name}
+                      onPress={() => setCategory(item.name)}
+                      style={[styles.chip, active && styles.chipActive]}
+                    >
+                      <CategoryIcon
+                        iconName={item.icon}
+                        color={active ? theme.colors.accent : item.color || theme.colors.textSecondary}
+                        size={14}
+                      />
+                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             </Field>
             {type === 'expense' && (
               <>
                 <Field label="Way of Payment">
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                    {availablePaymentMethods.map((item) => (
-                      <TouchableOpacity key={item.id} onPress={() => selectPaymentMethod(item.name)} style={[styles.chip, paymentMethod === item.name && styles.chipActive]}>
-                        <Text style={styles.chipText}>💳 {item.name}</Text>
-                      </TouchableOpacity>
-                    ))}
+                    {availablePaymentMethods.map((item) => {
+                      const active = paymentMethod === item.name;
+                      return (
+                        <TouchableOpacity
+                          key={item.id}
+                          onPress={() => selectPaymentMethod(item.name)}
+                          style={[styles.chip, active && styles.chipActive]}
+                        >
+                          <CreditCard
+                            size={14}
+                            color={active ? theme.colors.accent : theme.colors.textSecondary}
+                          />
+                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </ScrollView>
                 </Field>
                 {pmSupportsInstallments && (
@@ -375,13 +399,27 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 )}
                 <Field label="Bank (optional)">
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                    {availableBanks.map((item) => (
-                      <TouchableOpacity key={item.id} onPress={() => setBank(item.name)} style={[styles.chip, bank === item.name && styles.chipActive]}>
-                        <Text style={styles.chipText}>🏦 {item.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                    <TouchableOpacity onPress={() => setBank('')} style={[styles.chip, bank === '' && styles.chipActive]}>
-                      <Text style={styles.chipText}>None</Text>
+                    {availableBanks.map((item) => {
+                      const active = bank === item.name;
+                      return (
+                        <TouchableOpacity
+                          key={item.id}
+                          onPress={() => setBank(item.name)}
+                          style={[styles.chip, active && styles.chipActive]}
+                        >
+                          <Building2
+                            size={14}
+                            color={active ? theme.colors.accent : theme.colors.textSecondary}
+                          />
+                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                    <TouchableOpacity
+                      onPress={() => setBank('')}
+                      style={[styles.chip, bank === '' && styles.chipActive]}
+                    >
+                      <Text style={[styles.chipText, bank === '' && styles.chipTextActive]}>None</Text>
                     </TouchableOpacity>
                   </ScrollView>
                 </Field>
@@ -453,9 +491,10 @@ const styles = StyleSheet.create({
   pickerText: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: '600' },
   notesInput: { minHeight: 72, textAlignVertical: 'top' },
   chipList: { gap: 7, paddingVertical: theme.spacing.xxs },
-  chip: { backgroundColor: theme.colors.background, borderRadius: theme.radii['3xl'], paddingHorizontal: theme.spacing.base, paddingVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.borderLight },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.colors.background, borderRadius: theme.radii['3xl'], paddingHorizontal: theme.spacing.base, paddingVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.borderLight },
   chipActive: { backgroundColor: theme.colors.accentDark, borderColor: theme.colors.accent },
   chipText: { color: theme.colors.textLight, fontSize: 12, fontWeight: '600' },
+  chipTextActive: { color: theme.colors.textPrimary, fontWeight: '700' },
   installmentRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   installmentBtn: { width: 42, height: 42, borderRadius: theme.radii.base, backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.borderLight, alignItems: 'center', justifyContent: 'center' },
   installmentBtnText: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700' },

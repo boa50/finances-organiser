@@ -35,7 +35,7 @@ export function getCurrencyInfo(code: string): CurrencyInfo {
       code,
       symbol: '$',
       name: code,
-      flag: '🌐',
+      flag: '',
     }
   );
 }
