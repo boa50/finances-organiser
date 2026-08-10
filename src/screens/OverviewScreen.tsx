@@ -20,6 +20,84 @@ interface OverviewScreenProps {
   onRefresh: () => void;
 }
 
+interface GroupedRecentItem {
+  id: string;
+  representativeTx: Transaction;
+  type: 'income' | 'expense';
+  title: string;
+  totalAmount: number;
+  currency: string;
+  category: string;
+  paymentMethod?: string;
+  store?: string;
+  installments?: number;
+  date: string;
+}
+
+function getGroupedRecentTransactions(allTx: Transaction[], limit: number = 4): GroupedRecentItem[] {
+  const groupsMap = new Map<string, Transaction[]>();
+  const standaloneItems: Transaction[] = [];
+
+  allTx.forEach((tx) => {
+    if (tx.type === 'expense' && tx.installments && tx.installments > 1) {
+      const groupKey = tx.installmentGroupId
+        ? tx.installmentGroupId
+        : `${tx.title.replace(/\s*\(\d+\/\d+\)$/, '').trim().toLowerCase()}_${tx.installments}`;
+
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, []);
+      }
+      groupsMap.get(groupKey)!.push(tx);
+    } else {
+      standaloneItems.push(tx);
+    }
+  });
+
+  const result: GroupedRecentItem[] = [];
+
+  groupsMap.forEach((txList) => {
+    txList.sort((a, b) => (a.installmentNumber || 1) - (b.installmentNumber || 1));
+    const firstInst = txList.find((t) => t.installmentNumber === 1) || txList[0];
+
+    const baseTitle = firstInst.title.replace(/\s*\(\d+\/\d+\)$/, '').trim();
+    const installments = firstInst.installments || txList.length;
+    const totalAmount = txList.reduce((sum, t) => sum + t.amount, 0);
+
+    result.push({
+      id: firstInst.installmentGroupId || firstInst.id,
+      representativeTx: firstInst,
+      type: firstInst.type,
+      title: baseTitle,
+      totalAmount: totalAmount > 0 ? totalAmount : firstInst.amount * installments,
+      currency: firstInst.currency,
+      category: firstInst.category,
+      paymentMethod: firstInst.paymentMethod,
+      store: firstInst.store,
+      installments,
+      date: firstInst.date, // Date of the FIRST installment
+    });
+  });
+
+  standaloneItems.forEach((tx) => {
+    result.push({
+      id: tx.id,
+      representativeTx: tx,
+      type: tx.type,
+      title: tx.title,
+      totalAmount: tx.amount,
+      currency: tx.currency,
+      category: tx.category,
+      paymentMethod: tx.paymentMethod,
+      store: tx.store,
+      installments: tx.installments,
+      date: tx.date,
+    });
+  });
+
+  result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  return result.slice(0, limit);
+}
+
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   transactions,
   tursoConfig,
@@ -55,7 +133,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 
   const monthNet = currentMonthIncome - currentMonthExpense;
   const monthName = currentMonthDate.toLocaleString('default', { month: 'long' });
-  const recentTransactions = transactions.slice(0, 4);
+  const recentItems = getGroupedRecentTransactions(transactions, 4);
 
   return (
     <>
@@ -116,43 +194,43 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
           </TouchableOpacity>
         </View>
 
-        {recentTransactions.length === 0 ? (
+        {recentItems.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyText}>No recent transactions.</Text>
           </View>
         ) : (
           <View style={styles.recentList}>
-            {recentTransactions.map((tx) => {
-              const dateObj = new Date(tx.date);
+            {recentItems.map((item) => {
+              const dateObj = new Date(item.date);
               const dateStr = isNaN(dateObj.getTime())
-                ? tx.date
+                ? item.date
                 : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
               return (
-                <View key={tx.id} style={styles.recentItem}>
+                <View key={item.id} style={styles.recentItem}>
                   <View
                     style={[
                       styles.recentIcon,
                       {
                         backgroundColor:
-                          tx.type === 'income'
+                          item.type === 'income'
                             ? theme.colors.successBg
                             : theme.colors.dangerBg,
                       },
                     ]}
                   >
-                    {tx.type === 'income'
+                    {item.type === 'income'
                       ? <TrendingUp size={16} color={theme.colors.success} />
                       : <TrendingDown size={16} color={theme.colors.danger} />}
                   </View>
 
                   <View style={styles.recentInfo}>
-                    <Text style={styles.recentTitle}>{tx.title}</Text>
+                    <Text style={styles.recentTitle}>{item.title}</Text>
                     <Text style={styles.recentSub}>
-                      {tx.category}
-                      {tx.store ? ` • 🏪 ${tx.store}` : ''}
-                      {tx.paymentMethod ? ` • 💳 ${tx.paymentMethod}` : ''}
-                      {tx.installments && tx.installments > 1 ? ` • 📅 ${tx.installmentNumber}/${tx.installments}` : ''}
+                      {item.category}
+                      {item.store ? ` • 🏪 ${item.store}` : ''}
+                      {item.paymentMethod ? ` • 💳 ${item.paymentMethod}` : ''}
+                      {item.installments && item.installments > 1 ? ` • 📅 Split in ${item.installments}x` : ''}
                       {' • '}{dateStr}
                     </Text>
                   </View>
@@ -161,16 +239,16 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                     <Text
                       style={[
                         styles.recentAmount,
-                        { color: tx.type === 'income' ? theme.colors.success : theme.colors.danger },
+                        { color: item.type === 'income' ? theme.colors.success : theme.colors.danger },
                       ]}
                     >
-                      {tx.type === 'income' ? '+' : '-'}
-                      {formatMoney(tx.amount, tx.currency)}
+                      {item.type === 'income' ? '+' : '-'}
+                      {formatMoney(item.totalAmount, item.currency)}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => setEditingTransaction(tx)}
+                      onPress={() => setEditingTransaction(item.representativeTx)}
                       style={styles.editButton}
-                      accessibilityLabel={`Edit ${tx.title}`}
+                      accessibilityLabel={`Edit ${item.title}`}
                     >
                       <Pencil size={12} color={theme.colors.accent} />
                       <Text style={styles.editButtonText}>Edit</Text>
