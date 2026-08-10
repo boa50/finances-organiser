@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { Transaction } from '../types';
 import { D3EvolutionChart } from '../components/D3EvolutionChart';
 import { D3CurrentMonthCharts } from '../components/D3CurrentMonthCharts';
 import { CURRENCIES, DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
+import { AppBadge, AppCard, AppSectionHeader } from '../components/ui';
 import theme from '../theme';
 
 interface AnalyticsScreenProps {
@@ -33,19 +33,15 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
   });
 
   const netOverall = totalIncomeConverted - totalExpenseConverted;
-  const overallSavingsRate =
-    totalIncomeConverted > 0 ? ((totalIncomeConverted - totalExpenseConverted) / totalIncomeConverted) * 100 : 0;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.headerTitle}>Financial Analytics</Text>
-          <Text style={styles.headerSubtitle}>
-            Interactive D3.js evolution & monthly breakdown charts
-          </Text>
-        </View>
+        <AppSectionHeader
+          title="Financial Analytics"
+          subtitle="Interactive D3.js evolution & monthly breakdown charts"
+        />
 
         {/* Currency Filter */}
         <View style={styles.currencyFilterContainer}>
@@ -58,24 +54,13 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
             {CURRENCIES.slice(0, 5).map((c) => {
               const selected = selectedCurrency === c.code;
               return (
-                <TouchableOpacity
+                <AppBadge
                   key={c.code}
-                  style={[
-                    styles.currencyChip,
-                    selected && styles.currencyChipActive,
-                  ]}
+                  label={c.code}
+                  icon={<Text style={styles.currencyFlag}>{c.flag}</Text>}
+                  variant={selected ? 'accent' : 'neutral'}
                   onPress={() => setSelectedCurrency(c.code)}
-                >
-                  <Text style={styles.currencyFlag}>{c.flag}</Text>
-                  <Text
-                    style={[
-                      styles.currencyText,
-                      selected && styles.currencyTextActive,
-                    ]}
-                  >
-                    {c.code}
-                  </Text>
-                </TouchableOpacity>
+                />
               );
             })}
           </ScrollView>
@@ -84,21 +69,21 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
 
       {/* KPI Cards Row */}
       <View style={styles.kpiRow}>
-        <View style={styles.kpiCard}>
+        <AppCard style={styles.kpiCard} padding="xl">
           <Text style={styles.kpiLabel}>Lifetime Incomes</Text>
           <Text style={[styles.kpiValue, { color: theme.colors.success }]}>
             +{formatMoney(totalIncomeConverted, selectedCurrency)}
           </Text>
-        </View>
+        </AppCard>
 
-        <View style={styles.kpiCard}>
+        <AppCard style={styles.kpiCard} padding="xl">
           <Text style={styles.kpiLabel}>Lifetime Expenses</Text>
           <Text style={[styles.kpiValue, { color: theme.colors.danger }]}>
             -{formatMoney(totalExpenseConverted, selectedCurrency)}
           </Text>
-        </View>
+        </AppCard>
 
-        <View style={styles.kpiCard}>
+        <AppCard style={styles.kpiCard} padding="xl">
           <Text style={styles.kpiLabel}>Net Accumulated</Text>
           <Text
             style={[
@@ -108,7 +93,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
           >
             {formatMoney(netOverall, selectedCurrency)}
           </Text>
-        </View>
+        </AppCard>
       </View>
 
       {/* Graph 1: D3 Evolution by Month */}
@@ -136,16 +121,6 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
     gap: theme.spacing.lg,
   },
-  headerTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  headerSubtitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
-    marginTop: theme.spacing.xxs,
-  },
   currencyFilterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,32 +132,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  currencyChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.base,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.radii.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    gap: theme.spacing.xs,
-  },
-  currencyChipActive: {
-    backgroundColor: theme.colors.accentBgStrong,
-    borderColor: theme.colors.accent,
-  },
   currencyFlag: {
     fontSize: 12,
-  },
-  currencyText: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  currencyTextActive: {
-    color: theme.colors.accent,
-    fontWeight: '700',
   },
   kpiRow: {
     flexDirection: 'row',
@@ -191,11 +142,6 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.xl,
-    padding: theme.spacing.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
   },
   kpiLabel: {
     color: theme.colors.textSecondary,

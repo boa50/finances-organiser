@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY, formatMoney } from '../utils/currencies';
 import { calculateFinancialSummary, groupRecentTransactions, GroupedRecentItem } from '../utils/financials';
 import { TransactionEditModal } from '../components/TransactionEditModal';
+import { AppBadge, AppCard, AppEmptyState, AppIconBadge, AppSectionHeader } from '../components/ui';
 import { Pencil, TrendingDown, TrendingUp } from 'lucide-react-native';
 import theme from '../theme';
 
@@ -39,128 +40,117 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   return (
     <>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header Banner & Turso Cloud Badge */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeTitle}>Personal Finances</Text>
-          <Text style={styles.welcomeSubtitle}>Cloud-synced financial manager</Text>
-        </View>
+        {/* Header Banner & Turso Cloud Badge */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.welcomeTitle}>Personal Finances</Text>
+            <Text style={styles.welcomeSubtitle}>Cloud-synced financial manager</Text>
+          </View>
 
-        {/* Turso Database Connection Pill */}
-        <View style={styles.tursoPill}>
-          <View
-            style={[
-              styles.statusDot,
-              { backgroundColor: tursoConfig.isConnected ? theme.colors.success : theme.colors.warning },
-            ]}
+          <AppBadge
+            label={tursoConfig.isConnected ? 'Turso Cloud DB' : 'Turso Offline'}
+            variant={tursoConfig.isConnected ? 'success' : 'warning'}
+            statusDot
           />
-          <Text style={styles.tursoPillText}>
-            {tursoConfig.isConnected ? 'Turso Cloud DB' : 'Turso Offline'}
+        </View>
+
+        {/* Main Net Balance Hero Card */}
+        <AppCard variant="elevated" padding="6xl">
+          <Text style={styles.heroLabel}>Total Net Balance ({DEFAULT_CURRENCY})</Text>
+          <Text style={styles.heroValue}>
+            {formatMoney(totalNetBalance, DEFAULT_CURRENCY)}
           </Text>
-        </View>
-      </View>
 
-      {/* Main Net Balance Hero Card */}
-      <View style={styles.heroCard}>
-        <Text style={styles.heroLabel}>Total Net Balance ({DEFAULT_CURRENCY})</Text>
-        <Text style={styles.heroValue}>
-          {formatMoney(totalNetBalance, DEFAULT_CURRENCY)}
-        </Text>
+          <View style={styles.heroMetaRow}>
+            <View style={styles.metaBox}>
+              <Text style={styles.metaLabel}>{monthName} Income</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.success }]}>
+                +{formatMoney(currentMonthIncome, DEFAULT_CURRENCY)}
+              </Text>
+            </View>
 
-        <View style={styles.heroMetaRow}>
-          <View style={styles.metaBox}>
-            <Text style={styles.metaLabel}>{monthName} Income</Text>
-            <Text style={[styles.metaValue, { color: theme.colors.success }]}>
-              +{formatMoney(currentMonthIncome, DEFAULT_CURRENCY)}
-            </Text>
+            <View style={styles.metaDivider} />
+
+            <View style={styles.metaBox}>
+              <Text style={styles.metaLabel}>{monthName} Expense</Text>
+              <Text style={[styles.metaValue, { color: theme.colors.danger }]}>
+                -{formatMoney(currentMonthExpense, DEFAULT_CURRENCY)}
+              </Text>
+            </View>
           </View>
+        </AppCard>
 
-          <View style={styles.metaDivider} />
+        {/* Recent Activity Section */}
+        <View style={styles.section}>
+          <AppSectionHeader
+            title="Recent Activity"
+            actionLabel={`See all (${transactions.length}) →`}
+            onActionPress={onNavigateTransactions}
+          />
 
-          <View style={styles.metaBox}>
-            <Text style={styles.metaLabel}>{monthName} Expense</Text>
-            <Text style={[styles.metaValue, { color: theme.colors.danger }]}>
-              -{formatMoney(currentMonthExpense, DEFAULT_CURRENCY)}
-            </Text>
-          </View>
-        </View>
-      </View>
+          {recentItems.length === 0 ? (
+            <AppEmptyState title="No recent transactions." />
+          ) : (
+            <View style={styles.recentList}>
+              {recentItems.map((item) => {
+                const dateObj = new Date(item.date);
+                const dateStr = isNaN(dateObj.getTime())
+                  ? item.date
+                  : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
-      {/* Recent Activity Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <TouchableOpacity onPress={onNavigateTransactions}>
-            <Text style={styles.seeAllText}>See all ({transactions.length}) →</Text>
-          </TouchableOpacity>
-        </View>
+                return (
+                  <View key={item.id} style={styles.recentItem}>
+                    <AppIconBadge
+                      icon={
+                        item.type === 'income' ? (
+                          <TrendingUp size={16} color={theme.colors.success} />
+                        ) : (
+                          <TrendingDown size={16} color={theme.colors.danger} />
+                        )
+                      }
+                      variant={item.type === 'income' ? 'success' : 'danger'}
+                      size="sm"
+                    />
 
-        {recentItems.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>No recent transactions.</Text>
-          </View>
-        ) : (
-          <View style={styles.recentList}>
-            {recentItems.map((item) => {
-              const dateObj = new Date(item.date);
-              const dateStr = isNaN(dateObj.getTime())
-                ? item.date
-                : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    <View style={styles.recentInfo}>
+                      <Text style={styles.recentTitle}>{item.title}</Text>
+                      <Text style={styles.recentSub}>
+                        {item.category}
+                        {item.store ? ` • 🏪 ${item.store}` : ''}
+                        {item.paymentMethod ? ` • 💳 ${item.paymentMethod}` : ''}
+                        {item.installments && item.installments > 1
+                          ? ` • 📅 Split in ${item.installments}x`
+                          : ''}
+                        {' • '}
+                        {dateStr}
+                      </Text>
+                    </View>
 
-              return (
-                <View key={item.id} style={styles.recentItem}>
-                  <View
-                    style={[
-                      styles.recentIcon,
-                      {
-                        backgroundColor:
-                          item.type === 'income'
-                            ? theme.colors.successBg
-                            : theme.colors.dangerBg,
-                      },
-                    ]}
-                  >
-                    {item.type === 'income'
-                      ? <TrendingUp size={16} color={theme.colors.success} />
-                      : <TrendingDown size={16} color={theme.colors.danger} />}
+                    <View style={styles.recentActions}>
+                      <Text
+                        style={[
+                          styles.recentAmount,
+                          { color: item.type === 'income' ? theme.colors.success : theme.colors.danger },
+                        ]}
+                      >
+                        {item.type === 'income' ? '+' : '-'}
+                        {formatMoney(item.totalAmount, item.currency)}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setEditingTransaction(item.representativeTx)}
+                        style={styles.editButton}
+                        accessibilityLabel={`Edit ${item.title}`}
+                      >
+                        <Pencil size={12} color={theme.colors.accent} />
+                        <Text style={styles.editButtonText}>Edit</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-
-                  <View style={styles.recentInfo}>
-                    <Text style={styles.recentTitle}>{item.title}</Text>
-                    <Text style={styles.recentSub}>
-                      {item.category}
-                      {item.store ? ` • 🏪 ${item.store}` : ''}
-                      {item.paymentMethod ? ` • 💳 ${item.paymentMethod}` : ''}
-                      {item.installments && item.installments > 1 ? ` • 📅 Split in ${item.installments}x` : ''}
-                      {' • '}{dateStr}
-                    </Text>
-                  </View>
-
-                  <View style={styles.recentActions}>
-                    <Text
-                      style={[
-                        styles.recentAmount,
-                        { color: item.type === 'income' ? theme.colors.success : theme.colors.danger },
-                      ]}
-                    >
-                      {item.type === 'income' ? '+' : '-'}
-                      {formatMoney(item.totalAmount, item.currency)}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => setEditingTransaction(item.representativeTx)}
-                      style={styles.editButton}
-                      accessibilityLabel={`Edit ${item.title}`}
-                    >
-                      <Pencil size={12} color={theme.colors.accent} />
-                      <Text style={styles.editButtonText}>Edit</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-      </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       <TransactionEditModal
@@ -201,38 +191,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: theme.spacing.xxs,
   },
-  tursoPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radii['4xl'],
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    gap: theme.spacing.md,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  tursoPillText: {
-    color: theme.colors.textLight,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  heroCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['4xl'],
-    padding: theme.spacing['6xl'],
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-  },
   heroLabel: {
     color: theme.colors.textSecondary,
     fontSize: 13,
@@ -271,58 +229,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: theme.spacing.xxs,
   },
-  actionBtn: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['2xl'],
-    padding: theme.spacing['3xl'],
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    gap: theme.spacing.xs,
-  },
-  actionGraphBtn: {
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.accent,
-  },
-  actionEmoji: {
-    fontSize: 24,
-    marginBottom: theme.spacing.xs,
-  },
-  actionTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  actionSubtitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-  },
   section: {
     gap: theme.spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  seeAllText: {
-    color: theme.colors.accent,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  emptyBox: {
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing['4xl'],
-    borderRadius: theme.radii.xl,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: theme.colors.textTertiary,
-    fontSize: 13,
   },
   recentList: {
     gap: theme.spacing.md,
@@ -336,13 +244,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
-  },
-  recentIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: theme.radii.base,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   recentInfo: {
     flex: 1,

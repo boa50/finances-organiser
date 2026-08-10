@@ -2,18 +2,27 @@ import React, { useState } from 'react';
 import {
   Alert,
   Platform,
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
-  TextInput,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import { Transaction } from '../types';
 import { formatMoney, getCurrencyInfo } from '../utils/currencies';
+import { filterTransactions } from '../utils/financials';
 import { tursoService } from '../services/tursoService';
 import { TransactionEditModal } from '../components/TransactionEditModal';
-import { Pencil, Trash2, TrendingDown, TrendingUp } from 'lucide-react-native';
+import {
+  AppBadge,
+  AppCard,
+  AppEmptyState,
+  AppIconBadge,
+  AppSectionHeader,
+  AppSegmentedControl,
+  AppTextInput,
+} from '../components/ui';
+import { Pencil, Search, Trash2, TrendingDown, TrendingUp } from 'lucide-react-native';
 import theme from '../theme';
 
 interface TransactionsScreenProps {
@@ -54,17 +63,19 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
           <Text style={styles.monthTitle}>{monthLabel}</Text>
         </View>
       )}
-      <View style={styles.txRow}>
-        <View
-          style={[
-            styles.typeIconBox,
-            { backgroundColor: transaction.type === 'income' ? theme.colors.successBg : theme.colors.dangerBg },
-          ]}
-        >
-          {transaction.type === 'income'
-            ? <TrendingUp size={20} color={theme.colors.success} />
-            : <TrendingDown size={20} color={theme.colors.danger} />}
-        </View>
+      <AppCard style={styles.txRow} padding="lg">
+        <AppIconBadge
+          icon={
+            transaction.type === 'income' ? (
+              <TrendingUp size={18} color={theme.colors.success} />
+            ) : (
+              <TrendingDown size={18} color={theme.colors.danger} />
+            )
+          }
+          variant={transaction.type === 'income' ? 'success' : 'danger'}
+          size="md"
+        />
+
         <View style={styles.txMainInfo}>
           <Text style={styles.txTitle}>{transaction.title}</Text>
           <View style={styles.txMetaRow}>
@@ -90,27 +101,45 @@ const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
               </>
             ) : null}
             <Text style={styles.dotSeparator}>•</Text>
-            <Text style={styles.txDate}>{formattedDate} {formattedTime}</Text>
+            <Text style={styles.txDate}>
+              {formattedDate} {formattedTime}
+            </Text>
           </View>
           {transaction.notes ? <Text style={styles.txNotes}>{transaction.notes}</Text> : null}
         </View>
+
         <View style={styles.txRightCol}>
-          <Text style={[styles.txAmount, { color: transaction.type === 'income' ? theme.colors.success : theme.colors.danger }]}>
-            {transaction.type === 'income' ? '+' : '-'}{formatMoney(transaction.amount, transaction.currency)}
+          <Text
+            style={[
+              styles.txAmount,
+              { color: transaction.type === 'income' ? theme.colors.success : theme.colors.danger },
+            ]}
+          >
+            {transaction.type === 'income' ? '+' : '-'}
+            {formatMoney(transaction.amount, transaction.currency)}
           </Text>
+
           <View style={styles.actionsRow}>
-            <View style={styles.currencyBadge}>
-              <Text style={styles.currencyBadgeText}>{currencyInfo.flag} {transaction.currency}</Text>
-            </View>
-            <TouchableOpacity onPress={() => onEdit(transaction)} style={styles.editBtn} accessibilityLabel={`Edit ${transaction.title}`}>
+            <AppBadge
+              label={`${currencyInfo.flag} ${transaction.currency}`}
+              variant="neutral"
+              size="sm"
+            />
+
+            <TouchableOpacity
+              onPress={() => onEdit(transaction)}
+              style={styles.editBtn}
+              accessibilityLabel={`Edit ${transaction.title}`}
+            >
               <Pencil size={14} color={theme.colors.accent} />
             </TouchableOpacity>
+
             <TouchableOpacity onPress={() => onDelete(transaction)} style={styles.deleteBtn}>
               <Trash2 size={14} color={theme.colors.danger} />
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </AppCard>
     </View>
   );
 };
@@ -128,15 +157,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
-  const filteredTransactions = transactions.filter((tx) => {
-    const matchesSearch =
-      tx.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (tx.notes && tx.notes.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesType = filterType === 'all' || tx.type === filterType;
-
-    return matchesSearch && matchesType;
+  const filteredTransactions = filterTransactions(transactions, {
+    type: filterType,
+    searchQuery,
   });
 
   const handleDelete = async (transaction: Transaction) => {
@@ -146,9 +169,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           `"${transaction.title}" is part of an installment plan (${transaction.installmentNumber}/${transaction.installments}).\n\nClick OK to delete ALL installments in this group, or Cancel to delete ONLY this single installment.`
         );
         if (choice) {
-          await tursoService.deleteTransactionGroup(transaction.installmentGroupId || '', transaction);
+          await tursoService.deleteTransactionGroup(
+            transaction.installmentGroupId || '',
+            transaction
+          );
         } else {
-          if (confirm(`Delete ONLY installment ${transaction.installmentNumber}/${transaction.installments}?`)) {
+          if (
+            confirm(
+              `Delete ONLY installment ${transaction.installmentNumber}/${transaction.installments}?`
+            )
+          ) {
             await tursoService.deleteTransaction(transaction.id);
           } else {
             return;
@@ -172,7 +202,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               text: 'Delete All Installments',
               style: 'destructive',
               onPress: async () => {
-                await tursoService.deleteTransactionGroup(transaction.installmentGroupId || '', transaction);
+                await tursoService.deleteTransactionGroup(
+                  transaction.installmentGroupId || '',
+                  transaction
+                );
                 onRefresh();
               },
             },
@@ -204,90 +237,61 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   return (
     <>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.headerRow}>
-        <View>
-          <Text style={styles.headerTitle}>Transaction History</Text>
-          <Text style={styles.headerSubtitle}>
-            {filteredTransactions.length} recorded entries
-          </Text>
-        </View>
-
-        {transactions.length > 0 && (
-          <TouchableOpacity style={styles.clearAllBtn} onPress={handleClearAll}>
-            <Trash2 size={14} color={theme.colors.danger} />
-            <Text style={styles.clearAllBtnText}>Clear All</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Search & Filter Bar */}
-      <View style={styles.filterCard}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by title, category or notes..."
-          placeholderTextColor={theme.colors.textTertiary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+        <AppSectionHeader
+          title="Transaction History"
+          subtitle={`${filteredTransactions.length} recorded entries`}
+          rightElement={
+            transactions.length > 0 ? (
+              <TouchableOpacity style={styles.clearAllBtn} onPress={handleClearAll}>
+                <Trash2 size={14} color={theme.colors.danger} />
+                <Text style={styles.clearAllBtnText}>Clear All</Text>
+              </TouchableOpacity>
+            ) : undefined
+          }
         />
 
-        <View style={styles.filterTabs}>
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filterType === 'all' && styles.filterTabActive,
-            ]}
-            onPress={() => setFilterType('all')}
-          >
-            <Text style={[styles.filterTabText, filterType === 'all' && styles.filterTabTextActive]}>
-              All
-            </Text>
-          </TouchableOpacity>
+        {/* Search & Filter Bar */}
+        <AppCard style={styles.filterCard} padding="lg">
+          <AppTextInput
+            placeholder="Search by title, category or notes..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            icon={<Search size={16} color={theme.colors.textTertiary} />}
+          />
 
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filterType === 'income' && styles.filterTabIncomeActive,
+          <AppSegmentedControl<'all' | 'income' | 'expense'>
+            options={[
+              { label: 'All', value: 'all' },
+              { label: 'Incomes', value: 'income' },
+              { label: 'Expenses', value: 'expense' },
             ]}
-            onPress={() => setFilterType('income')}
-          >
-            <Text style={[styles.filterTabText, filterType === 'income' && styles.filterTabTextActive]}>
-              Incomes
-            </Text>
-          </TouchableOpacity>
+            selectedValue={filterType}
+            onSelect={setFilterType}
+          />
+        </AppCard>
 
-          <TouchableOpacity
-            style={[
-              styles.filterTab,
-              filterType === 'expense' && styles.filterTabExpenseActive,
-            ]}
-            onPress={() => setFilterType('expense')}
-          >
-            <Text style={[styles.filterTabText, filterType === 'expense' && styles.filterTabTextActive]}>
-              Expenses
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* List of Transactions */}
-      {filteredTransactions.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No transactions found</Text>
-          <Text style={styles.emptySubtitle}>Try adjusting your search query or filter.</Text>
-        </View>
-      ) : (
-        <View style={styles.list}>
-          {filteredTransactions.map((transaction, index) => (
-            <HistoryTransactionItem
-              key={transaction.id}
-              transaction={transaction}
-              showMonthHeader={index === 0 || monthKey(transaction.date) !== monthKey(filteredTransactions[index - 1].date)}
-              onEdit={(value) => setEditingTransaction(value)}
-              onDelete={handleDelete}
-            />
-          ))}
-        </View>
-      )}
+        {/* List of Transactions */}
+        {filteredTransactions.length === 0 ? (
+          <AppEmptyState
+            title="No transactions found"
+            description="Try adjusting your search query or filter."
+          />
+        ) : (
+          <View style={styles.list}>
+            {filteredTransactions.map((transaction, index) => (
+              <HistoryTransactionItem
+                key={transaction.id}
+                transaction={transaction}
+                showMonthHeader={
+                  index === 0 ||
+                  monthKey(transaction.date) !== monthKey(filteredTransactions[index - 1].date)
+                }
+                onEdit={(tx) => setEditingTransaction(tx)}
+                onDelete={(tx) => handleDelete(tx)}
+              />
+            ))}
+          </View>
+        )}
       </ScrollView>
 
       <TransactionEditModal
@@ -308,162 +312,55 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: theme.spacing['4xl'],
     paddingBottom: 88,
-    gap: theme.spacing['2xl'],
+    gap: theme.spacing['3xl'],
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.xs,
-  },
-  headerTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  headerSubtitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
-    marginTop: theme.spacing.xxs,
-  },
   clearAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: 5,
     backgroundColor: theme.colors.dangerBg,
-    borderWidth: 1,
     borderColor: theme.colors.danger,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: theme.radii.base,
   },
   clearAllBtnText: {
     color: theme.colors.danger,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   filterCard: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['2xl'],
-    padding: theme.spacing.xl,
     gap: theme.spacing.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  searchInput: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radii.base,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.base,
-    color: theme.colors.textPrimary,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-  },
-  filterTabs: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  filterTab: {
-    flex: 1,
-    paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radii.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  filterTabActive: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-  },
-  filterTabIncomeActive: {
-    backgroundColor: theme.colors.success,
-    borderColor: theme.colors.success,
-  },
-  filterTabExpenseActive: {
-    backgroundColor: theme.colors.danger,
-    borderColor: theme.colors.danger,
-  },
-  filterTabText: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  filterTabTextActive: {
-    color: theme.colors.white,
-    fontWeight: '700',
-  },
-  emptyCard: {
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing['7xl'],
-    borderRadius: theme.radii['2xl'],
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  emptyTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  emptySubtitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 13,
   },
   list: {
-    gap: theme.spacing['5xl'],
-  },
-  monthGroup: {
-    gap: theme.spacing.base,
+    gap: theme.spacing.lg,
   },
   monthEntry: {
-    gap: theme.spacing.base,
+    gap: theme.spacing.md,
   },
   monthHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    paddingHorizontal: theme.spacing.xxs,
-    paddingBottom: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderLight,
+    paddingHorizontal: theme.spacing.sm,
+    paddingTop: theme.spacing.md,
   },
   monthTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '800',
-  },
-  monthCount: {
-    color: theme.colors.textTertiary,
-    fontSize: 12,
-    fontWeight: '600',
+    color: theme.colors.accent,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing['2xl'],
-    borderRadius: theme.radii.xl,
-    gap: theme.spacing.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  typeIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: theme.radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  typeEmoji: {
-    fontSize: 20,
+    gap: theme.spacing.lg,
   },
   txMainInfo: {
     flex: 1,
-    gap: theme.spacing.xxs,
+    gap: 2,
   },
   txTitle: {
     color: theme.colors.textPrimary,
@@ -473,45 +370,44 @@ const styles = StyleSheet.create({
   txMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    flexWrap: 'wrap',
+    gap: 4,
   },
   txCategory: {
-    color: theme.colors.accent,
+    color: theme.colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
   txStore: {
-    color: theme.colors.textLight,
+    color: theme.colors.textTertiary,
     fontSize: 12,
-    fontWeight: '600',
   },
   txPaymentMethod: {
-    color: theme.colors.textSecondary,
+    color: theme.colors.textTertiary,
     fontSize: 12,
-    fontWeight: '600',
   },
   txInstallment: {
     color: theme.colors.accent,
     fontSize: 12,
     fontWeight: '600',
   },
+  txDate: {
+    color: theme.colors.textTertiary,
+    fontSize: 12,
+  },
   dotSeparator: {
     color: theme.colors.textTertiary,
-    fontSize: 12,
-  },
-  txDate: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: 10,
   },
   txNotes: {
-    color: theme.colors.textTertiary,
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontStyle: 'italic',
-    marginTop: theme.spacing.xxs,
+    marginTop: 2,
   },
   txRightCol: {
     alignItems: 'flex-end',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
   txAmount: {
     fontSize: 16,
@@ -522,32 +418,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.md,
   },
-  currencyBadge: {
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 3,
-    borderRadius: theme.radii.sm,
-  },
-  currencyBadgeText: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '600',
-  },
   editBtn: {
-    backgroundColor: theme.colors.accentBg,
-    borderWidth: 1,
-    borderColor: theme.colors.accent,
-    borderRadius: theme.radii.md,
-    paddingHorizontal: 7,
-    paddingVertical: theme.spacing.xs,
-  },
-  editBtnText: {
-    fontSize: 14,
+    padding: theme.spacing.xs,
   },
   deleteBtn: {
-    padding: theme.spacing.xxs,
-  },
-  deleteBtnText: {
-    fontSize: 14,
+    padding: theme.spacing.xs,
   },
 });

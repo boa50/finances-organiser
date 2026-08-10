@@ -19,6 +19,7 @@ import { TransactionEditModal } from './src/components/TransactionEditModal';
 import { ChartNoAxesCombined, House, List, LogOut, Plus, SlidersHorizontal, Trash2, Zap } from 'lucide-react-native';
 import { authService } from './src/services/authService';
 import { LoginScreen } from './src/screens/LoginScreen';
+import { AppBadge } from './src/components/ui';
 
 type TabName = 'overview' | 'analytics' | 'transactions' | 'categories';
 
@@ -92,32 +93,11 @@ export default function App() {
         </View>
 
         <View style={styles.topActions}>
-          <View
-            style={[
-              styles.tursoStatusBtn,
-              {
-                backgroundColor: tursoConfig.isConnected
-                  ? 'rgba(16, 185, 129, 0.15)'
-                  : 'rgba(245, 158, 11, 0.15)',
-                borderColor: tursoConfig.isConnected ? '#10B981' : '#F59E0B',
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: tursoConfig.isConnected ? '#10B981' : '#F59E0B' },
-              ]}
-            />
-            <Text
-              style={[
-                styles.tursoStatusText,
-                { color: tursoConfig.isConnected ? '#10B981' : '#F59E0B' },
-              ]}
-            >
-              {tursoConfig.isConnected ? 'Turso Connected' : 'Turso Offline'}
-            </Text>
-          </View>
+          <AppBadge
+            label={tursoConfig.isConnected ? 'Turso Connected' : 'Turso Offline'}
+            variant={tursoConfig.isConnected ? 'success' : 'warning'}
+            statusDot
+          />
 
           {transactions.length > 0 && (
             <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll}>
@@ -254,24 +234,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  tursoStatusBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 1,
-    gap: 6,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  tursoStatusText: {
-    fontSize: 11,
-    fontWeight: '700',
   },
   clearBtn: {
     flexDirection: 'row',
