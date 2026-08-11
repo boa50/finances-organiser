@@ -98,7 +98,7 @@ class BankService {
       }
     }
 
-    return this.loadFromLocalStorage();
+    return [...this.banks];
   }
 
   public getBanksSync(): BankItem[] {

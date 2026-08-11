@@ -99,7 +99,7 @@ class PaymentMethodService {
       }
     }
 
-    return this.loadFromLocalStorage();
+    return [...this.paymentMethods];
   }
 
   public getPaymentMethodsSync(): PaymentMethodItem[] {

@@ -5,6 +5,7 @@ import {
   calculateFinancialSummary,
   filterTransactions,
   groupRecentTransactions,
+  parseInstallmentTitle,
 } from '../financials';
 
 describe('Financial Utilities', () => {
@@ -166,6 +167,20 @@ describe('Financial Utilities', () => {
     it('should return all transactions when filter options are default', () => {
       const filtered = filterTransactions(sampleTransactions);
       expect(filtered.length).toBe(sampleTransactions.length);
+    });
+  });
+
+  describe('parseInstallmentTitle', () => {
+    it('removes installment suffix from title', () => {
+      expect(parseInstallmentTitle('Netflix (2/12)')).toBe('Netflix');
+    });
+
+    it('returns original title if no installment suffix', () => {
+      expect(parseInstallmentTitle('Groceries')).toBe('Groceries');
+    });
+
+    it('handles titles with parentheses that are not installments', () => {
+      expect(parseInstallmentTitle('Gift (birthday)')).toBe('Gift (birthday)');
     });
   });
 });

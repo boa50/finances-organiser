@@ -6,22 +6,26 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Automated and passing | 33 |
-| 🟡 Implemented but not automated | 48 |
+| ✅ Automated and passing | 61 |
+| 🟡 Implemented but not automated | 20 |
 | ⬜ Not implemented | 0 |
 | 🔴 Automated but failing | 0 |
 | ⚠️ Cannot currently be verified | 0 |
 | **Total** | **81** |
 
-All 33 automated tests were verified passing via `npm test` on 2026-08-11.
+All 61 automated tests across 9 test suites were verified passing via `npm test` on 2026-08-11.
 
 ### Automated Test Suites
 
+- [`src/services/__tests__/apiClient.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/apiClient.test.ts) — API response Content-Type validation (`isJsonResponse`)
 - [`src/services/__tests__/authService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/authService.test.ts) — Authentication service login/logout flows and API/session state
-- [`src/services/__tests__/categoryService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/categoryService.test.ts) — Category CRUD operations and duplicate name validation
+- [`src/services/__tests__/bankService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/bankService.test.ts) — Bank CRUD operations, duplicate validation, default preservation, reset
+- [`src/services/__tests__/categoryService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/categoryService.test.ts) — Category CRUD operations, update/add duplicate name validation
+- [`src/services/__tests__/paymentMethodService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/paymentMethodService.test.ts) — Payment method CRUD operations, allowInstallments flag, duplicate validation, reset
+- [`src/services/__tests__/tursoService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/tursoService.test.ts) — Transaction CRUD operations, single delete, installment group deletion, clear all
 - [`src/utils/__tests__/authUtils.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/authUtils.test.ts) — Password hashing, comparison, and input validation
 - [`src/utils/__tests__/currencies.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/currencies.test.ts) — Currency symbol lookup, formatting, conversion, and constants
-- [`src/utils/__tests__/financials.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/financials.test.ts) — Financial summaries, installment grouping, monthly/category aggregation, and filtering
+- [`src/utils/__tests__/financials.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/financials.test.ts) — Financial summaries, installment title parsing, monthly/category aggregation, and filtering
 
 ---
 
@@ -848,7 +852,7 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 ### TC-041 — Category update validates unique name
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -861,6 +865,8 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 **When** One category is renamed to match the other (same type).
 
 **Then** The operation throws an error.
+
+**Automation:** `src/services/__tests__/categoryService.test.ts` — `prevents updating category to an existing category name of same type`
 
 ---
 
@@ -950,7 +956,7 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 ### TC-046 — Add transaction persists to local memory and cache
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** High
 
@@ -964,11 +970,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** The transaction is added to local memory and saved to localStorage.
 
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `adds a transaction and retrieves it`
+
 ---
 
 ### TC-047 — Delete transaction removes from local memory
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** High
 
@@ -982,11 +990,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** The transaction is removed from local memory and localStorage.
 
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `deletes a single transaction`
+
 ---
 
 ### TC-048 — Update transaction modifies existing record
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** High
 
@@ -1000,11 +1010,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** The transaction is updated in local memory and synced.
 
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `updates an existing transaction`
+
 ---
 
 ### TC-049 — Update transaction throws if not found
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1018,11 +1030,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** An error is thrown: `"Transaction not found"`.
 
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `throws error when updating non-existent transaction`
+
 ---
 
 ### TC-050 — Delete installment group removes all siblings
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** High
 
@@ -1036,11 +1050,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** All transactions in the group are removed.
 
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `deletes all transactions in an installment group`
+
 ---
 
 ### TC-051 — Clear all transactions empties the collection
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1051,6 +1067,10 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 **Given** Transactions exist.
 
 **When** `clearAllTransactions()` is called.
+
+**Then** The transaction collection is empty.
+
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `clears all transactions`
 
 **Then** The transaction collection is empty.
 
@@ -1195,7 +1215,7 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 ### TC-059 — Add payment method with unique name
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1209,11 +1229,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** A new payment method is created and returned.
 
+**Automation:** `src/services/__tests__/paymentMethodService.test.ts` — `adds a new payment method with allowInstallments flag`
+
 ---
 
 ### TC-060 — Duplicate payment method name is rejected
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1227,11 +1249,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** The operation throws an error.
 
+**Automation:** `src/services/__tests__/paymentMethodService.test.ts` — `prevents adding duplicate payment method names`
+
 ---
 
 ### TC-061 — Delete non-default payment method
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1244,6 +1268,8 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 **When** `deletePaymentMethod(id)` is called.
 
 **Then** The payment method is removed.
+
+**Automation:** `src/services/__tests__/paymentMethodService.test.ts` — `deletes a custom payment method`
 
 ---
 
@@ -1267,7 +1293,7 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 ### TC-063 — allowInstallments flag is persisted
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1281,11 +1307,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** The `allowInstallments` flag is `true`.
 
+**Automation:** `src/services/__tests__/paymentMethodService.test.ts` — `adds a new payment method with allowInstallments flag`
+
 ---
 
 ### TC-064 — Reset payment methods to defaults
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Low
 
@@ -1298,6 +1326,8 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 **When** `resetToDefaults()` is called.
 
 **Then** The list is replaced with `DEFAULT_PAYMENT_METHODS`.
+
+**Automation:** `src/services/__tests__/paymentMethodService.test.ts` — `resets payment methods to default list`
 
 ---
 
@@ -1312,7 +1342,7 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 ### TC-065 — Add bank with unique name
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1326,11 +1356,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** A new bank is created and returned.
 
+**Automation:** `src/services/__tests__/bankService.test.ts` — `adds a new bank`
+
 ---
 
 ### TC-066 — Duplicate bank name is rejected
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1344,11 +1376,13 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 **Then** The operation throws an error.
 
+**Automation:** `src/services/__tests__/bankService.test.ts` — `prevents adding duplicate bank names`
+
 ---
 
 ### TC-067 — Delete non-default bank
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Medium
 
@@ -1361,6 +1395,8 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 **When** `deleteBank(id)` is called.
 
 **Then** The bank is removed.
+
+**Automation:** `src/services/__tests__/bankService.test.ts` — `deletes a custom bank`
 
 ---
 
@@ -1384,7 +1420,7 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 ### TC-069 — Reset banks to defaults
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** Low
 
@@ -1397,6 +1433,8 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 **When** `resetToDefaults()` is called.
 
 **Then** The list is replaced with `DEFAULT_BANKS`.
+
+**Automation:** `src/services/__tests__/bankService.test.ts` — `resets banks to defaults`
 
 ---
 
@@ -1573,7 +1611,7 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 
 ### TC-078 — isJsonResponse prevents SPA rewrite false positives
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** High
 
@@ -1586,6 +1624,8 @@ All 33 automated tests were verified passing via `npm test` on 2026-08-11.
 **When** Any service method calls the API.
 
 **Then** `isJsonResponse()` returns `false`, and the service falls through to libSQL or localStorage.
+
+**Automation:** `src/services/__tests__/apiClient.test.ts` — `returns false for ok response with text/html header (SPA rewrite in dev mode)`
 
 ---
 

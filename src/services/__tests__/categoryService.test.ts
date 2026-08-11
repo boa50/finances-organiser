@@ -41,4 +41,36 @@ describe('categoryService', () => {
       })
     ).rejects.toThrow();
   });
+
+  it('updates an existing category successfully', async () => {
+    const created = await categoryService.addCategory({
+      name: 'Old Category Name',
+      icon: 'star',
+      color: '#000000',
+      type: 'expense',
+    });
+
+    const updated = await categoryService.updateCategory(created.id, {
+      name: 'New Category Name',
+      color: '#123456',
+    });
+
+    expect(updated.name).toBe('New Category Name');
+    expect(updated.color).toBe('#123456');
+  });
+
+  it('prevents updating category to an existing category name of same type', async () => {
+    const customCat = await categoryService.addCategory({
+      name: 'My Special Expense',
+      icon: 'star',
+      color: '#000000',
+      type: 'expense',
+    });
+
+    await expect(
+      categoryService.updateCategory(customCat.id, {
+        name: 'Food & Dining',
+      })
+    ).rejects.toThrow();
+  });
 });
