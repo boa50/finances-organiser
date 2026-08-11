@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText } from './ui/AppText';
 import theme from '../theme';
 
@@ -24,12 +24,31 @@ export function ChipSelector<T>({
   getItemColor,
   isSelected,
 }: ChipSelectorProps<T>) {
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const handleWheel = (e: any) => {
+    if (Platform.OS === 'web' && e) {
+      const delta = e.deltaY || e.deltaX;
+      if (delta && scrollViewRef.current) {
+        const node =
+          typeof scrollViewRef.current.getScrollableNode === 'function'
+            ? scrollViewRef.current.getScrollableNode()
+            : (scrollViewRef.current as any);
+        if (node && typeof node.scrollLeft === 'number') {
+          node.scrollLeft += delta;
+        }
+      }
+    }
+  };
+
   return (
     <ScrollView
+      ref={scrollViewRef}
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.chipList}
       style={styles.scrollView}
+      {...(Platform.OS === 'web' ? { onWheel: handleWheel } : {})}
     >
       {items.map((item) => {
         const key = keyExtractor(item);
@@ -79,12 +98,20 @@ export function ChipSelector<T>({
 const styles = StyleSheet.create({
   scrollView: {
     marginVertical: theme.spacing.xs,
+    ...(Platform.OS === 'web'
+      ? ({
+          maxWidth: '100%',
+          overflowX: 'auto',
+          touchAction: 'pan-x',
+        } as any)
+      : {}),
   },
   chipList: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.xs,
     paddingVertical: theme.spacing.xxs,
+    flexGrow: 0,
   },
   chip: {
     flexDirection: 'row',
@@ -96,6 +123,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.borderSubtle,
     backgroundColor: 'transparent',
     gap: 4,
+    flexShrink: 0,
   },
   chipActiveDefault: {
     borderColor: theme.colors.accent,
