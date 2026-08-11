@@ -6,9 +6,9 @@ export interface Transaction {
   title: string;
   amount: number;
   currency: string; // e.g. 'USD', 'EUR', 'BRL', 'GBP'
-  category: string;
-  paymentMethod?: string;
-  bank?: string;
+  categoryId?: string;
+  paymentMethodId?: string;
+  bankId?: string;
   store?: string;
   installments?: number;
   installmentNumber?: number;
@@ -24,9 +24,9 @@ export interface Subscription {
   title: string;
   amount: number;
   currency: string;
-  category: string;
-  paymentMethod?: string;
-  bank?: string;
+  categoryId?: string;
+  paymentMethodId?: string;
+  bankId?: string;
   store?: string;
   billingDay: number; // 1 to 31
   active: boolean;
@@ -49,20 +49,17 @@ export interface CategoryItem {
   icon: string;
   color: string;
   type: TransactionType;
-  isDefault?: boolean;
 }
 
 export interface PaymentMethodItem {
   id: string;
   name: string;
-  isDefault?: boolean;
   allowInstallments?: boolean;
 }
 
 export interface BankItem {
   id: string;
   name: string;
-  isDefault?: boolean;
 }
 
 export interface MonthlyAggregate {

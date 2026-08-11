@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getTursoClient, ensureTablesExist, DEFAULT_BANKS } from './_db';
+import { getTursoClient, ensureTablesExist } from './_db';
 import { generateId } from '../src/utils/idGenerator';
 
 import { setCorsHeaders } from './_helpers';
@@ -19,19 +19,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
       const result = await client.execute('SELECT * FROM banks ORDER BY name ASC');
       if (!result.rows || result.rows.length === 0) {
-        for (const bank of DEFAULT_BANKS) {
-          await client.execute({
-            sql: `INSERT INTO banks (id, name, is_default) VALUES (?, ?, ?)`,
-            args: [bank.id, bank.name, bank.isDefault ? 1 : 0],
-          });
-        }
-        return res.status(200).json(DEFAULT_BANKS);
+        return res.status(200).json([]);
       }
 
       const banks = result.rows.map((row: any) => ({
         id: String(row.id),
         name: String(row.name),
-        isDefault: Boolean(row.is_default),
       }));
       return res.status(200).json(banks);
     }
@@ -42,13 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (action === 'reset' || req.query.action === 'reset') {
         await client.execute('DELETE FROM banks');
-        for (const bank of DEFAULT_BANKS) {
-          await client.execute({
-            sql: `INSERT INTO banks (id, name, is_default) VALUES (?, ?, ?)`,
-            args: [bank.id, bank.name, 1],
-          });
-        }
-        return res.status(200).json(DEFAULT_BANKS);
+        return res.status(200).json([]);
       }
 
       if (!name || !name.trim()) {
@@ -68,14 +55,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const id = generateId('bank');
       await client.execute({
-        sql: `INSERT INTO banks (id, name, is_default) VALUES (?, ?, 0)`,
+        sql: `INSERT INTO banks (id, name) VALUES (?, ?)`,
         args: [id, trimmedName],
       });
 
       const newBank = {
         id,
         name: trimmedName,
-        isDefault: false,
       };
       return res.status(201).json(newBank);
     }
@@ -110,18 +96,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(updatedBank);
     }
 
-    // DELETE /api/banks - Delete bank
+    // DELETE /api/banks - Delete bank and nullify references
     if (req.method === 'DELETE') {
       const id = req.query.id || req.body?.id;
       if (!id) {
         return res.status(400).json({ error: 'Missing id for bank deletion' });
       }
 
+      const targetId = String(id);
+      await client.execute({
+        sql: 'UPDATE transactions SET bank_id = NULL WHERE bank_id = ?',
+        args: [targetId],
+      });
+      await client.execute({
+        sql: 'UPDATE subscriptions SET bank_id = NULL WHERE bank_id = ?',
+        args: [targetId],
+      });
       await client.execute({
         sql: 'DELETE FROM banks WHERE id = ?',
-        args: [String(id)],
+        args: [targetId],
       });
-      return res.status(200).json({ success: true, id });
+      return res.status(200).json({ success: true, id: targetId });
     }
 
     return res.status(405).json({ error: 'Method Not Allowed' });

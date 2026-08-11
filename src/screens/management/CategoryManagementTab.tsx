@@ -4,7 +4,7 @@ import { CategoryItem, TransactionType } from '../../types';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
 import { AppCard, AppEmptyState, AppSegmentedControl, AppTextInput, AppText } from '../../components/ui';
-import { Plus, RotateCcw, Search } from 'lucide-react-native';
+import { Plus, Search } from 'lucide-react-native';
 import theme from '../../theme';
 
 interface CategoryManagementTabProps {
@@ -16,7 +16,6 @@ interface CategoryManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (cat: CategoryItem) => void;
   onDeleteCategory: (cat: CategoryItem) => void;
-  onResetDefaults: () => void;
 }
 
 export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
@@ -28,7 +27,6 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onDeleteCategory,
-  onResetDefaults,
 }) => {
   const filteredCategories = categories.filter(
     (c) =>
@@ -56,11 +54,6 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
                 New {activeCategoryType === 'income' ? 'Income' : 'Expense'} Category
               </AppText>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.resetBtn} onPress={onResetDefaults}>
-              <RotateCcw size={14} color={theme.colors.textSecondary} />
-              <AppText style={styles.resetBtnText}>Defaults</AppText>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -84,7 +77,6 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
               key={cat.id}
               name={cat.name}
               subtitle={cat.type}
-              isDefault={cat.isDefault}
               color={cat.color}
               icon={<CategoryIcon iconName={cat.icon} color={cat.color} size={20} />}
               onEdit={() => onOpenEditModal(cat)}
@@ -127,22 +119,6 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
-  },
-  resetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.radii.lg,
-  },
-  resetBtnText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.semibold,
   },
   grid: {
     gap: theme.spacing.sm,

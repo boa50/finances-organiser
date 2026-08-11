@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getTursoClient, ensureTablesExist, DEFAULT_PAYMENT_METHODS } from './_db';
+import { getTursoClient, ensureTablesExist } from './_db';
 import { generateId } from '../src/utils/idGenerator';
 
 import { setCorsHeaders } from './_helpers';
@@ -19,19 +19,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
       const result = await client.execute('SELECT * FROM payment_methods ORDER BY name ASC');
       if (!result.rows || result.rows.length === 0) {
-        for (const pm of DEFAULT_PAYMENT_METHODS) {
-          await client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
-            args: [pm.id, pm.name, pm.isDefault ? 1 : 0, pm.allowInstallments ? 1 : 0],
-          });
-        }
-        return res.status(200).json(DEFAULT_PAYMENT_METHODS);
+        return res.status(200).json([]);
       }
 
       const paymentMethods = result.rows.map((row: any) => ({
         id: String(row.id),
         name: String(row.name),
-        isDefault: Boolean(row.is_default),
         allowInstallments: Boolean(row.allow_installments),
       }));
       return res.status(200).json(paymentMethods);
@@ -43,13 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (action === 'reset' || req.query.action === 'reset') {
         await client.execute('DELETE FROM payment_methods');
-        for (const pm of DEFAULT_PAYMENT_METHODS) {
-          await client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
-            args: [pm.id, pm.name, 1, pm.allowInstallments ? 1 : 0],
-          });
-        }
-        return res.status(200).json(DEFAULT_PAYMENT_METHODS);
+        return res.status(200).json([]);
       }
 
       if (!name || !name.trim()) {
@@ -71,14 +58,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const allowInstVal = Boolean(allowInstallments);
 
       await client.execute({
-        sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, 0, ?)`,
+        sql: `INSERT INTO payment_methods (id, name, allow_installments) VALUES (?, ?, ?)`,
         args: [id, trimmedName, allowInstVal ? 1 : 0],
       });
 
       const newPm = {
         id,
         name: trimmedName,
-        isDefault: false,
         allowInstallments: allowInstVal,
       };
       return res.status(201).json(newPm);
@@ -117,18 +103,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(updatedPm);
     }
 
-    // DELETE /api/payment-methods - Delete payment method
+    // DELETE /api/payment-methods - Delete payment method and nullify references
     if (req.method === 'DELETE') {
       const id = req.query.id || req.body?.id;
       if (!id) {
         return res.status(400).json({ error: 'Missing id for payment method deletion' });
       }
 
+      const targetId = String(id);
+      await client.execute({
+        sql: 'UPDATE transactions SET payment_method_id = NULL WHERE payment_method_id = ?',
+        args: [targetId],
+      });
+      await client.execute({
+        sql: 'UPDATE subscriptions SET payment_method_id = NULL WHERE payment_method_id = ?',
+        args: [targetId],
+      });
       await client.execute({
         sql: 'DELETE FROM payment_methods WHERE id = ?',
-        args: [String(id)],
+        args: [targetId],
       });
-      return res.status(200).json({ success: true, id });
+      return res.status(200).json({ success: true, id: targetId });
     }
 
     return res.status(405).json({ error: 'Method Not Allowed' });

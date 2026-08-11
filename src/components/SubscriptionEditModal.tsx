@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Switch,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { BankItem, CategoryItem, PaymentMethodItem, Subscription } from '../types';
@@ -37,11 +35,11 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('BRL');
-  const [category, setCategory] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<string>('');
+  const [paymentMethodId, setPaymentMethodId] = useState<string>('');
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState<PaymentMethodItem[]>([]);
-  const [bank, setBank] = useState<string>('');
+  const [bankId, setBankId] = useState<string>('');
   const [availableBanks, setAvailableBanks] = useState<BankItem[]>([]);
   const [store, setStore] = useState('');
   const [billingDay, setBillingDay] = useState<string>('1');
@@ -66,9 +64,16 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         setTitle(subscription.title);
         setAmount(String(subscription.amount));
         setCurrency(subscription.currency || 'BRL');
-        setCategory(subscription.category || (cats.length > 0 ? cats[0].name : ''));
-        setPaymentMethod(subscription.paymentMethod || '');
-        setBank(subscription.bank || '');
+
+        const initialCatId = subscription.categoryId || '';
+        setCategoryId(initialCatId);
+
+        const initialPmId = subscription.paymentMethodId || '';
+        setPaymentMethodId(initialPmId);
+
+        const initialBankId = subscription.bankId || '';
+        setBankId(initialBankId);
+
         setStore(subscription.store || '');
         setBillingDay(String(subscription.billingDay || 1));
         setActive(subscription.active !== undefined ? subscription.active : true);
@@ -77,9 +82,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         setTitle('');
         setAmount('');
         setCurrency('BRL');
-        setCategory(cats.length > 0 ? cats[0].name : '');
-        setPaymentMethod(pms.length > 0 ? pms[0].name : '');
-        setBank('');
+        setCategoryId(cats.length > 0 ? cats[0].id : '');
+        setPaymentMethodId(pms.length > 0 ? pms[0].id : '');
+        setBankId('');
         setStore('');
         setBillingDay('1');
         setActive(true);
@@ -103,11 +108,6 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       return;
     }
 
-    if (!category) {
-      setErrorMessage('Please select a category.');
-      return;
-    }
-
     const numDay = parseInt(billingDay, 10);
     if (isNaN(numDay) || numDay < 1 || numDay > 31) {
       setErrorMessage('Please enter a valid payment day between 1 and 31.');
@@ -116,39 +116,29 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
 
     setSaving(true);
     try {
+      const subPayload = {
+        title: title.trim(),
+        amount: numAmount,
+        currency,
+        categoryId: categoryId || undefined,
+        paymentMethodId: paymentMethodId || undefined,
+        bankId: bankId || undefined,
+        store: store.trim() || undefined,
+        billingDay: numDay,
+        active,
+        notes: notes.trim() || undefined,
+      };
+
       if (subscription) {
         const oldBillingDay = subscription.billingDay;
-        const updated = await subscriptionService.updateSubscription(subscription.id, {
-          title: title.trim(),
-          amount: numAmount,
-          currency,
-          category,
-          paymentMethod: paymentMethod || undefined,
-          bank: bank || undefined,
-          store: store.trim() || undefined,
-          billingDay: numDay,
-          active,
-          notes: notes.trim() || undefined,
-        });
+        const updated = await subscriptionService.updateSubscription(subscription.id, subPayload);
 
-        // If billing day changed, update current month's transaction date if one exists
         if (oldBillingDay !== numDay) {
           const currentTxs = await tursoService.getTransactions();
           await handleSubscriptionBillingDayUpdate(updated, currentTxs);
         }
       } else {
-        await subscriptionService.addSubscription({
-          title: title.trim(),
-          amount: numAmount,
-          currency,
-          category,
-          paymentMethod: paymentMethod || undefined,
-          bank: bank || undefined,
-          store: store.trim() || undefined,
-          billingDay: numDay,
-          active,
-          notes: notes.trim() || undefined,
-        });
+        await subscriptionService.addSubscription(subPayload);
       }
 
       onSaved();
@@ -235,24 +225,26 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         </View>
 
         {/* Category */}
-        <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>Category *</AppText>
-          <ChipSelector
-            items={availableCategories}
-            selectedId={category}
-            onSelect={(cat) => setCategory(cat.name)}
-            keyExtractor={(cat) => cat.id || cat.name}
-            labelExtractor={(cat) => cat.name}
-            getItemColor={(cat) => cat.color}
-            renderIcon={(cat) => (
-              <CategoryIcon
-                iconName={cat.icon}
-                size={16}
-                color={cat.color}
-              />
-            )}
-          />
-        </View>
+        {availableCategories.length > 0 && (
+          <View style={styles.fieldGroup}>
+            <AppText style={styles.label}>Category</AppText>
+            <ChipSelector
+              items={availableCategories}
+              selectedId={categoryId}
+              onSelect={(cat) => setCategoryId(cat.id)}
+              keyExtractor={(cat) => cat.id}
+              labelExtractor={(cat) => cat.name}
+              getItemColor={(cat) => cat.color}
+              renderIcon={(cat) => (
+                <CategoryIcon
+                  iconName={cat.icon}
+                  size={16}
+                  color={cat.color}
+                />
+              )}
+            />
+          </View>
+        )}
 
         {/* Payment Method */}
         {availablePaymentMethods.length > 0 && (
@@ -260,9 +252,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
             <AppText style={styles.label}>Payment Method (Optional)</AppText>
             <ChipSelector
               items={availablePaymentMethods}
-              selectedId={paymentMethod}
-              onSelect={(pm) => setPaymentMethod(pm.name === paymentMethod ? '' : pm.name)}
-              keyExtractor={(pm) => pm.id || pm.name}
+              selectedId={paymentMethodId}
+              onSelect={(pm) => setPaymentMethodId(pm.id === paymentMethodId ? '' : pm.id)}
+              keyExtractor={(pm) => pm.id}
               labelExtractor={(pm) => pm.name}
             />
           </View>
@@ -274,9 +266,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
             <AppText style={styles.label}>Bank (Optional)</AppText>
             <ChipSelector
               items={availableBanks}
-              selectedId={bank}
-              onSelect={(b) => setBank(b.name === bank ? '' : b.name)}
-              keyExtractor={(b) => b.id || b.name}
+              selectedId={bankId}
+              onSelect={(b) => setBankId(b.id === bankId ? '' : b.id)}
+              keyExtractor={(b) => b.id}
               labelExtractor={(b) => b.name}
               renderIcon={(_b, active) => (
                 <Building2 size={14} color={active ? theme.colors.accent : theme.colors.textMuted} />
@@ -337,10 +329,14 @@ const styles = StyleSheet.create({
     maxHeight: 520,
   },
   content: {
-    paddingBottom: theme.spacing.lg,
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
   },
   errorContainer: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.xs,
+  },
+  fieldGroup: {
+    gap: theme.spacing.xs,
   },
   row: {
     flexDirection: 'row',
@@ -350,22 +346,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   flex2: {
-    flex: 1.5,
-  },
-  fieldGroup: {
-    marginVertical: theme.spacing.xs,
+    flex: 2,
   },
   label: {
-    color: theme.colors.textSecondary,
+    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
-    marginBottom: theme.spacing.xs,
+    fontWeight: theme.fontWeight.semibold,
   },
   fieldHint: {
     color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
-    marginTop: 2,
-    marginBottom: theme.spacing.xs,
+    marginTop: theme.spacing.xxs,
   },
   activeToggleRow: {
     flexDirection: 'row',
@@ -378,6 +369,7 @@ const styles = StyleSheet.create({
   },
   activeToggleInfo: {
     flex: 1,
+    paddingRight: theme.spacing.sm,
   },
   activeToggleTitle: {
     color: theme.colors.textPrimary,

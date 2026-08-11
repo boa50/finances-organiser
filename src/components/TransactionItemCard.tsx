@@ -15,6 +15,9 @@ export interface TransactionItemCardProps {
   amountToDisplay?: number;
   installmentsLabel?: string;
   dateString?: string;
+  categoryName?: string;
+  paymentMethodName?: string;
+  bankName?: string;
 }
 
 export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
@@ -26,6 +29,9 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   amountToDisplay,
   installmentsLabel,
   dateString,
+  categoryName,
+  paymentMethodName,
+  bankName,
 }) => {
   const isIncome = transaction.type === 'income';
   const currencyInfo = getCurrencyInfo(transaction.currency);
@@ -46,6 +52,10 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       : ''
   );
 
+  const catLabel = categoryName || (transaction.categoryId ? 'Category' : 'Uncategorized');
+  const pmLabel = paymentMethodName;
+  const bkLabel = bankName;
+
   return (
     <AppCard style={styles.txRow} padding="lg">
       <AppIconBadge
@@ -63,17 +73,23 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       <View style={styles.txMainInfo}>
         <AppText style={styles.txTitle}>{transaction.title}</AppText>
         <View style={styles.txMetaRow}>
-          <AppText style={styles.txCategory}>{transaction.category}</AppText>
+          <AppText style={styles.txCategory}>{catLabel}</AppText>
           {transaction.store ? (
             <>
               <AppText style={styles.dotSeparator}>•</AppText>
               <AppText style={styles.txStore}>{transaction.store}</AppText>
             </>
           ) : null}
-          {transaction.paymentMethod ? (
+          {pmLabel ? (
             <>
               <AppText style={styles.dotSeparator}>•</AppText>
-              <AppText style={styles.txPaymentMethod}>{transaction.paymentMethod}</AppText>
+              <AppText style={styles.txPaymentMethod}>{pmLabel}</AppText>
+            </>
+          ) : null}
+          {bkLabel ? (
+            <>
+              <AppText style={styles.dotSeparator}>•</AppText>
+              <AppText style={styles.txPaymentMethod}>{bkLabel}</AppText>
             </>
           ) : null}
           {instText ? (

@@ -1,5 +1,6 @@
 import { BankItem } from '../types';
 import { tursoService } from './tursoService';
+import { subscriptionService } from './subscriptionService';
 import { generateId } from '../utils/idGenerator';
 import { isJsonResponse } from './apiClient';
 
@@ -17,7 +18,7 @@ class BankService {
 
   private loadFromLocalStorage(): BankItem[] {
     if (typeof window === 'undefined') {
-      this.banks = [...DEFAULT_BANKS];
+      this.banks = [];
       return this.banks;
     }
 
@@ -25,7 +26,7 @@ class BankService {
       const stored = localStorage.getItem(BANKS_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.banks = parsed;
           return this.banks;
         }
@@ -34,7 +35,7 @@ class BankService {
       console.warn('Failed to parse stored banks:', e);
     }
 
-    this.banks = [...DEFAULT_BANKS];
+    this.banks = [];
     this.saveToLocalStorage();
     return this.banks;
   }
@@ -49,7 +50,6 @@ class BankService {
   }
 
   public async getBanks(): Promise<BankItem[]> {
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/banks', {
@@ -64,32 +64,19 @@ class BankService {
         }
       }
     } catch (e) {
-      // Fall through to direct LibSQL client execution below
+      // Fallback
     }
 
-    // 2. Try direct LibSQL client if available
     const client = tursoService.getClient();
     if (client) {
       try {
         const res = await client.execute('SELECT * FROM banks ORDER BY name ASC');
-        if (res.rows && res.rows.length > 0) {
+        if (res.rows) {
           const dbItems: BankItem[] = res.rows.map((row: any) => ({
             id: String(row.id),
             name: String(row.name),
-            isDefault: Boolean(row.is_default),
           }));
           this.banks = dbItems;
-          this.saveToLocalStorage();
-          return [...this.banks];
-        } else {
-          // Table is empty, insert default banks to database
-          for (const bank of DEFAULT_BANKS) {
-            await client.execute({
-              sql: `INSERT INTO banks (id, name, is_default) VALUES (?, ?, ?)`,
-              args: [bank.id, bank.name, bank.isDefault ? 1 : 0],
-            });
-          }
-          this.banks = [...DEFAULT_BANKS];
           this.saveToLocalStorage();
           return [...this.banks];
         }
@@ -119,13 +106,11 @@ class BankService {
     const newBank: BankItem = {
       id: generateId('bank'),
       name: trimmed,
-      isDefault: false,
     };
 
     this.banks = [...this.banks, newBank];
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/banks', {
@@ -139,16 +124,15 @@ class BankService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Persist to Turso Cloud DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
         await client.execute({
-          sql: 'INSERT INTO banks (id, name, is_default) VALUES (?, ?, ?)',
-          args: [newBank.id, newBank.name, 0],
+          sql: 'INSERT INTO banks (id, name) VALUES (?, ?)',
+          args: [newBank.id, newBank.name],
         });
       } catch (err) {
         console.error('Failed to sync added bank to Turso DB:', err);
@@ -182,7 +166,6 @@ class BankService {
     this.banks[index] = updated;
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/banks', {
@@ -196,10 +179,9 @@ class BankService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Update in Turso DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
@@ -216,10 +198,15 @@ class BankService {
   }
 
   public async deleteBank(id: string): Promise<boolean> {
+    const target = this.banks.find((b) => b.id === id);
+    const bankName = target?.name;
+
     this.banks = this.banks.filter((b) => b.id !== id);
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
+    tursoService.removeBankReferences(id);
+    subscriptionService.removeBankReferences(id);
+
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/banks?id=${encodeURIComponent(id)}`, {
@@ -231,13 +218,20 @@ class BankService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Delete from Turso DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
+        await client.execute({
+          sql: 'UPDATE transactions SET bank_id = NULL WHERE bank_id = ?',
+          args: [id],
+        });
+        await client.execute({
+          sql: 'UPDATE subscriptions SET bank_id = NULL WHERE bank_id = ?',
+          args: [id],
+        });
         await client.execute({
           sql: 'DELETE FROM banks WHERE id = ?',
           args: [id],
@@ -251,44 +245,30 @@ class BankService {
   }
 
   public async resetToDefaults(): Promise<BankItem[]> {
-    this.banks = [...DEFAULT_BANKS];
+    this.banks = [];
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
-        const res = await fetch('/api/banks?action=reset', {
+        await fetch('/api/banks?action=reset', {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
         });
-        if (isJsonResponse(res)) {
-          const resetItems: BankItem[] = await res.json();
-          this.banks = resetItems;
-          this.saveToLocalStorage();
-          return [...this.banks];
-        }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Reset in Turso DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
         await client.execute('DELETE FROM banks');
-        for (const bank of DEFAULT_BANKS) {
-          await client.execute({
-            sql: `INSERT INTO banks (id, name, is_default) VALUES (?, ?, ?)`,
-            args: [bank.id, bank.name, bank.isDefault ? 1 : 0],
-          });
-        }
       } catch (err) {
         console.error('Failed to reset banks in Turso DB:', err);
       }
     }
 
-    return [...this.banks];
+    return [];
   }
 }
 

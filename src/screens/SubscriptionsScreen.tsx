@@ -35,7 +35,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
   onSubscriptionsUpdated,
 }) => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [categoriesMap, setCategoriesMap] = useState<Record<string, { icon: string; color: string }>>({});
+  const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; icon: string; color: string }>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,9 +49,10 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
       setSubscriptions(subs);
 
       const cats = await categoryService.getCategories();
-      const catMap: Record<string, { icon: string; color: string }> = {};
+      const catMap: Record<string, { name: string; icon: string; color: string }> = {};
       cats.forEach((c) => {
-        catMap[c.name] = { icon: c.icon, color: c.color };
+        catMap[c.id] = { name: c.name, icon: c.icon, color: c.color };
+        catMap[c.name] = { name: c.name, icon: c.icon, color: c.color };
       });
       setCategoriesMap(catMap);
     } catch (e) {
@@ -123,9 +124,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
   const filteredSubscriptions = subscriptions.filter((sub) => {
     const matchesSearch =
       sub.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sub.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (sub.store && sub.store.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (sub.bank && sub.bank.toLowerCase().includes(searchQuery.toLowerCase()));
+      (sub.store && sub.store.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesStatus =
       statusFilter === 'all'
@@ -234,10 +233,13 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
           />
         }
         renderItem={({ item }) => {
-          const catInfo = categoriesMap[item.category] || {
+          const catKey = item.categoryId || '';
+          const catInfo = categoriesMap[catKey] || {
+            name: item.categoryId ? 'Category' : 'Uncategorized',
             icon: 'CreditCard',
             color: theme.colors.accent,
           };
+          const categoryDisplayName = catInfo.name || 'Uncategorized';
 
           return (
             <AppCard variant="glass" style={styles.subCard}>
@@ -249,17 +251,11 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                   <View style={styles.subTextGroup}>
                     <AppText style={styles.subTitle}>{item.title}</AppText>
                     <View style={styles.subMetaRow}>
-                      <AppText style={styles.subCategory}>{item.category}</AppText>
+                      <AppText style={styles.subCategory}>{categoryDisplayName}</AppText>
                       {item.store && (
                         <>
                           <AppText style={styles.dot}>•</AppText>
                           <AppText style={styles.subStore}>{item.store}</AppText>
-                        </>
-                      )}
-                      {item.bank && (
-                        <>
-                          <AppText style={styles.dot}>•</AppText>
-                          <AppText style={styles.subStore}>{item.bank}</AppText>
                         </>
                       )}
                     </View>

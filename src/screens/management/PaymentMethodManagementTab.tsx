@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { PaymentMethodItem } from '../../types';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
 import { AppCard, AppEmptyState, AppTextInput, AppText } from '../../components/ui';
-import { CreditCard, Plus, RotateCcw, Search } from 'lucide-react-native';
+import { CreditCard, Plus, Search } from 'lucide-react-native';
 import theme from '../../theme';
 
 interface PaymentMethodManagementTabProps {
@@ -13,7 +13,6 @@ interface PaymentMethodManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (pm: PaymentMethodItem) => void;
   onDeletePm: (pm: PaymentMethodItem) => void;
-  onResetDefaults: () => void;
 }
 
 export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProps> = ({
@@ -23,7 +22,6 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
   onOpenAddModal,
   onOpenEditModal,
   onDeletePm,
-  onResetDefaults,
 }) => {
   const filteredPms = paymentMethods.filter((pm) =>
     pm.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
@@ -36,11 +34,6 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
           <TouchableOpacity style={styles.createBtn} onPress={onOpenAddModal}>
             <Plus size={16} color={theme.colors.white} />
             <AppText style={styles.createBtnText}>New Payment Method</AppText>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.resetBtn} onPress={onResetDefaults}>
-            <RotateCcw size={14} color={theme.colors.textSecondary} />
-            <AppText style={styles.resetBtnText}>Defaults</AppText>
           </TouchableOpacity>
         </View>
 
@@ -64,7 +57,6 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
               key={pm.id}
               name={pm.name}
               subtitle={pm.allowInstallments ? 'Installments enabled' : 'Single payment only'}
-              isDefault={pm.isDefault}
               icon={<CreditCard size={20} color={theme.colors.accent} />}
               onEdit={() => onOpenEditModal(pm)}
               onDelete={() => onDeletePm(pm)}
@@ -103,22 +95,6 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
-  },
-  resetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.radii.lg,
-  },
-  resetBtnText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.semibold,
   },
   grid: {
     gap: theme.spacing.sm,

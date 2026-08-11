@@ -9,7 +9,7 @@ describe('subscriptionService', () => {
       title: 'Netflix HD',
       amount: 45.9,
       currency: 'BRL',
-      category: 'Entertainment',
+      categoryId: 'cat-ent-1',
       billingDay: 15,
       active: true,
       notes: 'Monthly streaming plan',

@@ -39,7 +39,6 @@ class SubscriptionService {
   }
 
   public async getSubscriptions(): Promise<Subscription[]> {
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/subscriptions', {
@@ -54,7 +53,7 @@ class SubscriptionService {
         }
       }
     } catch (e) {
-      // Fall through to Turso client fallback
+      // Fallback
     }
 
     const client = tursoService.getClient();
@@ -66,9 +65,9 @@ class SubscriptionService {
           title: String(row.title),
           amount: Number(row.amount),
           currency: String(row.currency),
-          category: String(row.category),
-          paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
-          bank: row.bank ? String(row.bank) : undefined,
+          categoryId: row.category_id ? String(row.category_id) : undefined,
+          paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
+          bankId: row.bank_id ? String(row.bank_id) : undefined,
           store: row.store ? String(row.store) : undefined,
           billingDay: Number(row.billing_day) || 1,
           active: Boolean(row.active),
@@ -104,7 +103,6 @@ class SubscriptionService {
     this.localMemorySubs = [newSub, ...this.localMemorySubs];
     this.saveLocalCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/subscriptions', {
@@ -118,23 +116,23 @@ class SubscriptionService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     const client = tursoService.getClient();
     if (client) {
       try {
         await client.execute({
-          sql: `INSERT INTO subscriptions (id, title, amount, currency, category, payment_method, bank, store, billing_day, active, notes, created_at, updated_at)
+          sql: `INSERT INTO subscriptions (id, title, amount, currency, category_id, payment_method_id, bank_id, store, billing_day, active, notes, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newSub.id,
             newSub.title,
             newSub.amount,
             newSub.currency,
-            newSub.category,
-            newSub.paymentMethod || null,
-            newSub.bank || null,
+            newSub.categoryId || null,
+            newSub.paymentMethodId || null,
+            newSub.bankId || null,
             newSub.store || null,
             newSub.billingDay,
             newSub.active ? 1 : 0,
@@ -174,7 +172,6 @@ class SubscriptionService {
     this.localMemorySubs = this.localMemorySubs.map((s) => (s.id === id ? updatedSub : s));
     this.saveLocalCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/subscriptions', {
@@ -188,7 +185,7 @@ class SubscriptionService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     const client = tursoService.getClient();
@@ -196,15 +193,15 @@ class SubscriptionService {
       try {
         await client.execute({
           sql: `UPDATE subscriptions
-                SET title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
+                SET title = ?, amount = ?, currency = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
                 WHERE id = ?`,
           args: [
             updatedSub.title,
             updatedSub.amount,
             updatedSub.currency,
-            updatedSub.category,
-            updatedSub.paymentMethod || null,
-            updatedSub.bank || null,
+            updatedSub.categoryId || null,
+            updatedSub.paymentMethodId || null,
+            updatedSub.bankId || null,
             updatedSub.store || null,
             updatedSub.billingDay,
             updatedSub.active ? 1 : 0,
@@ -229,7 +226,6 @@ class SubscriptionService {
     this.localMemorySubs = this.localMemorySubs.filter((s) => s.id !== id);
     this.saveLocalCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/subscriptions?id=${encodeURIComponent(id)}`, {
@@ -241,7 +237,7 @@ class SubscriptionService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     const client = tursoService.getClient();
@@ -257,6 +253,36 @@ class SubscriptionService {
     }
 
     return true;
+  }
+
+  public removeCategoryReferences(catId: string): void {
+    this.localMemorySubs = this.localMemorySubs.map((sub) => {
+      if (sub.categoryId === catId) {
+        return { ...sub, categoryId: undefined };
+      }
+      return sub;
+    });
+    this.saveLocalCache();
+  }
+
+  public removePaymentMethodReferences(pmId: string): void {
+    this.localMemorySubs = this.localMemorySubs.map((sub) => {
+      if (sub.paymentMethodId === pmId) {
+        return { ...sub, paymentMethodId: undefined };
+      }
+      return sub;
+    });
+    this.saveLocalCache();
+  }
+
+  public removeBankReferences(bankId: string): void {
+    this.localMemorySubs = this.localMemorySubs.map((sub) => {
+      if (sub.bankId === bankId) {
+        return { ...sub, bankId: undefined };
+      }
+      return sub;
+    });
+    this.saveLocalCache();
   }
 }
 

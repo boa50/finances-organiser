@@ -1,15 +1,11 @@
 import { createClient, Client } from '@libsql/client/web';
 import { Transaction, TursoConfig } from '../types';
-import { DEFAULT_CATEGORIES } from './categoryService';
 import { generateId } from '../utils/idGenerator';
 import { parseInstallmentTitle } from '../utils/financials';
 import { isJsonResponse } from './apiClient';
 
 const LOCAL_TX_KEY = 'finances_local_transactions';
 
-// Expo only exposes variables prefixed with EXPO_PUBLIC_ to application code.
-// These values are compiled into the client bundle, so use a token scoped only
-// to this database and never treat it as a server-side secret.
 const ENV_TURSO_URL = process.env.EXPO_PUBLIC_TURSO_DATABASE_URL?.trim() ?? '';
 const ENV_TURSO_AUTH_TOKEN = process.env.EXPO_PUBLIC_TURSO_AUTH_TOKEN?.trim() ?? '';
 
@@ -58,7 +54,6 @@ class TursoDatabaseService {
     } catch (e) {
       console.warn('Failed to load local transactions', e);
     }
-    // Default fallback to empty array
     this.localMemoryTx = [];
     this.saveLocalCache();
   }
@@ -75,7 +70,6 @@ class TursoDatabaseService {
 
   private initClient(url: string, authToken: string): boolean {
     try {
-      // Ensure URL is formatted cleanly (support libsql://, https://, or http://)
       let cleanUrl = url.trim();
       if (!cleanUrl.startsWith('https://') && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('libsql://')) {
         cleanUrl = `https://${cleanUrl}`;
@@ -110,10 +104,7 @@ class TursoDatabaseService {
     return headers;
   }
 
-
-
   public async initDatabase(): Promise<boolean> {
-    // Try initializing via Vercel serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/health', {
@@ -131,7 +122,7 @@ class TursoDatabaseService {
         }
       }
     } catch (e) {
-      // Fallback to client-side LibSQL initialization below
+      // Fallback below
     }
 
     if (!this.config.url || !this.config.authToken) {
@@ -145,7 +136,6 @@ class TursoDatabaseService {
     if (!this.client) return false;
 
     try {
-      // Create tables
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS transactions (
           id TEXT PRIMARY KEY,
@@ -153,9 +143,9 @@ class TursoDatabaseService {
           title TEXT NOT NULL,
           amount REAL NOT NULL,
           currency TEXT NOT NULL,
-          category TEXT NOT NULL,
-          payment_method TEXT,
-          bank TEXT,
+          category_id TEXT,
+          payment_method_id TEXT,
+          bank_id TEXT,
           store TEXT,
           installments INTEGER DEFAULT 0,
           installment_number INTEGER DEFAULT 0,
@@ -167,54 +157,14 @@ class TursoDatabaseService {
         );
       `);
 
-      // Migration: Add payment_method column if existing table lacks it
-      try {
-        await this.client.execute('ALTER TABLE transactions ADD COLUMN payment_method TEXT');
-      } catch (e) {
-        // Column already exists
-      }
-
-      // Migration: Add store column if existing table lacks it
-      try {
-        await this.client.execute('ALTER TABLE transactions ADD COLUMN store TEXT');
-      } catch (e) {
-        // Column already exists
-      }
-
-      // Migration: Add bank column if existing table lacks it
-      try {
-        await this.client.execute('ALTER TABLE transactions ADD COLUMN bank TEXT');
-      } catch (e) {
-        // Column already exists
-      }
-
-      // Migration: Add installments column if existing table lacks it
-      try {
-        await this.client.execute('ALTER TABLE transactions ADD COLUMN installments INTEGER DEFAULT 0');
-      } catch (e) {
-        // Column already exists
-      }
-
-      // Migration: Add installment_number column if existing table lacks it
-      try {
-        await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_number INTEGER DEFAULT 0');
-      } catch (e) {
-        // Column already exists
-      }
-
-      // Migration: Add installment_group_id column if existing table lacks it
-      try {
-        await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_group_id TEXT');
-      } catch (e) {
-        // Column already exists
-      }
-
-      // Migration: Add subscription_id column if existing table lacks it
-      try {
-        await this.client.execute('ALTER TABLE transactions ADD COLUMN subscription_id TEXT');
-      } catch (e) {
-        // Column already exists
-      }
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN category_id TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN payment_method_id TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN bank_id TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN store TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN installments INTEGER DEFAULT 0'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_number INTEGER DEFAULT 0'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_group_id TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN subscription_id TEXT'); } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS subscriptions (
@@ -222,9 +172,9 @@ class TursoDatabaseService {
           title TEXT NOT NULL,
           amount REAL NOT NULL,
           currency TEXT NOT NULL,
-          category TEXT NOT NULL,
-          payment_method TEXT,
-          bank TEXT,
+          category_id TEXT,
+          payment_method_id TEXT,
+          bank_id TEXT,
           store TEXT,
           billing_day INTEGER NOT NULL DEFAULT 1,
           active INTEGER NOT NULL DEFAULT 1,
@@ -234,14 +184,17 @@ class TursoDatabaseService {
         );
       `);
 
+      try { await this.client.execute('ALTER TABLE subscriptions ADD COLUMN category_id TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE subscriptions ADD COLUMN payment_method_id TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE subscriptions ADD COLUMN bank_id TEXT'); } catch (e) {}
+
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS categories (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           icon TEXT NOT NULL,
           color TEXT NOT NULL,
-          type TEXT CHECK (type IN ('income', 'expense')),
-          is_default INTEGER DEFAULT 0
+          type TEXT CHECK (type IN ('income', 'expense'))
         );
       `);
 
@@ -249,61 +202,22 @@ class TursoDatabaseService {
         CREATE TABLE IF NOT EXISTS payment_methods (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL UNIQUE,
-          is_default INTEGER DEFAULT 0,
           allow_installments INTEGER DEFAULT 0
         );
       `);
 
-      try {
-        await this.client.execute('ALTER TABLE payment_methods ADD COLUMN allow_installments INTEGER DEFAULT 0');
-      } catch (e) {
-        // Column already exists
-      }
+      try { await this.client.execute('ALTER TABLE payment_methods ADD COLUMN allow_installments INTEGER DEFAULT 0'); } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS banks (
           id TEXT PRIMARY KEY,
-          name TEXT NOT NULL UNIQUE,
-          is_default INTEGER DEFAULT 0
+          name TEXT NOT NULL UNIQUE
         );
       `);
 
       this.config.isConnected = true;
       this.config.lastSyncedAt = new Date().toISOString();
 
-      // Check if categories table has data. If empty, insert default categories into Turso DB!
-      const catCountRes = await this.client.execute('SELECT COUNT(*) as count FROM categories');
-      const catCount = Number(catCountRes.rows[0]?.count || 0);
-
-      if (catCount === 0) {
-        for (const cat of DEFAULT_CATEGORIES) {
-          await this.client.execute({
-            sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.isDefault ? 1 : 0],
-          });
-        }
-      }
-
-      // Check if payment_methods table has data. If empty, insert defaults!
-      const pmCountRes = await this.client.execute('SELECT COUNT(*) as count FROM payment_methods');
-      const pmCount = Number(pmCountRes.rows[0]?.count || 0);
-
-      if (pmCount === 0) {
-        const defaults = [
-          { id: 'pm-1', name: 'Credit Card', isDefault: 1, allowInstallments: 1 },
-          { id: 'pm-2', name: 'Debit Card', isDefault: 1, allowInstallments: 0 },
-          { id: 'pm-3', name: 'Money Transfer', isDefault: 1, allowInstallments: 0 },
-        ];
-        for (const pm of defaults) {
-          await this.client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
-            args: [pm.id, pm.name, pm.isDefault, pm.allowInstallments],
-          });
-        }
-      }
-
-      // Sync data from Turso to local memory
       await this.fetchFromTurso();
       return true;
     } catch (err) {
@@ -314,7 +228,6 @@ class TursoDatabaseService {
   }
 
   private async fetchFromTurso(): Promise<Transaction[]> {
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/transactions', {
@@ -330,7 +243,7 @@ class TursoDatabaseService {
         }
       }
     } catch (e) {
-      // Fall through to LibSQL client execution
+      // Fallback below
     }
 
     if (!this.client) return this.localMemoryTx;
@@ -343,9 +256,9 @@ class TursoDatabaseService {
         title: String(row.title),
         amount: Number(row.amount),
         currency: String(row.currency),
-        category: String(row.category),
-        paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
-        bank: row.bank ? String(row.bank) : undefined,
+        categoryId: row.category_id ? String(row.category_id) : undefined,
+        paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
+        bankId: row.bank_id ? String(row.bank_id) : undefined,
         store: row.store ? String(row.store) : undefined,
         installments: Number(row.installments) || 0,
         installmentNumber: Number(row.installment_number) || 0,
@@ -380,11 +293,9 @@ class TursoDatabaseService {
       createdAt: new Date().toISOString(),
     };
 
-    // Update local memory & cache immediately
     this.localMemoryTx = [newTx, ...this.localMemoryTx];
     this.saveLocalCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/transactions', {
@@ -399,14 +310,13 @@ class TursoDatabaseService {
         }
       }
     } catch (e) {
-      // Fall through to LibSQL client fallback
+      // Fallback
     }
 
-    // Persist to Turso Cloud DB directly if connected
     if (this.client) {
       try {
         await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, bank, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
+          sql: `INSERT INTO transactions (id, type, title, amount, currency, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newTx.id,
@@ -414,9 +324,9 @@ class TursoDatabaseService {
             newTx.title,
             newTx.amount,
             newTx.currency,
-            newTx.category,
-            newTx.paymentMethod || null,
-            newTx.bank || null,
+            newTx.categoryId || null,
+            newTx.paymentMethodId || null,
+            newTx.bankId || null,
             newTx.store || null,
             newTx.installments || 0,
             newTx.installmentNumber || 0,
@@ -440,7 +350,6 @@ class TursoDatabaseService {
     this.localMemoryTx = this.localMemoryTx.filter((t) => t.id !== id);
     this.saveLocalCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
@@ -453,7 +362,7 @@ class TursoDatabaseService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     if (this.client) {
@@ -473,7 +382,6 @@ class TursoDatabaseService {
     const baseTitle = targetTx ? parseInstallmentTitle(targetTx.title).toLowerCase() : '';
     const totalInst = targetTx?.installments || 0;
 
-    // 1. Identify all sibling transactions in local memory
     const siblingTx = this.localMemoryTx.filter((t) => {
       if (groupId && t.installmentGroupId === groupId) return true;
       if (targetTx && t.id === targetTx.id) return true;
@@ -486,7 +394,6 @@ class TursoDatabaseService {
 
     const siblingIds = Array.from(new Set(siblingTx.map((t) => t.id)));
 
-    // 2. Remove all matched siblings from local memory immediately
     this.localMemoryTx = this.localMemoryTx.filter((t) => {
       if (siblingIds.includes(t.id)) return false;
       if (groupId && t.installmentGroupId === groupId) return false;
@@ -494,7 +401,6 @@ class TursoDatabaseService {
     });
     this.saveLocalCache();
 
-    // 3. Delete from Vercel Serverless API if online
     if (groupId) {
       try {
         if (typeof window !== 'undefined') {
@@ -504,11 +410,10 @@ class TursoDatabaseService {
           });
         }
       } catch (e) {
-        // Fall through
+        // Fallback
       }
     }
 
-    // 4. Delete from Turso Cloud DB directly if client connected
     if (this.client) {
       if (groupId) {
         try {
@@ -522,7 +427,6 @@ class TursoDatabaseService {
         }
       }
 
-      // Also ensure all sibling IDs are deleted explicitly from Turso DB
       for (const id of siblingIds) {
         try {
           await this.client.execute({
@@ -530,12 +434,11 @@ class TursoDatabaseService {
             args: [id],
           });
         } catch (err) {
-          // Ignore if already deleted by group query
+          // Ignore
         }
       }
     }
 
-    // 5. Also issue DELETE requests for sibling IDs via API as safety fallback
     if (typeof window !== 'undefined' && siblingIds.length > 0) {
       for (const id of siblingIds) {
         try {
@@ -571,7 +474,6 @@ class TursoDatabaseService {
     );
     this.saveLocalCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/transactions', {
@@ -586,23 +488,23 @@ class TursoDatabaseService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     if (this.client) {
       try {
         await this.client.execute({
           sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
+                SET type = ?, title = ?, amount = ?, currency = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
                 WHERE id = ?`,
           args: [
             updatedTx.type,
             updatedTx.title,
             updatedTx.amount,
             updatedTx.currency,
-            updatedTx.category,
-            updatedTx.paymentMethod || null,
-            updatedTx.bank || null,
+            updatedTx.categoryId || null,
+            updatedTx.paymentMethodId || null,
+            updatedTx.bankId || null,
             updatedTx.store || null,
             updatedTx.installments || 0,
             updatedTx.installmentNumber || 0,
@@ -623,13 +525,40 @@ class TursoDatabaseService {
     return updatedTx;
   }
 
+  public removeCategoryReferences(catId: string): void {
+    this.localMemoryTx = this.localMemoryTx.map((tx) => {
+      if (tx.categoryId === catId) {
+        return { ...tx, categoryId: undefined };
+      }
+      return tx;
+    });
+    this.saveLocalCache();
+  }
 
+  public removePaymentMethodReferences(pmId: string): void {
+    this.localMemoryTx = this.localMemoryTx.map((tx) => {
+      if (tx.paymentMethodId === pmId) {
+        return { ...tx, paymentMethodId: undefined };
+      }
+      return tx;
+    });
+    this.saveLocalCache();
+  }
+
+  public removeBankReferences(bankId: string): void {
+    this.localMemoryTx = this.localMemoryTx.map((tx) => {
+      if (tx.bankId === bankId) {
+        return { ...tx, bankId: undefined };
+      }
+      return tx;
+    });
+    this.saveLocalCache();
+  }
 
   public async clearAllTransactions(): Promise<Transaction[]> {
     this.localMemoryTx = [];
     this.saveLocalCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         await fetch('/api/transactions?id=all', {
@@ -638,7 +567,7 @@ class TursoDatabaseService {
         });
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     if (this.client) {

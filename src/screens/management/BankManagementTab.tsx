@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { BankItem } from '../../types';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
 import { AppCard, AppEmptyState, AppTextInput, AppText } from '../../components/ui';
-import { Building2, Plus, RotateCcw, Search } from 'lucide-react-native';
+import { Building2, Plus, Search } from 'lucide-react-native';
 import theme from '../../theme';
 
 interface BankManagementTabProps {
@@ -13,7 +13,6 @@ interface BankManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (bank: BankItem) => void;
   onDeleteBank: (bank: BankItem) => void;
-  onResetDefaults: () => void;
 }
 
 export const BankManagementTab: React.FC<BankManagementTabProps> = ({
@@ -23,7 +22,6 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onDeleteBank,
-  onResetDefaults,
 }) => {
   const filteredBanks = banks.filter((b) =>
     b.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
@@ -36,11 +34,6 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
           <TouchableOpacity style={styles.createBtn} onPress={onOpenAddModal}>
             <Plus size={16} color={theme.colors.white} />
             <AppText style={styles.createBtnText}>New Bank</AppText>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.resetBtn} onPress={onResetDefaults}>
-            <RotateCcw size={14} color={theme.colors.textSecondary} />
-            <AppText style={styles.resetBtnText}>Defaults</AppText>
           </TouchableOpacity>
         </View>
 
@@ -64,7 +57,6 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
               key={bank.id}
               name={bank.name}
               subtitle="Bank Institution"
-              isDefault={bank.isDefault}
               icon={<Building2 size={20} color={theme.colors.accent} />}
               onEdit={() => onOpenEditModal(bank)}
               onDelete={() => onDeleteBank(bank)}
@@ -103,22 +95,6 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
-  },
-  resetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.radii.lg,
-  },
-  resetBtnText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.semibold,
   },
   grid: {
     gap: theme.spacing.sm,

@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { CategoryAggregate, Transaction } from '../types';
-import { convertCurrency, EXPENSE_CATEGORIES } from '../utils/currencies';
+import { convertCurrency } from '../utils/currencies';
+import { categoryService } from '../services/categoryService';
 import { AppText } from './ui';
 import { D3DonutChart } from './D3DonutChart';
 import { D3CategoryBarChart } from './D3CategoryBarChart';
@@ -38,16 +39,19 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
       totalIncome += converted;
     } else {
       totalExpense += converted;
-      categoryExpenseMap[tx.category] = (categoryExpenseMap[tx.category] || 0) + converted;
+      const catKey = tx.categoryId || 'Uncategorized';
+      categoryExpenseMap[catKey] = (categoryExpenseMap[catKey] || 0) + converted;
     }
   });
 
+  const categoriesList = categoryService.getCategoriesSync();
   const categoryAggregates: CategoryAggregate[] = Object.keys(categoryExpenseMap)
-    .map((catName) => {
-      const amount = categoryExpenseMap[catName];
-      const categoryObj = EXPENSE_CATEGORIES.find((c) => c.name === catName);
+    .map((catKey) => {
+      const amount = categoryExpenseMap[catKey];
+      const categoryObj = categoriesList.find((c) => c.id === catKey);
+      const catDisplayName = categoryObj?.name || catKey;
       return {
-        category: catName,
+        category: catDisplayName,
         amount,
         percentage: totalExpense > 0 ? (amount / totalExpense) * 100 : 0,
         color: categoryObj?.color || '#3B82F6',

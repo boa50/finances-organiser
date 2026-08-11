@@ -17,8 +17,9 @@ export interface GroupedRecentItem {
   title: string;
   totalAmount: number;
   currency: string;
-  category: string;
-  paymentMethod?: string;
+  categoryId?: string;
+  paymentMethodId?: string;
+  bankId?: string;
   store?: string;
   installments?: number;
   date: string;
@@ -127,8 +128,9 @@ export function groupRecentTransactions(
       title: baseTitle,
       totalAmount: totalAmount > 0 ? totalAmount : firstInst.amount * installments,
       currency: firstInst.currency,
-      category: firstInst.category,
-      paymentMethod: firstInst.paymentMethod,
+      categoryId: firstInst.categoryId,
+      paymentMethodId: firstInst.paymentMethodId,
+      bankId: firstInst.bankId,
       store: firstInst.store,
       installments,
       date: firstInst.date,
@@ -143,8 +145,9 @@ export function groupRecentTransactions(
       title: tx.title,
       totalAmount: tx.amount,
       currency: tx.currency,
-      category: tx.category,
-      paymentMethod: tx.paymentMethod,
+      categoryId: tx.categoryId,
+      paymentMethodId: tx.paymentMethodId,
+      bankId: tx.bankId,
       store: tx.store,
       installments: tx.installments,
       date: tx.date,
@@ -220,7 +223,7 @@ export function aggregateTransactionsByCategory(
   transactions.forEach((tx) => {
     if (tx.type !== targetType) return;
     const amount = convertCurrency(tx.amount, tx.currency, targetCurrency);
-    const cat = tx.category || 'Uncategorized';
+    const cat = tx.categoryId || 'Uncategorized';
     categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
     totalForType += amount;
   });
@@ -249,12 +252,12 @@ export function filterTransactions(
 
   return transactions.filter((tx) => {
     if (type !== 'all' && tx.type !== type) return false;
-    if (category && tx.category.toLowerCase() !== category.toLowerCase()) return false;
+    if (category && (tx.categoryId || '').toLowerCase() !== category.toLowerCase()) return false;
 
     if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const titleMatch = tx.title.toLowerCase().includes(q);
-      const categoryMatch = tx.category.toLowerCase().includes(q);
+      const categoryMatch = tx.categoryId ? tx.categoryId.toLowerCase().includes(q) : false;
       const storeMatch = tx.store ? tx.store.toLowerCase().includes(q) : false;
       const notesMatch = tx.notes ? tx.notes.toLowerCase().includes(q) : false;
       if (!titleMatch && !categoryMatch && !storeMatch && !notesMatch) return false;

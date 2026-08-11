@@ -11,7 +11,7 @@ describe('tursoService', () => {
       title: 'Coffee',
       amount: 12.5,
       currency: 'BRL',
-      category: 'Food & Dining',
+      categoryId: 'cat-test-1',
       date: '2026-08-11',
     });
 
@@ -28,7 +28,7 @@ describe('tursoService', () => {
       title: 'Groceries',
       amount: 150,
       currency: 'BRL',
-      category: 'Food & Dining',
+      categoryId: 'cat-test-1',
       date: '2026-08-10',
     });
 
@@ -37,7 +37,7 @@ describe('tursoService', () => {
       title: 'Supermarket Groceries',
       amount: 200,
       currency: 'BRL',
-      category: 'Food & Dining',
+      categoryId: 'cat-test-1',
       date: '2026-08-10',
     });
 
@@ -56,7 +56,7 @@ describe('tursoService', () => {
         title: 'Ghost',
         amount: 50,
         currency: 'BRL',
-        category: 'Other',
+        categoryId: 'cat-test-1',
         date: '2026-08-10',
       })
     ).rejects.toThrow('Transaction not found');
@@ -68,7 +68,7 @@ describe('tursoService', () => {
       title: 'Freelance Work',
       amount: 800,
       currency: 'BRL',
-      category: 'Salary',
+      categoryId: 'cat-test-1',
       date: '2026-08-01',
     });
 
@@ -87,7 +87,7 @@ describe('tursoService', () => {
       title: 'Laptop (1/2)',
       amount: 1500,
       currency: 'BRL',
-      category: 'Shopping',
+      categoryId: 'cat-test-1',
       installments: 2,
       installmentNumber: 1,
       installmentGroupId: groupId,
@@ -99,7 +99,7 @@ describe('tursoService', () => {
       title: 'Laptop (2/2)',
       amount: 1500,
       currency: 'BRL',
-      category: 'Shopping',
+      categoryId: 'cat-test-1',
       installments: 2,
       installmentNumber: 2,
       installmentGroupId: groupId,
@@ -120,7 +120,7 @@ describe('tursoService', () => {
       title: 'Rent',
       amount: 1200,
       currency: 'BRL',
-      category: 'Housing',
+      categoryId: 'cat-test-1',
       date: '2026-08-01',
     });
 

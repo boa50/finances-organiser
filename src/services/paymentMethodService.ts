@@ -1,5 +1,6 @@
 import { PaymentMethodItem } from '../types';
 import { tursoService } from './tursoService';
+import { subscriptionService } from './subscriptionService';
 import { generateId } from '../utils/idGenerator';
 import { isJsonResponse } from './apiClient';
 
@@ -17,7 +18,7 @@ class PaymentMethodService {
 
   private loadFromLocalStorage(): PaymentMethodItem[] {
     if (typeof window === 'undefined') {
-      this.paymentMethods = [...DEFAULT_PAYMENT_METHODS];
+      this.paymentMethods = [];
       return this.paymentMethods;
     }
 
@@ -25,7 +26,7 @@ class PaymentMethodService {
       const stored = localStorage.getItem(PAYMENT_METHODS_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           this.paymentMethods = parsed;
           return this.paymentMethods;
         }
@@ -34,7 +35,7 @@ class PaymentMethodService {
       console.warn('Failed to parse stored payment methods:', e);
     }
 
-    this.paymentMethods = [...DEFAULT_PAYMENT_METHODS];
+    this.paymentMethods = [];
     this.saveToLocalStorage();
     return this.paymentMethods;
   }
@@ -49,7 +50,6 @@ class PaymentMethodService {
   }
 
   public async getPaymentMethods(): Promise<PaymentMethodItem[]> {
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/payment-methods', {
@@ -64,33 +64,20 @@ class PaymentMethodService {
         }
       }
     } catch (e) {
-      // Fall through to direct LibSQL client execution below
+      // Fallback
     }
 
-    // 2. Try direct LibSQL client if available
     const client = tursoService.getClient();
     if (client) {
       try {
         const res = await client.execute('SELECT * FROM payment_methods ORDER BY name ASC');
-        if (res.rows && res.rows.length > 0) {
+        if (res.rows) {
           const dbItems: PaymentMethodItem[] = res.rows.map((row: any) => ({
             id: String(row.id),
             name: String(row.name),
-            isDefault: Boolean(row.is_default),
             allowInstallments: Boolean(row.allow_installments),
           }));
           this.paymentMethods = dbItems;
-          this.saveToLocalStorage();
-          return [...this.paymentMethods];
-        } else {
-          // Table is empty, insert default payment methods to database
-          for (const pm of DEFAULT_PAYMENT_METHODS) {
-            await client.execute({
-              sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
-              args: [pm.id, pm.name, pm.isDefault ? 1 : 0, pm.allowInstallments ? 1 : 0],
-            });
-          }
-          this.paymentMethods = [...DEFAULT_PAYMENT_METHODS];
           this.saveToLocalStorage();
           return [...this.paymentMethods];
         }
@@ -120,14 +107,12 @@ class PaymentMethodService {
     const newMethod: PaymentMethodItem = {
       id: generateId('pm'),
       name: trimmed,
-      isDefault: false,
       allowInstallments: Boolean(allowInstallments),
     };
 
     this.paymentMethods = [...this.paymentMethods, newMethod];
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/payment-methods', {
@@ -141,16 +126,15 @@ class PaymentMethodService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Persist to Turso Cloud DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
         await client.execute({
-          sql: 'INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)',
-          args: [newMethod.id, newMethod.name, 0, allowInstallments ? 1 : 0],
+          sql: 'INSERT INTO payment_methods (id, name, allow_installments) VALUES (?, ?, ?)',
+          args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0],
         });
       } catch (err) {
         console.error('Failed to sync added payment method to Turso DB:', err);
@@ -185,7 +169,6 @@ class PaymentMethodService {
     this.paymentMethods[index] = updated;
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/payment-methods', {
@@ -199,10 +182,9 @@ class PaymentMethodService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Update in Turso DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
@@ -219,10 +201,15 @@ class PaymentMethodService {
   }
 
   public async deletePaymentMethod(id: string): Promise<boolean> {
+    const target = this.paymentMethods.find((p) => p.id === id);
+    const pmName = target?.name;
+
     this.paymentMethods = this.paymentMethods.filter((pm) => pm.id !== id);
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
+    tursoService.removePaymentMethodReferences(id);
+    subscriptionService.removePaymentMethodReferences(id);
+
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/payment-methods?id=${encodeURIComponent(id)}`, {
@@ -234,13 +221,20 @@ class PaymentMethodService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Delete from Turso DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
+        await client.execute({
+          sql: 'UPDATE transactions SET payment_method_id = NULL WHERE payment_method_id = ?',
+          args: [id],
+        });
+        await client.execute({
+          sql: 'UPDATE subscriptions SET payment_method_id = NULL WHERE payment_method_id = ?',
+          args: [id],
+        });
         await client.execute({
           sql: 'DELETE FROM payment_methods WHERE id = ?',
           args: [id],
@@ -254,44 +248,30 @@ class PaymentMethodService {
   }
 
   public async resetToDefaults(): Promise<PaymentMethodItem[]> {
-    this.paymentMethods = [...DEFAULT_PAYMENT_METHODS];
+    this.paymentMethods = [];
     this.saveToLocalStorage();
 
-    // 1. Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
-        const res = await fetch('/api/payment-methods?action=reset', {
+        await fetch('/api/payment-methods?action=reset', {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
         });
-        if (isJsonResponse(res)) {
-          const resetItems: PaymentMethodItem[] = await res.json();
-          this.paymentMethods = resetItems;
-          this.saveToLocalStorage();
-          return [...this.paymentMethods];
-        }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // 2. Reset in Turso DB directly if client connected
     const client = tursoService.getClient();
     if (client) {
       try {
         await client.execute('DELETE FROM payment_methods');
-        for (const pm of DEFAULT_PAYMENT_METHODS) {
-          await client.execute({
-            sql: `INSERT INTO payment_methods (id, name, is_default, allow_installments) VALUES (?, ?, ?, ?)`,
-            args: [pm.id, pm.name, pm.isDefault ? 1 : 0, pm.allowInstallments ? 1 : 0],
-          });
-        }
       } catch (err) {
         console.error('Failed to reset payment methods in Turso DB:', err);
       }
     }
 
-    return [...this.paymentMethods];
+    return [];
   }
 }
 

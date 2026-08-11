@@ -5,6 +5,11 @@ describe('categoryService', () => {
     await categoryService.resetToDefaults();
   });
 
+  it('starts with empty list when reset', async () => {
+    const categories = await categoryService.getCategories('expense');
+    expect(categories.length).toBe(0);
+  });
+
   it('adds a new category and allows deleting it', async () => {
     const initialCategories = await categoryService.getCategories('expense');
     const initialCount = initialCategories.length;
@@ -32,6 +37,13 @@ describe('categoryService', () => {
   });
 
   it('prevents adding duplicate category names for the same type', async () => {
+    await categoryService.addCategory({
+      name: 'Food & Dining',
+      icon: 'utensils',
+      color: '#EF4444',
+      type: 'expense',
+    });
+
     await expect(
       categoryService.addCategory({
         name: 'Food & Dining',
@@ -60,6 +72,13 @@ describe('categoryService', () => {
   });
 
   it('prevents updating category to an existing category name of same type', async () => {
+    await categoryService.addCategory({
+      name: 'Existing Category',
+      icon: 'utensils',
+      color: '#EF4444',
+      type: 'expense',
+    });
+
     const customCat = await categoryService.addCategory({
       name: 'My Special Expense',
       icon: 'star',
@@ -69,7 +88,7 @@ describe('categoryService', () => {
 
     await expect(
       categoryService.updateCategory(customCat.id, {
-        name: 'Food & Dining',
+        name: 'Existing Category',
       })
     ).rejects.toThrow();
   });

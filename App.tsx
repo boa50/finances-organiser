@@ -83,6 +83,7 @@ export default function App() {
 
       <TransactionEditModal
         visible={addTransactionModalVisible}
+        transaction={null}
         onClose={() => setAddTransactionModalVisible(false)}
         onSaved={loadData}
       />

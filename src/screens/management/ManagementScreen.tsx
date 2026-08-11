@@ -191,23 +191,6 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     });
   };
 
-  const handleResetCatDefaults = async () => {
-    confirmAction({
-      title: 'Reset Default Categories',
-      message: 'Restore all built-in default categories? Custom categories will be removed.',
-      destructive: true,
-      onConfirm: async () => {
-        try {
-          await categoryService.resetToDefaults();
-          await loadCategoriesData();
-          onCategoriesUpdated?.();
-        } catch (err: any) {
-          console.error('Failed to reset categories:', err);
-        }
-      },
-    });
-  };
-
   // ── Payment Method Handlers ──
   const openAddPmModal = () => {
     setEditingPm(null);
@@ -273,22 +256,6 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     });
   };
 
-  const handleResetPmDefaults = async () => {
-    confirmAction({
-      title: 'Reset Default Payment Methods',
-      message: 'Restore all default payment methods? Custom methods will be removed.',
-      destructive: true,
-      onConfirm: async () => {
-        try {
-          await paymentMethodService.resetToDefaults();
-          await loadPaymentMethodsData();
-        } catch (err: any) {
-          console.error('Failed to reset payment methods:', err);
-        }
-      },
-    });
-  };
-
   // ── Bank Handlers ──
   const openAddBankModal = () => {
     setEditingBank(null);
@@ -345,22 +312,6 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     });
   };
 
-  const handleResetBankDefaults = async () => {
-    confirmAction({
-      title: 'Reset Default Banks',
-      message: 'Restore all default banks? Custom banks will be removed.',
-      destructive: true,
-      onConfirm: async () => {
-        try {
-          await bankService.resetToDefaults();
-          await loadBanksData();
-        } catch (err: any) {
-          console.error('Failed to reset banks:', err);
-        }
-      },
-    });
-  };
-
   if (loading) {
     return <AppLoadingView message="Loading management settings..." />;
   }
@@ -396,7 +347,6 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
             onOpenAddModal={openAddCatModal}
             onOpenEditModal={openEditCatModal}
             onDeleteCategory={handleDeleteCategory}
-            onResetDefaults={handleResetCatDefaults}
           />
         )}
 
@@ -408,7 +358,6 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
             onOpenAddModal={openAddPmModal}
             onOpenEditModal={openEditPmModal}
             onDeletePm={handleDeletePm}
-            onResetDefaults={handleResetPmDefaults}
           />
         )}
 
@@ -420,7 +369,6 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
             onOpenAddModal={openAddBankModal}
             onOpenEditModal={openEditBankModal}
             onDeleteBank={handleDeleteBank}
-            onResetDefaults={handleResetBankDefaults}
           />
         )}
       </ScrollView>

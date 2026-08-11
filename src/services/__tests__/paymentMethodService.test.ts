@@ -5,10 +5,9 @@ describe('paymentMethodService', () => {
     await paymentMethodService.resetToDefaults();
   });
 
-  it('loads default payment methods', async () => {
+  it('starts with empty list when reset', async () => {
     const methods = await paymentMethodService.getPaymentMethods();
-    expect(methods.length).toBeGreaterThan(0);
-    expect(methods.some((pm) => pm.name === 'Credit Card')).toBe(true);
+    expect(methods.length).toBe(0);
   });
 
   it('adds a new payment method with allowInstallments flag', async () => {
@@ -21,6 +20,7 @@ describe('paymentMethodService', () => {
   });
 
   it('prevents adding duplicate payment method names', async () => {
+    await paymentMethodService.addPaymentMethod('Credit Card');
     await expect(paymentMethodService.addPaymentMethod('Credit Card')).rejects.toThrow();
   });
 
@@ -33,6 +33,7 @@ describe('paymentMethodService', () => {
   });
 
   it('prevents updating payment method to duplicate name', async () => {
+    await paymentMethodService.addPaymentMethod('Credit Card');
     const created = await paymentMethodService.addPaymentMethod('Voucher', false);
     await expect(paymentMethodService.updatePaymentMethod(created.id, 'Credit Card')).rejects.toThrow();
   });
@@ -46,11 +47,10 @@ describe('paymentMethodService', () => {
     expect(methods.some((pm) => pm.id === created.id)).toBe(false);
   });
 
-  it('resets payment methods to default list', async () => {
+  it('resets payment methods to empty list', async () => {
     await paymentMethodService.addPaymentMethod('Temporary Card');
     const resetList = await paymentMethodService.resetToDefaults();
 
-    expect(resetList.some((pm) => pm.name === 'Temporary Card')).toBe(false);
-    expect(resetList.some((pm) => pm.name === 'Credit Card')).toBe(true);
+    expect(resetList.length).toBe(0);
   });
 });

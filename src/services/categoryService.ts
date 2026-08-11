@@ -1,12 +1,11 @@
 import { CategoryItem, TransactionType } from '../types';
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/currencies';
 import { tursoService } from './tursoService';
+import { subscriptionService } from './subscriptionService';
 import { generateId } from '../utils/idGenerator';
 import { isJsonResponse } from './apiClient';
 
 const CATEGORIES_STORAGE_KEY = 'finances_custom_categories';
 
-// Standard icon options for users when creating or editing categories
 export const AVAILABLE_CATEGORY_ICONS = [
   { id: 'utensils', label: 'Food / Dining', iconName: 'utensils' },
   { id: 'home', label: 'Housing', iconName: 'home' },
@@ -60,7 +59,7 @@ class CategoryService {
     } catch (e) {
       console.warn('Failed to load categories from localStorage', e);
     }
-    this.categories = [...DEFAULT_CATEGORIES];
+    this.categories = [];
     this.saveToCache();
   }
 
@@ -75,7 +74,6 @@ class CategoryService {
   }
 
   public async getCategories(type?: TransactionType): Promise<CategoryItem[]> {
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/categories', {
@@ -93,35 +91,22 @@ class CategoryService {
         }
       }
     } catch (e) {
-      // Fall through to LibSQL client execution below
+      // Fallback below
     }
 
-    // If Turso is connected, attempt to load from Turso categories table
     const client = tursoService.getClient();
     if (client) {
       try {
         const res = await client.execute('SELECT * FROM categories ORDER BY name ASC');
-        if (res.rows && res.rows.length > 0) {
+        if (res.rows) {
           const dbCategories: CategoryItem[] = res.rows.map((row: any) => ({
             id: String(row.id),
             name: String(row.name),
             icon: String(row.icon),
             color: String(row.color),
             type: row.type as TransactionType,
-            isDefault: Boolean(row.is_default),
           }));
           this.categories = dbCategories;
-          this.saveToCache();
-        } else {
-          // Table is empty, insert default categories to database
-          for (const cat of DEFAULT_CATEGORIES) {
-            await client.execute({
-              sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
-                    VALUES (?, ?, ?, ?, ?, ?)`,
-              args: [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.isDefault ? 1 : 0],
-            });
-          }
-          this.categories = [...DEFAULT_CATEGORIES];
           this.saveToCache();
         }
       } catch (e) {
@@ -156,13 +141,11 @@ class CategoryService {
       icon: cat.icon,
       color: cat.color,
       type: cat.type,
-      isDefault: false,
     };
 
     this.categories = [...this.categories, newCategory];
     this.saveToCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/categories', {
@@ -176,23 +159,21 @@ class CategoryService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // Persist to Turso Cloud DB if connected directly
     const client = tursoService.getClient();
     if (client) {
       try {
         await client.execute({
-          sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
-                VALUES (?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO categories (id, name, icon, color, type)
+                VALUES (?, ?, ?, ?, ?)`,
           args: [
             newCategory.id,
             newCategory.name,
             newCategory.icon,
             newCategory.color,
             newCategory.type,
-            0,
           ],
         });
       } catch (err) {
@@ -216,7 +197,6 @@ class CategoryService {
     const newName = updated.name ? updated.name.trim() : current.name;
     const newType = updated.type || current.type;
 
-    // Check duplicate name
     const duplicate = this.categories.find(
       (c) => c.id !== id && c.name.toLowerCase() === newName.toLowerCase() && c.type === newType
     );
@@ -235,7 +215,6 @@ class CategoryService {
     this.categories[index] = nextCategory;
     this.saveToCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch('/api/categories', {
@@ -249,10 +228,9 @@ class CategoryService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
-    // Update in Turso DB if connected directly
     const client = tursoService.getClient();
     if (client) {
       try {
@@ -275,10 +253,16 @@ class CategoryService {
   }
 
   public async deleteCategory(id: string): Promise<boolean> {
+    const target = this.categories.find((c) => c.id === id);
+    const catName = target?.name;
+
     this.categories = this.categories.filter((c) => c.id !== id);
     this.saveToCache();
 
-    // Try Vercel Serverless API first
+    // Remove references in local memory
+    tursoService.removeCategoryReferences(id);
+    subscriptionService.removeCategoryReferences(id);
+
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/categories?id=${encodeURIComponent(id)}`, {
@@ -290,12 +274,20 @@ class CategoryService {
         }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     const client = tursoService.getClient();
     if (client) {
       try {
+        await client.execute({
+          sql: 'UPDATE transactions SET category_id = NULL WHERE category_id = ?',
+          args: [id],
+        });
+        await client.execute({
+          sql: 'UPDATE subscriptions SET category_id = NULL WHERE category_id = ?',
+          args: [id],
+        });
         await client.execute({
           sql: 'DELETE FROM categories WHERE id = ?',
           args: [id],
@@ -309,44 +301,30 @@ class CategoryService {
   }
 
   public async resetToDefaults(): Promise<CategoryItem[]> {
-    this.categories = [...DEFAULT_CATEGORIES];
+    this.categories = [];
     this.saveToCache();
 
-    // Try Vercel Serverless API first
     try {
       if (typeof window !== 'undefined') {
-        const res = await fetch('/api/categories?action=reset', {
+        await fetch('/api/categories?action=reset', {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
         });
-        if (isJsonResponse(res)) {
-          const resetItems: CategoryItem[] = await res.json();
-          this.categories = resetItems;
-          this.saveToCache();
-          return [...this.categories];
-        }
       }
     } catch (e) {
-      // Fall through
+      // Fallback
     }
 
     const client = tursoService.getClient();
     if (client) {
       try {
         await client.execute('DELETE FROM categories');
-        for (const cat of DEFAULT_CATEGORIES) {
-          await client.execute({
-            sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [cat.id, cat.name, cat.icon, cat.color, cat.type, 1],
-          });
-        }
       } catch (err) {
-        console.error('Failed to reset categories in Turso DB:', err);
+        console.error('Failed to clear categories in Turso DB:', err);
       }
     }
 
-    return [...this.categories];
+    return [];
   }
 }
 

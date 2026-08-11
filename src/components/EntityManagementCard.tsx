@@ -8,7 +8,6 @@ export interface EntityManagementCardProps {
   icon?: React.ReactNode;
   name: string;
   subtitle?: string;
-  isDefault?: boolean;
   color?: string;
   onEdit: () => void;
   onDelete: () => void;
@@ -18,7 +17,6 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
   icon,
   name,
   subtitle,
-  isDefault,
   color,
   onEdit,
   onDelete,
@@ -32,7 +30,6 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
         <View style={styles.infoCol}>
           <View style={styles.titleRow}>
             <AppText style={styles.name}>{name}</AppText>
-            {isDefault && <AppBadge label="Default" variant="accent" size="sm" />}
           </View>
           {subtitle && <AppText style={styles.subtitle}>{subtitle}</AppText>}
         </View>

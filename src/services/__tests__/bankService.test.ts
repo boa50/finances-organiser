@@ -5,10 +5,9 @@ describe('bankService', () => {
     await bankService.resetToDefaults();
   });
 
-  it('loads default banks', async () => {
+  it('starts with empty list when reset', async () => {
     const banks = await bankService.getBanks();
-    expect(banks.length).toBeGreaterThan(0);
-    expect(banks.some((b) => b.name === 'Nubank')).toBe(true);
+    expect(banks.length).toBe(0);
   });
 
   it('adds a new bank', async () => {
@@ -20,6 +19,7 @@ describe('bankService', () => {
   });
 
   it('prevents adding duplicate bank names', async () => {
+    await bankService.addBank('Nubank');
     await expect(bankService.addBank('Nubank')).rejects.toThrow();
   });
 
@@ -31,6 +31,7 @@ describe('bankService', () => {
   });
 
   it('prevents updating bank to duplicate name', async () => {
+    await bankService.addBank('Nubank');
     const created = await bankService.addBank('Old Bank');
     await expect(bankService.updateBank(created.id, 'Nubank')).rejects.toThrow();
   });
@@ -44,11 +45,10 @@ describe('bankService', () => {
     expect(banks.some((b) => b.id === created.id)).toBe(false);
   });
 
-  it('resets banks to defaults', async () => {
+  it('resets banks to empty list', async () => {
     await bankService.addBank('Extra Bank');
     const resetList = await bankService.resetToDefaults();
 
-    expect(resetList.some((b) => b.name === 'Extra Bank')).toBe(false);
-    expect(resetList.some((b) => b.name === 'Nubank')).toBe(true);
+    expect(resetList.length).toBe(0);
   });
 });

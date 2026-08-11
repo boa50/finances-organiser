@@ -197,7 +197,7 @@ finances-organiser/
 | **Design system** | Centralized `src/theme.ts` design tokens (palette, colors, spacing, radii, typography); 10 reusable UI primitive components in `src/components/ui/`. |
 | **Icons & Emojis** | Lucide React Native vector icons mapped via `CategoryIcon.tsx`; no emojis in the UI (country flags only for currency representations). |
 | **Data persistence** | Vercel Functions + Turso SQLite Cloud as primary store; `localStorage` as offline fallback. |
-| **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; payment methods support `allowInstallments` flag. |
+| **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; transactions and subscriptions store ID foreign keys (`category_id`, `payment_method_id`, `bank_id`) to custom entities with `ON DELETE SET NULL` reference cascade; no hardcoded defaults. |
 | **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography. |
 | **Unit testing** | Jest + ts-jest test runner covering pure utility functions and auth services (31 passing unit tests across 4 suites). |
 | **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |

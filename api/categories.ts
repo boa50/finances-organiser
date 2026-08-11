@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getTursoClient, ensureTablesExist, DEFAULT_CATEGORIES } from './_db';
+import { getTursoClient, ensureTablesExist } from './_db';
 import { generateId } from '../src/utils/idGenerator';
 
 import { setCorsHeaders } from './_helpers';
@@ -19,15 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'GET') {
       const result = await client.execute('SELECT * FROM categories ORDER BY name ASC');
       if (!result.rows || result.rows.length === 0) {
-        // Insert default categories if table is empty
-        for (const cat of DEFAULT_CATEGORIES) {
-          await client.execute({
-            sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [cat.id, cat.name, cat.icon, cat.color, cat.type, cat.isDefault ? 1 : 0],
-          });
-        }
-        return res.status(200).json(DEFAULT_CATEGORIES);
+        return res.status(200).json([]);
       }
 
       const categories = result.rows.map((row: any) => ({
@@ -36,7 +28,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         icon: String(row.icon),
         color: String(row.color),
         type: row.type,
-        isDefault: Boolean(row.is_default),
       }));
       return res.status(200).json(categories);
     }
@@ -47,14 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (action === 'reset' || req.query.action === 'reset') {
         await client.execute('DELETE FROM categories');
-        for (const cat of DEFAULT_CATEGORIES) {
-          await client.execute({
-            sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
-                  VALUES (?, ?, ?, ?, ?, ?)`,
-            args: [cat.id, cat.name, cat.icon, cat.color, cat.type, 1],
-          });
-        }
-        return res.status(200).json(DEFAULT_CATEGORIES);
+        return res.status(200).json([]);
       }
 
       if (!name || !icon || !color || !type) {
@@ -63,9 +47,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const id = generateId('cat');
       await client.execute({
-        sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        args: [id, name.trim(), icon, color, type, 0],
+        sql: `INSERT INTO categories (id, name, icon, color, type)
+              VALUES (?, ?, ?, ?, ?)`,
+        args: [id, name.trim(), icon, color, type],
       });
 
       const newCat = {
@@ -74,7 +58,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         icon,
         color,
         type,
-        isDefault: false,
       };
       return res.status(201).json(newCat);
     }
@@ -101,18 +84,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(updatedCat);
     }
 
-    // DELETE /api/categories - Delete a category
+    // DELETE /api/categories - Delete a category and set referencing transaction/subscription category_id to NULL
     if (req.method === 'DELETE') {
       const id = req.query.id || req.body?.id;
       if (!id) {
         return res.status(400).json({ error: 'Missing id for category deletion' });
       }
 
+      const targetId = String(id);
+      await client.execute({
+        sql: 'UPDATE transactions SET category_id = NULL WHERE category_id = ?',
+        args: [targetId],
+      });
+      await client.execute({
+        sql: 'UPDATE subscriptions SET category_id = NULL WHERE category_id = ?',
+        args: [targetId],
+      });
       await client.execute({
         sql: 'DELETE FROM categories WHERE id = ?',
-        args: [String(id)],
+        args: [targetId],
       });
-      return res.status(200).json({ success: true, id });
+      return res.status(200).json({ success: true, id: targetId });
     }
 
     return res.status(405).json({ error: 'Method Not Allowed' });

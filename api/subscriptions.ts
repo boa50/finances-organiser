@@ -22,9 +22,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: String(row.title),
         amount: Number(row.amount),
         currency: String(row.currency),
-        category: String(row.category),
-        paymentMethod: row.payment_method ? String(row.payment_method) : undefined,
-        bank: row.bank ? String(row.bank) : undefined,
+        categoryId: row.category_id ? String(row.category_id) : undefined,
+        paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
+        bankId: row.bank_id ? String(row.bank_id) : undefined,
         store: row.store ? String(row.store) : undefined,
         billingDay: Number(row.billing_day) || 1,
         active: Boolean(row.active),
@@ -37,8 +37,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST /api/subscriptions
     if (req.method === 'POST') {
-      const { title, amount, currency, category, paymentMethod, bank, store, billingDay, active, notes } = req.body || {};
-      if (!title || amount === undefined || !currency || !category) {
+      const { title, amount, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
+      if (!title || amount === undefined || !currency) {
         return res.status(400).json({ error: 'Missing required subscription fields' });
       }
 
@@ -47,21 +47,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const bDay = Math.min(Math.max(Number(billingDay) || 1, 1), 31);
       const isActive = active !== undefined ? Boolean(active) : true;
 
-      const pmVal = paymentMethod ? String(paymentMethod).trim() : null;
-      const bankVal = bank ? String(bank).trim() : null;
+      const catIdVal = categoryId ? String(categoryId).trim() : null;
+      const pmIdVal = paymentMethodId ? String(paymentMethodId).trim() : null;
+      const bankIdVal = bankId ? String(bankId).trim() : null;
       const storeVal = store ? String(store).trim() : null;
 
       await client.execute({
-        sql: `INSERT INTO subscriptions (id, title, amount, currency, category, payment_method, bank, store, billing_day, active, notes, created_at, updated_at)
+        sql: `INSERT INTO subscriptions (id, title, amount, currency, category_id, payment_method_id, bank_id, store, billing_day, active, notes, created_at, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           id,
           title.trim(),
           Number(amount),
           currency.trim(),
-          category.trim(),
-          pmVal,
-          bankVal,
+          catIdVal,
+          pmIdVal,
+          bankIdVal,
           storeVal,
           bDay,
           isActive ? 1 : 0,
@@ -76,9 +77,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: title.trim(),
         amount: Number(amount),
         currency: currency.trim(),
-        category: category.trim(),
-        paymentMethod: pmVal || undefined,
-        bank: bankVal || undefined,
+        categoryId: catIdVal || undefined,
+        paymentMethodId: pmIdVal || undefined,
+        bankId: bankIdVal || undefined,
         store: storeVal || undefined,
         billingDay: bDay,
         active: isActive,
@@ -92,8 +93,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // PUT /api/subscriptions
     if (req.method === 'PUT') {
-      const { id, title, amount, currency, category, paymentMethod, bank, store, billingDay, active, notes } = req.body || {};
-      if (!id || !title || amount === undefined || !currency || !category) {
+      const { id, title, amount, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
+      if (!id || !title || amount === undefined || !currency) {
         return res.status(400).json({ error: 'Missing required subscription fields for update' });
       }
 
@@ -101,21 +102,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const bDay = Math.min(Math.max(Number(billingDay) || 1, 1), 31);
       const isActive = active !== undefined ? Boolean(active) : true;
 
-      const pmVal = paymentMethod ? String(paymentMethod).trim() : null;
-      const bankVal = bank ? String(bank).trim() : null;
+      const catIdVal = categoryId ? String(categoryId).trim() : null;
+      const pmIdVal = paymentMethodId ? String(paymentMethodId).trim() : null;
+      const bankIdVal = bankId ? String(bankId).trim() : null;
       const storeVal = store ? String(store).trim() : null;
 
       await client.execute({
         sql: `UPDATE subscriptions
-              SET title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
+              SET title = ?, amount = ?, currency = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
               WHERE id = ?`,
         args: [
           title.trim(),
           Number(amount),
           currency.trim(),
-          category.trim(),
-          pmVal,
-          bankVal,
+          catIdVal,
+          pmIdVal,
+          bankIdVal,
           storeVal,
           bDay,
           isActive ? 1 : 0,
@@ -130,9 +132,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: title.trim(),
         amount: Number(amount),
         currency: currency.trim(),
-        category: category.trim(),
-        paymentMethod: pmVal || undefined,
-        bank: bankVal || undefined,
+        categoryId: catIdVal || undefined,
+        paymentMethodId: pmIdVal || undefined,
+        bankId: bankIdVal || undefined,
         store: storeVal || undefined,
         billingDay: bDay,
         active: isActive,
