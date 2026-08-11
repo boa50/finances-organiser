@@ -1,14 +1,11 @@
 import { BankItem } from '../types';
 import { tursoService } from './tursoService';
+import { generateId } from '../utils/idGenerator';
 
 const BANKS_STORAGE_KEY = 'finances_custom_banks';
 
-export const DEFAULT_BANKS: BankItem[] = [
-  { id: 'bank-1', name: 'Nubank', isDefault: true },
-  { id: 'bank-2', name: 'Itaú', isDefault: true },
-  { id: 'bank-3', name: 'Bradesco', isDefault: true },
-  { id: 'bank-4', name: 'Caixa', isDefault: true },
-];
+import { DEFAULT_BANKS } from '../constants/defaults';
+export { DEFAULT_BANKS };
 
 class BankService {
   private banks: BankItem[] = [];
@@ -119,7 +116,7 @@ class BankService {
     }
 
     const newBank: BankItem = {
-      id: `bank-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateId('bank'),
       name: trimmed,
       isDefault: false,
     };

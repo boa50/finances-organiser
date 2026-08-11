@@ -1,125 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
   Platform,
 } from 'react-native';
-import { Transaction, TursoConfig } from './src/types';
-import { tursoService } from './src/services/tursoService';
 import { OverviewScreen } from './src/screens/OverviewScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
 import { ManagementScreen } from './src/screens/ManagementScreen';
-import { refreshCurrencyRates } from './src/utils/currencies';
 import { TransactionEditModal } from './src/components/TransactionEditModal';
-import { ChartNoAxesCombined, House, List, LogOut, Plus, SlidersHorizontal, Trash2, Zap } from 'lucide-react-native';
-import { authService } from './src/services/authService';
 import { LoginScreen } from './src/screens/LoginScreen';
-import { AppBadge } from './src/components/ui';
-
-type TabName = 'overview' | 'analytics' | 'transactions' | 'categories';
+import { AppHeader } from './src/components/AppHeader';
+import { AppTabBar, TabName } from './src/components/AppTabBar';
+import { useAuth } from './src/hooks/useAuth';
+import { useAppData } from './src/hooks/useAppData';
+import { Plus } from 'lucide-react-native';
+import theme from './src/theme';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() =>
-    authService.isAuthenticated()
-  );
+  const { isAuthenticated, authenticate, logout } = useAuth();
+  const { transactions, tursoConfig, loadData, clearAllTransactions } = useAppData(isAuthenticated);
   const [activeTab, setActiveTab] = useState<TabName>('overview');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [tursoConfig, setTursoConfig] = useState<TursoConfig>({
-    url: '',
-    authToken: '',
-    isConnected: false,
-  });
   const [addTransactionModalVisible, setAddTransactionModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const loadData = async () => {
-    try {
-      // Fetch current exchange rates before calculating dashboard totals.
-      await refreshCurrencyRates();
-
-      // Attempt DB init
-      await tursoService.initDatabase();
-
-      const items = await tursoService.getTransactions();
-      setTransactions(items);
-      setTursoConfig(tursoService.getConfig());
-    } catch (e) {
-      console.warn('Error loading app data:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, [isAuthenticated]);
-
-  const handleLogout = () => {
-    authService.logout();
-    setIsAuthenticated(false);
-  };
-
-  const handleClearAll = async () => {
-    if (
-      confirm(
-        'Are you sure you want to clear ALL transactions? This will permanently delete all expense and income records from your local storage and Turso Cloud database.'
-      )
-    ) {
-      const empty = await tursoService.clearAllTransactions();
-      setTransactions(empty);
-    }
-  };
 
   if (!isAuthenticated) {
-    return <LoginScreen onAuthenticated={() => setIsAuthenticated(true)} />;
+    return <LoginScreen onAuthenticated={authenticate} />;
   }
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
 
-      {/* Top Application Bar */}
-      <View style={styles.topBar}>
-        <View style={styles.brandContainer}>
-          <Zap size={20} color="#38BDF8" strokeWidth={2} />
-          <Text style={styles.brandTitle}>FinanceCloud</Text>
-        </View>
+      <AppHeader
+        isConnected={tursoConfig.isConnected}
+        hasTransactions={transactions.length > 0}
+        onClearAll={clearAllTransactions}
+        onLogout={logout}
+      />
 
-        <View style={styles.topActions}>
-          <AppBadge
-            label={tursoConfig.isConnected ? 'Turso Connected' : 'Turso Offline'}
-            variant={tursoConfig.isConnected ? 'success' : 'warning'}
-            statusDot
-          />
-
-          {transactions.length > 0 && (
-            <TouchableOpacity style={styles.clearBtn} onPress={handleClearAll}>
-              <Trash2 size={14} color="#F43F5E" />
-              <Text style={styles.clearBtnText}>Clear All</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <LogOut size={14} color="#94A3B8" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-
-      {/* Screen Router */}
       <View style={styles.screenContainer}>
         {activeTab === 'overview' && (
           <OverviewScreen
             transactions={transactions}
             tursoConfig={tursoConfig}
-            onNavigateAdd={() => setAddTransactionModalVisible(true)}
             onNavigateTransactions={() => setActiveTab('transactions')}
             onRefresh={loadData}
           />
@@ -137,59 +63,18 @@ export default function App() {
           <ManagementScreen onCategoriesUpdated={loadData} />
         )}
       </View>
-      {/* Floating Action Button — visible on Overview and History only */}
+
       {(activeTab === 'overview' || activeTab === 'transactions') && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => setAddTransactionModalVisible(true)}
           activeOpacity={0.85}
         >
-          <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+          <Plus size={28} color={theme.colors.white} strokeWidth={2.5} />
         </TouchableOpacity>
       )}
 
-      {/* Bottom Navigation Tab Bar */}
-      <View style={styles.navTabBar}>
-        <TouchableOpacity
-          style={[styles.navTab, activeTab === 'overview' && styles.navTabActive]}
-          onPress={() => setActiveTab('overview')}
-        >
-          <House size={18} color={activeTab === 'overview' ? '#38BDF8' : '#64748B'} />
-          <Text style={[styles.navText, activeTab === 'overview' && styles.navTextActive]}>
-            Overview
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.navTab, activeTab === 'categories' && styles.navTabActive]}
-          onPress={() => setActiveTab('categories')}
-        >
-          <SlidersHorizontal size={18} color={activeTab === 'categories' ? '#38BDF8' : '#64748B'} />
-          <Text style={[styles.navText, activeTab === 'categories' && styles.navTextActive]}>
-            Management
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.navTab, activeTab === 'analytics' && styles.navTabActive]}
-          onPress={() => setActiveTab('analytics')}
-        >
-          <ChartNoAxesCombined size={18} color={activeTab === 'analytics' ? '#38BDF8' : '#64748B'} />
-          <Text style={[styles.navText, activeTab === 'analytics' && styles.navTextActive]}>
-            D3 Graphs
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.navTab, activeTab === 'transactions' && styles.navTabActive]}
-          onPress={() => setActiveTab('transactions')}
-        >
-          <List size={18} color={activeTab === 'transactions' ? '#38BDF8' : '#64748B'} />
-          <Text style={[styles.navText, activeTab === 'transactions' && styles.navTextActive]}>
-            History
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <AppTabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <TransactionEditModal
         visible={addTransactionModalVisible}
@@ -203,63 +88,8 @@ export default function App() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: '#1E293B',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  brandContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandLogo: {
-    fontSize: 20,
-  },
-  brandTitle: {
-    color: '#F8FAFC',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-  },
-  topActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  clearBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-    borderColor: '#F43F5E',
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  clearBtnText: {
-    color: '#F43F5E',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  logoutBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 10,
   },
   screenContainer: {
     flex: 1,
@@ -271,45 +101,14 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#10B981',
+    backgroundColor: theme.colors.success,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#10B981',
+    shadowColor: theme.colors.success,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
     zIndex: 10,
-  },
-  navTabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#1E293B',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    justifyContent: 'space-around',
-  },
-  navTab: {
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 2,
-  },
-  navTabActive: {
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-  },
-  navIcon: {
-    fontSize: 18,
-  },
-  navText: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  navTextActive: {
-    color: '#38BDF8',
-    fontWeight: '700',
   },
 });

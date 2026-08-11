@@ -1,23 +1,16 @@
 import React, { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY, formatMoney } from '../utils/currencies';
-import { calculateFinancialSummary, groupRecentTransactions, GroupedRecentItem } from '../utils/financials';
+import { calculateFinancialSummary, groupRecentTransactions } from '../utils/financials';
 import { TransactionEditModal } from '../components/TransactionEditModal';
-import { AppBadge, AppCard, AppEmptyState, AppIconBadge, AppSectionHeader } from '../components/ui';
-import { Pencil, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { TransactionItemCard } from '../components/TransactionItemCard';
+import { AppBadge, AppCard, AppEmptyState, AppSectionHeader } from '../components/ui';
 import theme from '../theme';
 
 interface OverviewScreenProps {
   transactions: Transaction[];
   tursoConfig: TursoConfig;
-  onNavigateAdd?: () => void;
   onNavigateTransactions: () => void;
   onRefresh: () => void;
 }
@@ -99,53 +92,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                   : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
                 return (
-                  <View key={item.id} style={styles.recentItem}>
-                    <AppIconBadge
-                      icon={
-                        item.type === 'income' ? (
-                          <TrendingUp size={16} color={theme.colors.success} />
-                        ) : (
-                          <TrendingDown size={16} color={theme.colors.danger} />
-                        )
-                      }
-                      variant={item.type === 'income' ? 'success' : 'danger'}
-                      size="sm"
-                    />
-
-                    <View style={styles.recentInfo}>
-                      <Text style={styles.recentTitle}>{item.title}</Text>
-                      <Text style={styles.recentSub}>
-                        {item.category}
-                        {item.store ? ` • ${item.store}` : ''}
-                        {item.paymentMethod ? ` • ${item.paymentMethod}` : ''}
-                        {item.installments && item.installments > 1
-                          ? ` • Split in ${item.installments}x`
-                          : ''}
-                        {' • '}
-                        {dateStr}
-                      </Text>
-                    </View>
-
-                    <View style={styles.recentActions}>
-                      <Text
-                        style={[
-                          styles.recentAmount,
-                          { color: item.type === 'income' ? theme.colors.success : theme.colors.danger },
-                        ]}
-                      >
-                        {item.type === 'income' ? '+' : '-'}
-                        {formatMoney(item.totalAmount, item.currency)}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => setEditingTransaction(item.representativeTx)}
-                        style={styles.editButton}
-                        accessibilityLabel={`Edit ${item.title}`}
-                      >
-                        <Pencil size={12} color={theme.colors.accent} />
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  <TransactionItemCard
+                    key={item.id}
+                    transaction={item.representativeTx}
+                    amountToDisplay={item.totalAmount}
+                    installmentsLabel={item.installments && item.installments > 1 ? `${item.installments}x` : ''}
+                    dateString={dateStr}
+                    onEdit={(tx) => setEditingTransaction(tx)}
+                  />
                 );
               })}
             </View>
@@ -234,50 +188,5 @@ const styles = StyleSheet.create({
   },
   recentList: {
     gap: theme.spacing.md,
-  },
-  recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.xl,
-    borderRadius: theme.radii.xl,
-    gap: theme.spacing.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
-  },
-  recentInfo: {
-    flex: 1,
-  },
-  recentTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.fontSize.md,
-    fontWeight: theme.fontWeight.semibold,
-  },
-  recentSub: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.sm,
-  },
-  recentAmount: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: theme.fontWeight.bold,
-  },
-  recentActions: {
-    alignItems: 'flex-end',
-    gap: theme.spacing.sm,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    borderWidth: 1,
-    borderColor: theme.colors.accent,
-    borderRadius: 7,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 3,
-  },
-  editButtonText: {
-    color: theme.colors.accent,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
   },
 });

@@ -1,18 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getTursoClient, ensureTablesExist, DEFAULT_CATEGORIES } from './_db';
+import { generateId } from '../src/utils/idGenerator';
+
+import { setCorsHeaders } from './_helpers';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-turso-db-url, x-turso-auth-token'
-  );
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (setCorsHeaders(req, res)) return;
 
   const client = getTursoClient(req);
   if (!client) {
@@ -68,7 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing required category fields' });
       }
 
-      const id = 'cat-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
+      const id = generateId('cat');
       await client.execute({
         sql: `INSERT INTO categories (id, name, icon, color, type, is_default)
               VALUES (?, ?, ?, ?, ?, ?)`,

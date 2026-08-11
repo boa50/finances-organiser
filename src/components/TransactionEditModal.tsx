@@ -1,23 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { BankItem, CategoryItem, PaymentMethodItem, Transaction, TransactionType } from '../types';
-import { CURRENCIES, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/currencies';
+import { CURRENCIES } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
 import { bankService } from '../services/bankService';
 import { tursoService } from '../services/tursoService';
-import { Building2, CalendarDays, CreditCard, TrendingDown, TrendingUp, X } from 'lucide-react-native';
+import { Building2, CalendarDays, CreditCard, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { TransactionDatePicker } from './TransactionDatePicker';
 import { CategoryIcon } from './CategoryIcon';
+import { ChipSelector } from './ChipSelector';
+import { AppModal, AppText } from './ui';
 import theme from '../theme';
 
 interface TransactionEditModalProps {
@@ -206,7 +206,6 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           });
         }
       } else if (transaction && finalInstallments > 1) {
-        // Reuse existing group ID or generate new one if converting single transaction
         const groupId = transaction.installmentGroupId || `inst-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
         await tursoService.deleteTransactionGroup(groupId, transaction);
@@ -261,191 +260,171 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const parsedAmountNum = Number(amount.replace(',', '.')) || 0;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>{transaction ? 'Edit Transaction' : 'Add Transaction'}</Text>
-              <Text style={styles.subtitle}>
-                {transaction ? 'Update an income or expense' : 'Record a new income or expense'}
-              </Text>
-            </View>
-            <TouchableOpacity onPress={onClose} disabled={saving} style={styles.closeButton}>
-              <X size={20} color={theme.colors.textMuted} />
-            </TouchableOpacity>
+    <>
+      <AppModal
+        visible={visible}
+        onClose={onClose}
+        title={transaction ? 'Edit Transaction' : 'Add Transaction'}
+        subtitle={transaction ? 'Update an income or expense' : 'Record a new income or expense'}
+      >
+        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+          <View style={styles.typeRow}>
+            {(['expense', 'income'] as TransactionType[]).map((option) => (
+              <TouchableOpacity
+                key={option}
+                onPress={() => changeType(option)}
+                style={[styles.typeButton, type === option && (option === 'income' ? styles.incomeActive : styles.expenseActive)]}
+              >
+                {option === 'income'
+                  ? <TrendingUp size={16} color={theme.colors.textPrimary} />
+                  : <TrendingDown size={16} color={theme.colors.textPrimary} />}
+                <AppText style={styles.typeText}>{option === 'income' ? 'Income' : 'Expense'}</AppText>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-            <View style={styles.typeRow}>
-              {(['expense', 'income'] as TransactionType[]).map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => changeType(option)}
-                  style={[styles.typeButton, type === option && (option === 'income' ? styles.incomeActive : styles.expenseActive)]}
-                >
-                  {option === 'income'
-                    ? <TrendingUp size={16} color={theme.colors.textPrimary} />
-                    : <TrendingDown size={16} color={theme.colors.textPrimary} />}
-                  <Text style={styles.typeText}>{option === 'income' ? 'Income' : 'Expense'}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          <Field label="Title">
+            <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Description" placeholderTextColor={theme.colors.textTertiary} />
+          </Field>
+          <Field label={type === 'expense' && pmSupportsInstallments && installments > 1 ? "Total Amount" : "Amount"}>
+            <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={theme.colors.textTertiary} />
+          </Field>
 
-            <Field label="Title">
-              <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Description" placeholderTextColor={theme.colors.textTertiary} />
-            </Field>
-            <Field label={type === 'expense' && pmSupportsInstallments && installments > 1 ? "Total Amount" : "Amount"}>
-              <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={theme.colors.textTertiary} />
-            </Field>
-            <Field label="Currency">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                {CURRENCIES.map((item) => (
-                  <TouchableOpacity key={item.code} onPress={() => setCurrency(item.code)} style={[styles.chip, currency === item.code && styles.chipActive]}>
-                    <Text style={styles.chipText}>{item.flag} {item.code}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </Field>
-            <Field label="Category">
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                {availableCategories.map((item) => {
-                  const active = category === item.name;
-                  return (
+          <Field label="Currency">
+            <ChipSelector
+              items={CURRENCIES}
+              selectedId={currency}
+              onSelect={(item) => setCurrency(item.code)}
+              keyExtractor={(item) => item.code}
+              labelExtractor={(item) => `${item.flag} ${item.code}`}
+            />
+          </Field>
+
+          <Field label="Category">
+            <ChipSelector
+              items={availableCategories}
+              selectedId={category}
+              onSelect={(item) => setCategory(item.name)}
+              keyExtractor={(item) => item.id || item.name}
+              labelExtractor={(item) => item.name}
+              renderIcon={(item) => (
+                <CategoryIcon
+                  iconName={item.icon}
+                  color={category === item.name ? theme.colors.accent : item.color || theme.colors.textSecondary}
+                  size={14}
+                />
+              )}
+            />
+          </Field>
+
+          {type === 'expense' && (
+            <>
+              <Field label="Way of Payment">
+                <ChipSelector
+                  items={availablePaymentMethods}
+                  selectedId={paymentMethod}
+                  onSelect={(item) => selectPaymentMethod(item.name)}
+                  keyExtractor={(item) => item.id}
+                  labelExtractor={(item) => item.name}
+                  renderIcon={(item) => (
+                    <CreditCard
+                      size={14}
+                      color={paymentMethod === item.name ? theme.colors.accent : theme.colors.textSecondary}
+                    />
+                  )}
+                />
+              </Field>
+
+              {pmSupportsInstallments && (
+                <Field label="Installments">
+                  <View style={styles.installmentRow}>
                     <TouchableOpacity
-                      key={item.id || item.name}
-                      onPress={() => setCategory(item.name)}
-                      style={[styles.chip, active && styles.chipActive]}
+                      onPress={() => {
+                        const n = Math.max(1, (installments || 1) - 1);
+                        setInstallments(n);
+                        setInstallmentInputText(String(n));
+                      }}
+                      style={styles.installmentBtn}
                     >
-                      <CategoryIcon
-                        iconName={item.icon}
-                        color={active ? theme.colors.accent : item.color || theme.colors.textSecondary}
+                      <AppText style={styles.installmentBtnText}>−</AppText>
+                    </TouchableOpacity>
+
+                    <TextInput
+                      style={styles.installmentInput}
+                      value={installmentInputText}
+                      onChangeText={(text) => {
+                        setInstallmentInputText(text);
+                        const parsed = parseInt(text, 10);
+                        if (!isNaN(parsed) && parsed >= 1) {
+                          setInstallments(parsed);
+                        }
+                      }}
+                      keyboardType="number-pad"
+                      textAlign="center"
+                    />
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        const n = (installments || 1) + 1;
+                        setInstallments(n);
+                        setInstallmentInputText(String(n));
+                      }}
+                      style={styles.installmentBtn}
+                    >
+                      <AppText style={styles.installmentBtnText}>+</AppText>
+                    </TouchableOpacity>
+                  </View>
+
+                  {installments > 1 && parsedAmountNum > 0 && (
+                    <AppText style={styles.installmentHint}>
+                      {installments}× of {currency} {(parsedAmountNum / installments).toFixed(2)} / month
+                    </AppText>
+                  )}
+                </Field>
+              )}
+
+              <Field label="Bank (optional)">
+                <ChipSelector
+                  items={[{ id: 'none', name: 'None' }, ...availableBanks]}
+                  selectedId={bank || 'none'}
+                  onSelect={(item) => setBank(item.name === 'None' ? '' : item.name)}
+                  keyExtractor={(item) => item.id}
+                  labelExtractor={(item) => item.name}
+                  renderIcon={(item) =>
+                    item.name !== 'None' ? (
+                      <Building2
                         size={14}
+                        color={(bank || 'None') === item.name ? theme.colors.accent : theme.colors.textSecondary}
                       />
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </Field>
-            {type === 'expense' && (
-              <>
-                <Field label="Way of Payment">
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                    {availablePaymentMethods.map((item) => {
-                      const active = paymentMethod === item.name;
-                      return (
-                        <TouchableOpacity
-                          key={item.id}
-                          onPress={() => selectPaymentMethod(item.name)}
-                          style={[styles.chip, active && styles.chipActive]}
-                        >
-                          <CreditCard
-                            size={14}
-                            color={active ? theme.colors.accent : theme.colors.textSecondary}
-                          />
-                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </Field>
-                {pmSupportsInstallments && (
-                  <Field label="Installments">
-                    <View style={styles.installmentRow}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          const n = Math.max(1, (installments || 1) - 1);
-                          setInstallments(n);
-                          setInstallmentInputText(String(n));
-                        }}
-                        style={styles.installmentBtn}
-                      >
-                        <Text style={styles.installmentBtnText}>−</Text>
-                      </TouchableOpacity>
+                    ) : undefined
+                  }
+                />
+              </Field>
 
-                      <TextInput
-                        style={styles.installmentInput}
-                        value={installmentInputText}
-                        onChangeText={(text) => {
-                          setInstallmentInputText(text);
-                          const parsed = parseInt(text, 10);
-                          if (!isNaN(parsed) && parsed >= 1) {
-                            setInstallments(parsed);
-                          }
-                        }}
-                        keyboardType="number-pad"
-                        textAlign="center"
-                      />
+              <Field label="Store / Merchant (optional)">
+                <TextInput style={styles.input} value={store} onChangeText={setStore} placeholder="e.g. Amazon, Supermarket, Target" placeholderTextColor={theme.colors.textTertiary} />
+              </Field>
+            </>
+          )}
 
-                      <TouchableOpacity
-                        onPress={() => {
-                          const n = (installments || 1) + 1;
-                          setInstallments(n);
-                          setInstallmentInputText(String(n));
-                        }}
-                        style={styles.installmentBtn}
-                      >
-                        <Text style={styles.installmentBtnText}>+</Text>
-                      </TouchableOpacity>
-                    </View>
+          <Field label="Date">
+            <View style={styles.pickerRow}>
+              <TouchableOpacity style={styles.pickerButton} onPress={() => setDatePickerVisible(true)}>
+                <CalendarDays size={16} color={theme.colors.textSecondary} />
+                <AppText style={styles.pickerText}>{date.toLocaleDateString()}</AppText>
+              </TouchableOpacity>
+            </View>
+          </Field>
 
-                    {installments > 1 && parsedAmountNum > 0 && (
-                      <Text style={styles.installmentHint}>
-                        {installments}× of {currency} {(parsedAmountNum / installments).toFixed(2)} / month
-                      </Text>
-                    )}
-                  </Field>
-                )}
-                <Field label="Bank (optional)">
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
-                    {availableBanks.map((item) => {
-                      const active = bank === item.name;
-                      return (
-                        <TouchableOpacity
-                          key={item.id}
-                          onPress={() => setBank(item.name)}
-                          style={[styles.chip, active && styles.chipActive]}
-                        >
-                          <Building2
-                            size={14}
-                            color={active ? theme.colors.accent : theme.colors.textSecondary}
-                          />
-                          <Text style={[styles.chipText, active && styles.chipTextActive]}>{item.name}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                    <TouchableOpacity
-                      onPress={() => setBank('')}
-                      style={[styles.chip, bank === '' && styles.chipActive]}
-                    >
-                      <Text style={[styles.chipText, bank === '' && styles.chipTextActive]}>None</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                </Field>
-                <Field label="Store / Merchant (optional)">
-                  <TextInput style={styles.input} value={store} onChangeText={setStore} placeholder="e.g. Amazon, Supermarket, Target" placeholderTextColor={theme.colors.textTertiary} />
-                </Field>
-              </>
-            )}
-            <Field label="Date">
-              <View style={styles.pickerRow}>
-                <TouchableOpacity style={styles.pickerButton} onPress={() => setDatePickerVisible(true)}>
-                  <CalendarDays size={16} color={theme.colors.textSecondary} />
-                  <Text style={styles.pickerText}>{date.toLocaleDateString()}</Text>
-                </TouchableOpacity>
-              </View>
-            </Field>
-            <Field label="Notes (optional)">
-              <TextInput style={[styles.input, styles.notesInput]} value={notes} onChangeText={setNotes} placeholder="Add a note" placeholderTextColor={theme.colors.textTertiary} multiline />
-            </Field>
+          <Field label="Notes (optional)">
+            <TextInput style={[styles.input, styles.notesInput]} value={notes} onChangeText={setNotes} placeholder="Add a note" placeholderTextColor={theme.colors.textTertiary} multiline />
+          </Field>
 
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-              {saving ? <ActivityIndicator color={theme.colors.white} /> : <Text style={styles.saveText}>{transaction ? 'Save Changes' : 'Add Transaction'}</Text>}
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </View>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+            {saving ? <ActivityIndicator color={theme.colors.white} /> : <AppText style={styles.saveText}>{transaction ? 'Save Changes' : 'Add Transaction'}</AppText>}
+          </TouchableOpacity>
+        </ScrollView>
+      </AppModal>
 
       <TransactionDatePicker
         visible={datePickerVisible}
@@ -453,13 +432,13 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         onChange={setDate}
         onClose={() => setDatePickerVisible(false)}
       />
-    </Modal>
+    </>
   );
 };
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <View style={styles.field}>
-    <Text style={styles.label}>{label}</Text>
+    <AppText style={styles.label}>{label}</AppText>
     {children}
   </View>
 );
@@ -470,13 +449,6 @@ function dateFromTransaction(value: string): Date {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'center', padding: theme.spacing['4xl'] },
-  card: { backgroundColor: theme.colors.surface, borderRadius: theme.radii['4xl'], maxWidth: 560, width: '100%', maxHeight: '90%', alignSelf: 'center', padding: theme.spacing['5xl'] },
-  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing['2xl'] },
-  title: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '800' },
-  subtitle: { color: theme.colors.textSecondary, fontSize: 13, marginTop: theme.spacing.xxs },
-  closeButton: { padding: theme.spacing.xs },
-  closeText: { color: theme.colors.textMuted, fontSize: 20 },
   body: { gap: theme.spacing.xl },
   typeRow: { flexDirection: 'row', gap: theme.spacing.base },
   typeButton: { flex: 1, flexDirection: 'row', gap: theme.spacing.sm, borderRadius: theme.radii.base, backgroundColor: theme.colors.background, padding: theme.spacing.base, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.colors.borderLight },
@@ -490,11 +462,6 @@ const styles = StyleSheet.create({
   pickerButton: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md, backgroundColor: theme.colors.background, borderRadius: theme.radii.base, borderWidth: 1, borderColor: theme.colors.borderLight, paddingHorizontal: theme.spacing.lg, paddingVertical: 11 },
   pickerText: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: '600' },
   notesInput: { minHeight: 72, textAlignVertical: 'top' },
-  chipList: { gap: 7, paddingVertical: theme.spacing.xxs },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.colors.background, borderRadius: theme.radii['3xl'], paddingHorizontal: theme.spacing.base, paddingVertical: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.borderLight },
-  chipActive: { backgroundColor: theme.colors.accentDark, borderColor: theme.colors.accent },
-  chipText: { color: theme.colors.textLight, fontSize: 12, fontWeight: '600' },
-  chipTextActive: { color: theme.colors.textPrimary, fontWeight: '700' },
   installmentRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   installmentBtn: { width: 42, height: 42, borderRadius: theme.radii.base, backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.borderLight, alignItems: 'center', justifyContent: 'center' },
   installmentBtnText: { color: theme.colors.textPrimary, fontSize: 20, fontWeight: '700' },

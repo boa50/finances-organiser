@@ -12,3 +12,5 @@ export {
   type AppSegmentedControlProps,
   type SegmentedControlOption,
 } from './AppSegmentedControl';
+export { AppModal, type AppModalProps } from './AppModal';
+export { AppLoadingView, type AppLoadingViewProps } from './AppLoadingView';

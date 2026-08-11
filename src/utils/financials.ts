@@ -84,6 +84,10 @@ export function calculateFinancialSummary(
  * Groups installment transactions into a single representative item and combines
  * standalone items into a sorted list of recent transactions.
  */
+export function parseInstallmentTitle(title: string): string {
+  return title.replace(/\s*\(\d+\/\d+\)$/, '').trim();
+}
+
 export function groupRecentTransactions(
   allTx: Transaction[],
   limit: number = 4
@@ -95,7 +99,7 @@ export function groupRecentTransactions(
     if (tx.type === 'expense' && tx.installments && tx.installments > 1) {
       const groupKey = tx.installmentGroupId
         ? tx.installmentGroupId
-        : `${tx.title.replace(/\s*\(\d+\/\d+\)$/, '').trim().toLowerCase()}_${tx.installments}`;
+        : `${parseInstallmentTitle(tx.title).toLowerCase()}_${tx.installments}`;
 
       if (!groupsMap.has(groupKey)) {
         groupsMap.set(groupKey, []);
@@ -112,7 +116,7 @@ export function groupRecentTransactions(
     txList.sort((a, b) => (a.installmentNumber || 1) - (b.installmentNumber || 1));
     const firstInst = txList.find((t) => t.installmentNumber === 1) || txList[0];
 
-    const baseTitle = firstInst.title.replace(/\s*\(\d+\/\d+\)$/, '').trim();
+    const baseTitle = parseInstallmentTitle(firstInst.title);
     const installments = firstInst.installments || txList.length;
     const totalAmount = txList.reduce((sum, t) => sum + t.amount, 0);
 

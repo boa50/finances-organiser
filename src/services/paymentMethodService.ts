@@ -1,13 +1,11 @@
 import { PaymentMethodItem } from '../types';
 import { tursoService } from './tursoService';
+import { generateId } from '../utils/idGenerator';
 
 const PAYMENT_METHODS_STORAGE_KEY = 'finances_custom_payment_methods';
 
-export const DEFAULT_PAYMENT_METHODS: PaymentMethodItem[] = [
-  { id: 'pm-1', name: 'Credit Card', isDefault: true, allowInstallments: true },
-  { id: 'pm-2', name: 'Debit Card', isDefault: true, allowInstallments: false },
-  { id: 'pm-3', name: 'Money Transfer', isDefault: true, allowInstallments: false },
-];
+import { DEFAULT_PAYMENT_METHODS } from '../constants/defaults';
+export { DEFAULT_PAYMENT_METHODS };
 
 class PaymentMethodService {
   private paymentMethods: PaymentMethodItem[] = [];
@@ -119,7 +117,7 @@ class PaymentMethodService {
     }
 
     const newMethod: PaymentMethodItem = {
-      id: `pm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: generateId('pm'),
       name: trimmed,
       isDefault: false,
       allowInstallments: Boolean(allowInstallments),

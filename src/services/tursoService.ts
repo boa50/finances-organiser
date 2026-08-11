@@ -1,8 +1,9 @@
 import { createClient, Client } from '@libsql/client/web';
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CATEGORIES } from './categoryService';
+import { generateId } from '../utils/idGenerator';
+import { parseInstallmentTitle } from '../utils/financials';
 
-const CONFIG_KEY = 'finances_turso_config';
 const LOCAL_TX_KEY = 'finances_local_transactions';
 
 // Expo only exposes variables prefixed with EXPO_PUBLIC_ to application code.
@@ -95,10 +96,6 @@ class TursoDatabaseService {
     return { ...this.config };
   }
 
-  public isDatabaseConnected(): boolean {
-    return Boolean(this.config.isConnected);
-  }
-
   public getApiHeaders(): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -112,53 +109,7 @@ class TursoDatabaseService {
     return headers;
   }
 
-  public async testConnection(url: string, authToken: string): Promise<{ success: boolean; message: string }> {
-    // Attempt testing via Vercel serverless health function first
-    try {
-      if (typeof window !== 'undefined') {
-        const res = await fetch('/api/health', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-turso-db-url': url.trim(),
-            'x-turso-auth-token': authToken.trim(),
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.isConnected) {
-            return { success: true, message: data.message || 'Successfully connected to Turso Cloud Database via Serverless API!' };
-          }
-        }
-      }
-    } catch (e) {
-      // Ignore API fetch error and fall back to direct LibSQL client check
-    }
 
-    try {
-      let cleanUrl = url.trim();
-      if (!cleanUrl.startsWith('https://') && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('libsql://')) {
-        cleanUrl = `https://${cleanUrl}`;
-      }
-
-      const tempClient = createClient({
-        url: cleanUrl,
-        authToken: authToken.trim(),
-      });
-
-      const res = await tempClient.execute('SELECT 1 as ping');
-      if (res.rows && res.rows.length > 0) {
-        return { success: true, message: 'Successfully connected to Turso Cloud Database!' };
-      }
-      return { success: false, message: 'Connected, but received invalid response from database' };
-    } catch (err: any) {
-      console.error('Turso connection error:', err);
-      return {
-        success: false,
-        message: err?.message || 'Failed to connect to Turso. Please check database URL and Auth Token.',
-      };
-    }
-  }
 
   public async initDatabase(): Promise<boolean> {
     // Try initializing via Vercel serverless API first
@@ -397,7 +348,7 @@ class TursoDatabaseService {
   ): Promise<Transaction> {
     const newTx: Transaction = {
       ...txData,
-      id: 'tx-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+      id: generateId('tx'),
       createdAt: new Date().toISOString(),
     };
 
@@ -490,7 +441,7 @@ class TursoDatabaseService {
   }
 
   public async deleteTransactionGroup(groupId: string, targetTx?: Transaction): Promise<boolean> {
-    const baseTitle = targetTx ? targetTx.title.replace(/\s*\(\d+\/\d+\)$/, '').trim().toLowerCase() : '';
+    const baseTitle = targetTx ? parseInstallmentTitle(targetTx.title).toLowerCase() : '';
     const totalInst = targetTx?.installments || 0;
 
     // 1. Identify all sibling transactions in local memory
@@ -498,7 +449,7 @@ class TursoDatabaseService {
       if (groupId && t.installmentGroupId === groupId) return true;
       if (targetTx && t.id === targetTx.id) return true;
       if (baseTitle && totalInst > 1 && t.installments === totalInst) {
-        const tBase = t.title.replace(/\s*\(\d+\/\d+\)$/, '').trim().toLowerCase();
+        const tBase = parseInstallmentTitle(t.title).toLowerCase();
         if (tBase === baseTitle) return true;
       }
       return false;
@@ -642,56 +593,7 @@ class TursoDatabaseService {
     return updatedTx;
   }
 
-  // Payment Methods DB Operations
-  public async getPaymentMethods(): Promise<Array<{ id: string; name: string; isDefault?: boolean }>> {
-    if (!this.client) return [];
-    try {
-      const res = await this.client.execute('SELECT * FROM payment_methods ORDER BY name ASC');
-      return res.rows.map((row: any) => ({
-        id: String(row.id),
-        name: String(row.name),
-        isDefault: Boolean(row.is_default),
-      }));
-    } catch (e) {
-      console.error('Error fetching payment methods from Turso:', e);
-      return [];
-    }
-  }
 
-  public async addPaymentMethod(pm: { id: string; name: string; isDefault?: boolean }): Promise<void> {
-    if (!this.client) return;
-    await this.client.execute({
-      sql: 'INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)',
-      args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
-    });
-  }
-
-  public async updatePaymentMethod(id: string, name: string): Promise<void> {
-    if (!this.client) return;
-    await this.client.execute({
-      sql: 'UPDATE payment_methods SET name = ? WHERE id = ?',
-      args: [name, id],
-    });
-  }
-
-  public async deletePaymentMethod(id: string): Promise<void> {
-    if (!this.client) return;
-    await this.client.execute({
-      sql: 'DELETE FROM payment_methods WHERE id = ?',
-      args: [id],
-    });
-  }
-
-  public async resetPaymentMethods(defaults: Array<{ id: string; name: string; isDefault?: boolean }>): Promise<void> {
-    if (!this.client) return;
-    await this.client.execute('DELETE FROM payment_methods');
-    for (const pm of defaults) {
-      await this.client.execute({
-        sql: 'INSERT INTO payment_methods (id, name, is_default) VALUES (?, ?, ?)',
-        args: [pm.id, pm.name, pm.isDefault ? 1 : 0],
-      });
-    }
-  }
 
   public async clearAllTransactions(): Promise<Transaction[]> {
     this.localMemoryTx = [];

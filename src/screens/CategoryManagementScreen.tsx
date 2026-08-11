@@ -1,5 +1,5 @@
 import React from 'react';
-import { ManagementScreen } from './ManagementScreen';
+import { ManagementScreen } from './management/ManagementScreen';
 
 interface CategoryManagementScreenProps {
   onCategoriesUpdated?: () => void;

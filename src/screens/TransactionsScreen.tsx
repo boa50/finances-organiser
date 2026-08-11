@@ -4,145 +4,30 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { Transaction } from '../types';
-import { formatMoney, getCurrencyInfo } from '../utils/currencies';
 import { filterTransactions } from '../utils/financials';
 import { tursoService } from '../services/tursoService';
+import { confirmAction } from '../utils/dialogs';
 import { TransactionEditModal } from '../components/TransactionEditModal';
+import { TransactionItemCard } from '../components/TransactionItemCard';
 import {
-  AppBadge,
   AppCard,
   AppEmptyState,
-  AppIconBadge,
   AppSectionHeader,
   AppSegmentedControl,
   AppTextInput,
+  AppText,
 } from '../components/ui';
-import { Pencil, Search, Trash2, TrendingDown, TrendingUp } from 'lucide-react-native';
+import { Search, Trash2 } from 'lucide-react-native';
 import theme from '../theme';
 
 interface TransactionsScreenProps {
   transactions: Transaction[];
   onRefresh: () => void;
 }
-
-interface HistoryTransactionItemProps {
-  transaction: Transaction;
-  showMonthHeader: boolean;
-  onEdit: (transaction: Transaction) => void;
-  onDelete: (transaction: Transaction) => void;
-}
-
-const HistoryTransactionItem: React.FC<HistoryTransactionItemProps> = ({
-  transaction,
-  showMonthHeader,
-  onEdit,
-  onDelete,
-}) => {
-  const currencyInfo = getCurrencyInfo(transaction.currency);
-  const date = new Date(transaction.date);
-  const isValidDate = !Number.isNaN(date.getTime());
-  const monthLabel = isValidDate
-    ? date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-    : 'Undated transactions';
-  const formattedDate = isValidDate
-    ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-    : transaction.date;
-  const formattedTime = isValidDate
-    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : '';
-
-  return (
-    <View style={styles.monthEntry}>
-      {showMonthHeader && (
-        <View style={styles.monthHeader}>
-          <Text style={styles.monthTitle}>{monthLabel}</Text>
-        </View>
-      )}
-      <AppCard style={styles.txRow} padding="lg">
-        <AppIconBadge
-          icon={
-            transaction.type === 'income' ? (
-              <TrendingUp size={18} color={theme.colors.success} />
-            ) : (
-              <TrendingDown size={18} color={theme.colors.danger} />
-            )
-          }
-          variant={transaction.type === 'income' ? 'success' : 'danger'}
-          size="md"
-        />
-
-        <View style={styles.txMainInfo}>
-          <Text style={styles.txTitle}>{transaction.title}</Text>
-          <View style={styles.txMetaRow}>
-            <Text style={styles.txCategory}>{transaction.category}</Text>
-            {transaction.store ? (
-              <>
-                <Text style={styles.dotSeparator}>•</Text>
-                <Text style={styles.txStore}>{transaction.store}</Text>
-              </>
-            ) : null}
-            {transaction.paymentMethod ? (
-              <>
-                <Text style={styles.dotSeparator}>•</Text>
-                <Text style={styles.txPaymentMethod}>{transaction.paymentMethod}</Text>
-              </>
-            ) : null}
-            {transaction.installments && transaction.installments > 1 ? (
-              <>
-                <Text style={styles.dotSeparator}>•</Text>
-                <Text style={styles.txInstallment}>
-                  {transaction.installmentNumber}/{transaction.installments}
-                </Text>
-              </>
-            ) : null}
-            <Text style={styles.dotSeparator}>•</Text>
-            <Text style={styles.txDate}>
-              {formattedDate} {formattedTime}
-            </Text>
-          </View>
-          {transaction.notes ? <Text style={styles.txNotes}>{transaction.notes}</Text> : null}
-        </View>
-
-        <View style={styles.txRightCol}>
-          <Text
-            style={[
-              styles.txAmount,
-              { color: transaction.type === 'income' ? theme.colors.success : theme.colors.danger },
-            ]}
-          >
-            {transaction.type === 'income' ? '+' : '-'}
-            {formatMoney(transaction.amount, transaction.currency)}
-          </Text>
-
-          <View style={styles.actionsRow}>
-            <AppBadge
-              label={`${currencyInfo.flag} ${transaction.currency}`}
-              variant="neutral"
-              size="sm"
-            />
-
-            <TouchableOpacity
-              onPress={() => onEdit(transaction)}
-              style={styles.editBtn}
-              accessibilityLabel={`Edit ${transaction.title}`}
-            >
-              <Pencil size={14} color={theme.colors.accent} />
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => onDelete(transaction)} style={styles.deleteBtn}>
-              <Trash2 size={14} color={theme.colors.danger} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </AppCard>
-    </View>
-  );
-};
 
 function monthKey(dateValue: string): string {
   const date = new Date(dateValue);
@@ -165,25 +50,17 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const handleDelete = async (transaction: Transaction) => {
     if (transaction.installments && transaction.installments > 1) {
       if (Platform.OS === 'web') {
-        const choice = confirm(
-          `"${transaction.title}" is part of an installment plan (${transaction.installmentNumber}/${transaction.installments}).\n\nClick OK to delete ALL installments in this group, or Cancel to delete ONLY this single installment.`
-        );
-        if (choice) {
-          await tursoService.deleteTransactionGroup(
-            transaction.installmentGroupId || '',
-            transaction
-          );
-        } else {
-          if (
-            confirm(
-              `Delete ONLY installment ${transaction.installmentNumber}/${transaction.installments}?`
-            )
-          ) {
-            await tursoService.deleteTransaction(transaction.id);
-          } else {
-            return;
-          }
-        }
+        confirmAction({
+          title: 'Delete Installments',
+          message: `"${transaction.title}" is part of an installment plan (${transaction.installmentNumber}/${transaction.installments}).\n\nClick OK to delete ALL installments in this group, or Cancel to delete ONLY this single installment.`,
+          onConfirm: async () => {
+            await tursoService.deleteTransactionGroup(
+              transaction.installmentGroupId || '',
+              transaction
+            );
+            onRefresh();
+          },
+        });
       } else {
         Alert.alert(
           'Delete Installment',
@@ -211,27 +88,30 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             },
           ]
         );
-        return;
       }
     } else {
-      if (confirm(`Are you sure you want to delete "${transaction.title}"?`)) {
-        await tursoService.deleteTransaction(transaction.id);
-      } else {
-        return;
-      }
+      confirmAction({
+        title: 'Delete Transaction',
+        message: `Are you sure you want to delete "${transaction.title}"?`,
+        destructive: true,
+        onConfirm: async () => {
+          await tursoService.deleteTransaction(transaction.id);
+          onRefresh();
+        },
+      });
     }
-    onRefresh();
   };
 
   const handleClearAll = async () => {
-    if (
-      confirm(
-        'Are you sure you want to clear ALL transactions? This will permanently remove all expense and income records from your database.'
-      )
-    ) {
-      await tursoService.clearAllTransactions();
-      onRefresh();
-    }
+    confirmAction({
+      title: 'Clear All Transactions',
+      message: 'Are you sure you want to clear ALL transactions? This will permanently remove all expense and income records from your database.',
+      destructive: true,
+      onConfirm: async () => {
+        await tursoService.clearAllTransactions();
+        onRefresh();
+      },
+    });
   };
 
   return (
@@ -244,7 +124,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             transactions.length > 0 ? (
               <TouchableOpacity style={styles.clearAllBtn} onPress={handleClearAll}>
                 <Trash2 size={14} color={theme.colors.danger} />
-                <Text style={styles.clearAllBtnText}>Clear All</Text>
+                <AppText style={styles.clearAllBtnText}>Clear All</AppText>
               </TouchableOpacity>
             ) : undefined
           }
@@ -278,18 +158,33 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           />
         ) : (
           <View style={styles.list}>
-            {filteredTransactions.map((transaction, index) => (
-              <HistoryTransactionItem
-                key={transaction.id}
-                transaction={transaction}
-                showMonthHeader={
-                  index === 0 ||
-                  monthKey(transaction.date) !== monthKey(filteredTransactions[index - 1].date)
-                }
-                onEdit={(tx) => setEditingTransaction(tx)}
-                onDelete={(tx) => handleDelete(tx)}
-              />
-            ))}
+            {filteredTransactions.map((transaction, index) => {
+              const showMonthHeader =
+                index === 0 ||
+                monthKey(transaction.date) !== monthKey(filteredTransactions[index - 1].date);
+              const date = new Date(transaction.date);
+              const isValidDate = !Number.isNaN(date.getTime());
+              const monthLabel = isValidDate
+                ? date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+                : 'Undated transactions';
+
+              return (
+                <View key={transaction.id} style={styles.monthEntry}>
+                  {showMonthHeader && (
+                    <View style={styles.monthHeader}>
+                      <AppText style={styles.monthTitle}>{monthLabel}</AppText>
+                    </View>
+                  )}
+                  <TransactionItemCard
+                    transaction={transaction}
+                    showCurrencyBadge
+                    showTime
+                    onEdit={(tx) => setEditingTransaction(tx)}
+                    onDelete={(tx) => handleDelete(tx)}
+                  />
+                </View>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -320,17 +215,17 @@ const styles = StyleSheet.create({
   clearAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: theme.colors.dangerBg,
+    gap: theme.spacing.xs,
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
     borderColor: theme.colors.danger,
     borderWidth: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: theme.spacing.md,
     paddingVertical: 6,
-    borderRadius: theme.radii.base,
+    borderRadius: theme.radii.md,
   },
   clearAllBtnText: {
     color: theme.colors.danger,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },
   filterCard: {
@@ -340,88 +235,17 @@ const styles = StyleSheet.create({
     gap: theme.spacing.lg,
   },
   monthEntry: {
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   monthHeader: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs,
+    paddingTop: theme.spacing.sm,
   },
   monthTitle: {
-    color: theme.colors.accent,
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.bold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.lg,
-  },
-  txMainInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  txTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.fontSize.lg,
-    fontWeight: theme.fontWeight.bold,
-  },
-  txMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  txCategory: {
     color: theme.colors.textSecondary,
     fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.semibold,
-  },
-  txStore: {
-    color: theme.colors.textTertiary,
-    fontSize: theme.fontSize.sm,
-  },
-  txPaymentMethod: {
-    color: theme.colors.textTertiary,
-    fontSize: theme.fontSize.sm,
-  },
-  txInstallment: {
-    color: theme.colors.accent,
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.semibold,
-  },
-  txDate: {
-    color: theme.colors.textTertiary,
-    fontSize: theme.fontSize.sm,
-  },
-  dotSeparator: {
-    color: theme.colors.textTertiary,
-    fontSize: 10,
-  },
-  txNotes: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.sm,
-    fontStyle: 'italic',
-    marginTop: 2,
-  },
-  txRightCol: {
-    alignItems: 'flex-end',
-    gap: theme.spacing.xs,
-  },
-  txAmount: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: theme.fontWeight.extrabold,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.md,
-  },
-  editBtn: {
-    padding: theme.spacing.xs,
-  },
-  deleteBtn: {
-    padding: theme.spacing.xs,
+    fontWeight: theme.fontWeight.bold,
+    textTransform: 'capitalize',
+    letterSpacing: 0.5,
   },
 });

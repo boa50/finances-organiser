@@ -1,6 +1,7 @@
 import { CategoryItem, TransactionType } from '../types';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/currencies';
 import { tursoService } from './tursoService';
+import { generateId } from '../utils/idGenerator';
 
 const CATEGORIES_STORAGE_KEY = 'finances_custom_categories';
 
@@ -36,24 +37,8 @@ export const PRESET_CATEGORY_COLORS = [
   '#059669', '#14B8A6', '#0284C7', '#7C3AED',
 ];
 
-export const DEFAULT_CATEGORIES: CategoryItem[] = [
-  ...EXPENSE_CATEGORIES.map((c, i) => ({
-    id: `cat-exp-${i}`,
-    name: c.name,
-    icon: c.icon,
-    color: c.color,
-    type: 'expense' as TransactionType,
-    isDefault: true,
-  })),
-  ...INCOME_CATEGORIES.map((c, i) => ({
-    id: `cat-inc-${i}`,
-    name: c.name,
-    icon: c.icon,
-    color: c.color,
-    type: 'income' as TransactionType,
-    isDefault: true,
-  })),
-];
+import { DEFAULT_CATEGORIES } from '../constants/defaults';
+export { DEFAULT_CATEGORIES };
 
 class CategoryService {
   private categories: CategoryItem[] = [];
@@ -165,7 +150,7 @@ class CategoryService {
     }
 
     const newCategory: CategoryItem = {
-      id: 'cat-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      id: generateId('cat'),
       name: cat.name.trim(),
       icon: cat.icon,
       color: cat.color,
