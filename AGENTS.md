@@ -251,6 +251,59 @@ src/types/index.ts
 
 When changing a data structure, update all relevant consumers rather than introducing inconsistent duplicate types.
 
+### 6. Reuse before creating
+
+Before implementing any new UI, component, utility, hook, service, or other abstraction, the agent MUST search the existing codebase for reusable implementations.
+
+The agent MUST prefer:
+1. Reusing an existing component directly.
+2. Extending an existing reusable component when appropriate.
+3. Extracting duplicated logic into a reusable component or utility.
+4. Creating a new component/abstraction only when no suitable existing implementation exists.
+
+Do NOT duplicate existing UI, business logic, styling, validation, or data-access patterns merely because creating a new implementation is faster.
+
+Before creating a new component, explicitly check:
+- `src/components/`
+- `src/components/ui/`
+- `src/screens/`
+- `src/services/`
+- `src/utils/`
+- relevant existing hooks and shared types.
+
+When implementing a feature that is similar to an existing feature, inspect the existing implementation and reuse its patterns rather than creating a parallel implementation.
+
+If two or more components contain substantially similar logic or UI, prefer extracting the common behavior into a reusable component, hook, or utility rather than maintaining duplicated code.
+
+### Reuse decision
+
+Before creating a new reusable component, answer internally:
+
+- Does an existing component already provide this functionality?
+- Can an existing component be extended without making it overly complex?
+- Is the new implementation genuinely different enough to justify a separate component?
+- Would extracting the shared behavior reduce duplication?
+
+Only create a new abstraction when there is a clear reason to do so.
+
+### Component consistency
+
+When an existing reusable component exists, use it even if implementing the feature directly would be slightly faster.
+
+For example:
+- Use `AppButton` instead of creating a custom `Pressable` button.
+- Use `AppText` instead of creating custom `Text` styling.
+- Use `AppCard` instead of recreating card containers.
+- Use `AppEmptyState` for empty states.
+- Use `FeedbackMessage` for feedback/error messages.
+- Use `AppTextInput` for text inputs.
+- Use `AppSectionHeader` for section headers.
+- Use `AppSegmentedControl` for segmented filters.
+- Use `AppIconBadge` for icon containers.
+- Use `CategoryIcon` for category icons.
+
+Do not create another component that duplicates an existing UI primitive's responsibility.
+
 ---
 
 ## Documentation rules
@@ -662,25 +715,40 @@ Identify:
 - validation steps;
 - potential risks.
 
-### Phase 3 — Implement
+### Phase 3 — Reuse check
+
+Before creating new components, utilities, hooks, services, or abstractions:
+
+1. Search the repository for existing implementations.
+2. Identify reusable components and utilities.
+3. Determine whether existing components can be extended.
+4. Identify any duplicated logic that should instead be extracted.
+5. State which existing components will be reused.
+6. Only create new abstractions when existing ones are genuinely unsuitable.
+
+Do not proceed with creating a duplicate implementation without a clear reason.
+
+### Phase 4 — Implement
 
 Implement one logical increment at a time.
 
+Prefer composition and reuse over duplication.
+
 Avoid unrelated refactoring.
 
-### Phase 4 — Validate
+### Phase 5 — Validate
 
 Run the most relevant type checks, tests, builds, or endpoint checks.
 
 Fix issues caused by the implementation.
 
-### Phase 5 — Documentation
+### Phase 6 — Documentation
 
 Review `README.md` and update it when the implemented feature changes documented application behavior, setup, configuration, architecture, integrations, or supported functionality.
 
 Do not skip this step for new user-facing features.
 
-### Phase 6 — Review
+### Phase 7 — Review
 
 Inspect the final diff.
 
@@ -692,7 +760,7 @@ Look specifically for:
 - cross-platform problems;
 - outdated README documentation.
 
-### Phase 7 — Report
+### Phase 8 — Report
 
 Give a concise summary:
 
@@ -708,6 +776,11 @@ Not validated:
 
 Potential follow-up:
 - ...
+
+Reuse:
+- Existing components reused: ...
+- New components created: ...
+- Reason new components were necessary: ...
 ```
 
 ---
