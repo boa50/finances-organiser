@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Transaction, TursoConfig } from '../types';
 import { tursoService } from '../services/tursoService';
+import { subscriptionService } from '../services/subscriptionService';
+import { processSubscriptionAutoGeneration } from '../services/subscriptionAutoGenerator';
 import { refreshCurrencyRates } from '../utils/currencies';
 import { confirmAction } from '../utils/dialogs';
 
@@ -16,7 +18,14 @@ export function useAppData(enabled: boolean = true) {
     try {
       await refreshCurrencyRates();
       await tursoService.initDatabase();
-      const items = await tursoService.getTransactions();
+      const subs = await subscriptionService.getSubscriptions();
+      let items = await tursoService.getTransactions();
+      
+      const newGenerated = await processSubscriptionAutoGeneration(subs, items);
+      if (newGenerated.length > 0) {
+        items = await tursoService.getTransactions();
+      }
+
       setTransactions(items);
       setTursoConfig(tursoService.getConfig());
     } catch (e) {

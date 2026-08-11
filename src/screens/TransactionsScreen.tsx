@@ -47,6 +47,19 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     searchQuery,
   });
 
+  const handleEdit = (transaction: Transaction) => {
+    if (transaction.subscriptionId) {
+      confirmAction({
+        title: 'Subscription Transaction',
+        message:
+          'Subscription expenses cannot be edited directly from Transaction History. Please edit the subscription on the Subscriptions management page.',
+        onConfirm: () => {},
+      });
+      return;
+    }
+    setEditingTransaction(transaction);
+  };
+
   const handleDelete = async (transaction: Transaction) => {
     if (transaction.installments && transaction.installments > 1) {
       if (Platform.OS === 'web') {
@@ -179,7 +192,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                     transaction={transaction}
                     showCurrencyBadge
                     showTime
-                    onEdit={(tx) => setEditingTransaction(tx)}
+                    onEdit={handleEdit}
                     onDelete={(tx) => handleDelete(tx)}
                   />
                 </View>

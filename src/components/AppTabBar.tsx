@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { ChartNoAxesCombined, House, List, SlidersHorizontal } from 'lucide-react-native';
+import { ChartNoAxesCombined, House, List, Repeat, SlidersHorizontal } from 'lucide-react-native';
 import { AppText } from './ui';
 import theme from '../theme';
 
-export type TabName = 'overview' | 'analytics' | 'transactions' | 'categories';
+export type TabName = 'overview' | 'analytics' | 'transactions' | 'subscriptions' | 'categories';
 
 interface AppTabBarProps {
   activeTab: TabName;
@@ -17,6 +17,11 @@ export const AppTabBar: React.FC<AppTabBarProps> = ({ activeTab, onTabChange }) 
       id: 'overview',
       label: 'Overview',
       icon: (color) => <House size={18} color={color} />,
+    },
+    {
+      id: 'subscriptions',
+      label: 'Subs',
+      icon: (color) => <Repeat size={18} color={color} />,
     },
     {
       id: 'categories',

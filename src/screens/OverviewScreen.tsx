@@ -26,7 +26,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   const { totalNetBalance, currentMonthIncome, currentMonthExpense } =
     calculateFinancialSummary(transactions, DEFAULT_CURRENCY);
 
-  const recentItems = groupRecentTransactions(transactions, 4);
+  const nonSubscriptionTransactions = transactions.filter((tx) => !tx.subscriptionId);
+  const recentItems = groupRecentTransactions(nonSubscriptionTransactions, 4);
   const currentMonthDate = new Date();
   const monthName = currentMonthDate.toLocaleString('default', { month: 'long' });
 
@@ -77,7 +78,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
         <View style={styles.section}>
           <AppSectionHeader
             title="Recent Activity"
-            actionLabel={`See all (${transactions.length}) →`}
+            actionLabel={`See all (${nonSubscriptionTransactions.length}) →`}
             onActionPress={onNavigateTransactions}
           />
 

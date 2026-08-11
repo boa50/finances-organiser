@@ -9,6 +9,7 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **D3.js analytics** — Interactive donut charts, category breakdown bars, and monthly trend line/area charts rendered with `react-native-svg`.
 - **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and handle authentication, transactions, categories, payment methods, and banks.
 - **Multi-currency** — 9 supported currencies (BRL, USD, EUR, GBP, CAD, AUD, JPY, CHF, INR) with live exchange rates from [AwesomeAPI](https://docs.awesomeapi.com.br/api-de-moedas).
+- **Subscription management** — Dedicated screen for managing monthly recurring subscription expenses with active/inactive toggles, payment day scheduling, and idempotent monthly transaction auto-generation.
 - **Transaction & Installment management** — Full create, edit, delete, search, and filter capabilities with monthly grouping, merchant tracking, and multi-month installment support.
 - **Comprehensive management hub** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), and Banks.
 - **Design system & UI primitives** — Centralized design tokens (`theme.ts`) and 10 reusable UI primitive components.

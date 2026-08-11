@@ -97,6 +97,30 @@ export async function ensureTablesExist(client: Client): Promise<void> {
     // Column already exists
   }
 
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN subscription_id TEXT');
+  } catch (e) {
+    // Column already exists
+  }
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL,
+      category TEXT NOT NULL,
+      payment_method TEXT,
+      bank TEXT,
+      store TEXT,
+      billing_day INTEGER NOT NULL DEFAULT 1,
+      active INTEGER NOT NULL DEFAULT 1,
+      notes TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+
   await client.execute(`
     CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,

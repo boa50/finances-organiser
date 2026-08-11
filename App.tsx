@@ -10,6 +10,7 @@ import {
 import { OverviewScreen } from './src/screens/OverviewScreen';
 import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
 import { TransactionsScreen } from './src/screens/TransactionsScreen';
+import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
 import { ManagementScreen } from './src/screens/ManagementScreen';
 import { TransactionEditModal } from './src/components/TransactionEditModal';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -57,6 +58,10 @@ export default function App() {
 
         {activeTab === 'transactions' && (
           <TransactionsScreen transactions={transactions} onRefresh={loadData} />
+        )}
+
+        {activeTab === 'subscriptions' && (
+          <SubscriptionsScreen onSubscriptionsUpdated={loadData} />
         )}
 
         {activeTab === 'categories' && (

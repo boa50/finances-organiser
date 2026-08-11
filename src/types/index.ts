@@ -15,7 +15,24 @@ export interface Transaction {
   installmentGroupId?: string;
   date: string; // ISO 8601 string: YYYY-MM-DDTHH:mm:ss.sssZ
   notes?: string;
+  subscriptionId?: string;
   createdAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  title: string;
+  amount: number;
+  currency: string;
+  category: string;
+  paymentMethod?: string;
+  bank?: string;
+  store?: string;
+  billingDay: number; // 1 to 31
+  active: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TursoConfig {

@@ -110,13 +110,21 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
             />
           )}
 
-          <TouchableOpacity
-            onPress={() => onEdit(transaction)}
-            style={styles.editBtn}
-            accessibilityLabel={`Edit ${transaction.title}`}
-          >
-            <Pencil size={14} color={theme.colors.accent} />
-          </TouchableOpacity>
+          {transaction.subscriptionId ? (
+            <AppBadge
+              label="Subscription"
+              variant="accent"
+              size="sm"
+            />
+          ) : (
+            <TouchableOpacity
+              onPress={() => onEdit(transaction)}
+              style={styles.editBtn}
+              accessibilityLabel={`Edit ${transaction.title}`}
+            >
+              <Pencil size={14} color={theme.colors.accent} />
+            </TouchableOpacity>
+          )}
 
           {onDelete && (
             <TouchableOpacity

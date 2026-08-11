@@ -6,14 +6,14 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Automated and passing | 61 |
+| ✅ Automated and passing | 72 |
 | 🟡 Implemented but not automated | 20 |
 | ⬜ Not implemented | 0 |
 | 🔴 Automated but failing | 0 |
 | ⚠️ Cannot currently be verified | 0 |
-| **Total** | **81** |
+| **Total** | **92** |
 
-All 61 automated tests across 9 test suites were verified passing via `npm test` on 2026-08-11.
+All 72 automated tests across 11 test suites were verified passing via `npm test` on 2026-08-11.
 
 ### Automated Test Suites
 
@@ -22,6 +22,8 @@ All 61 automated tests across 9 test suites were verified passing via `npm test`
 - [`src/services/__tests__/bankService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/bankService.test.ts) — Bank CRUD operations, duplicate validation, default preservation, reset
 - [`src/services/__tests__/categoryService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/categoryService.test.ts) — Category CRUD operations, update/add duplicate name validation
 - [`src/services/__tests__/paymentMethodService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/paymentMethodService.test.ts) — Payment method CRUD operations, allowInstallments flag, duplicate validation, reset
+- [`src/services/__tests__/subscriptionService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/subscriptionService.test.ts) — Subscription CRUD operations, active status toggling, deletion
+- [`src/services/__tests__/subscriptionAutoGenerator.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/subscriptionAutoGenerator.test.ts) — Subscription target date calculation, monthly expense auto-generation, idempotency, billing day update scope
 - [`src/services/__tests__/tursoService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/tursoService.test.ts) — Transaction CRUD operations, single delete, installment group deletion, clear all
 - [`src/utils/__tests__/authUtils.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/authUtils.test.ts) — Password hashing, comparison, and input validation
 - [`src/utils/__tests__/currencies.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/currencies.test.ts) — Currency symbol lookup, formatting, conversion, and constants

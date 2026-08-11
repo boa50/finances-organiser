@@ -160,6 +160,7 @@ class TursoDatabaseService {
           installments INTEGER DEFAULT 0,
           installment_number INTEGER DEFAULT 0,
           installment_group_id TEXT,
+          subscription_id TEXT,
           date TEXT NOT NULL,
           notes TEXT,
           created_at TEXT NOT NULL
@@ -207,6 +208,31 @@ class TursoDatabaseService {
       } catch (e) {
         // Column already exists
       }
+
+      // Migration: Add subscription_id column if existing table lacks it
+      try {
+        await this.client.execute('ALTER TABLE transactions ADD COLUMN subscription_id TEXT');
+      } catch (e) {
+        // Column already exists
+      }
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS subscriptions (
+          id TEXT PRIMARY KEY,
+          title TEXT NOT NULL,
+          amount REAL NOT NULL,
+          currency TEXT NOT NULL,
+          category TEXT NOT NULL,
+          payment_method TEXT,
+          bank TEXT,
+          store TEXT,
+          billing_day INTEGER NOT NULL DEFAULT 1,
+          active INTEGER NOT NULL DEFAULT 1,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      `);
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS categories (
@@ -324,6 +350,7 @@ class TursoDatabaseService {
         installments: Number(row.installments) || 0,
         installmentNumber: Number(row.installment_number) || 0,
         installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
+        subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
         date: String(row.date),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at || row.date),
@@ -379,8 +406,8 @@ class TursoDatabaseService {
     if (this.client) {
       try {
         await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, bank, store, installments, installment_number, installment_group_id, date, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO transactions (id, type, title, amount, currency, category, payment_method, bank, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newTx.id,
             newTx.type,
@@ -394,6 +421,7 @@ class TursoDatabaseService {
             newTx.installments || 0,
             newTx.installmentNumber || 0,
             newTx.installmentGroupId || null,
+            newTx.subscriptionId || null,
             newTx.date,
             newTx.notes || '',
             newTx.createdAt,
@@ -565,7 +593,7 @@ class TursoDatabaseService {
       try {
         await this.client.execute({
           sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, date = ?, notes = ?
+                SET type = ?, title = ?, amount = ?, currency = ?, category = ?, payment_method = ?, bank = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
                 WHERE id = ?`,
           args: [
             updatedTx.type,
@@ -579,6 +607,7 @@ class TursoDatabaseService {
             updatedTx.installments || 0,
             updatedTx.installmentNumber || 0,
             updatedTx.installmentGroupId || null,
+            updatedTx.subscriptionId || null,
             updatedTx.date,
             updatedTx.notes || '',
             id,
