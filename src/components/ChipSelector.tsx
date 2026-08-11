@@ -11,6 +11,7 @@ export interface ChipSelectorProps<T> {
   labelExtractor: (item: T) => string;
   renderIcon?: (item: T, active: boolean) => React.ReactNode;
   getItemColor?: (item: T) => string;
+  isSelected?: (item: T) => boolean;
 }
 
 export function ChipSelector<T>({
@@ -21,6 +22,7 @@ export function ChipSelector<T>({
   labelExtractor,
   renderIcon,
   getItemColor,
+  isSelected,
 }: ChipSelectorProps<T>) {
   return (
     <ScrollView
@@ -32,7 +34,9 @@ export function ChipSelector<T>({
       {items.map((item) => {
         const key = keyExtractor(item);
         const label = labelExtractor(item);
-        const active = key === String(selectedId) || label === String(selectedId);
+        const active = isSelected
+          ? isSelected(item)
+          : key === String(selectedId) || label === String(selectedId);
         const itemColor = getItemColor ? getItemColor(item) : undefined;
 
         let activeChipStyle = {};

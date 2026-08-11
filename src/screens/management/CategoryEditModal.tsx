@@ -13,6 +13,7 @@ import {
   PRESET_CATEGORY_COLORS,
 } from '../../services/categoryService';
 import { CategoryIcon } from '../../components/CategoryIcon';
+import { ChipSelector } from '../../components/ChipSelector';
 import { AppModal, AppText } from '../../components/ui';
 import theme from '../../theme';
 
@@ -86,35 +87,22 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
 
         <View style={styles.formGroup}>
           <AppText style={styles.formLabel}>Icon Badge</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.iconList}>
-            {AVAILABLE_CATEGORY_ICONS.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.iconChip,
-                  iconInput === item.iconName && {
-                    backgroundColor: `${colorInput}30`,
-                    borderColor: colorInput,
-                  },
-                ]}
-                onPress={() => setIconInput(item.iconName)}
-              >
-                <CategoryIcon
-                  iconName={item.iconName}
-                  color={iconInput === item.iconName ? colorInput : theme.colors.textSecondary}
-                  size={18}
-                />
-                <AppText
-                  style={[
-                    styles.iconChipText,
-                    iconInput === item.iconName && { color: colorInput, fontWeight: '700' },
-                  ]}
-                >
-                  {item.label}
-                </AppText>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <ChipSelector
+            items={AVAILABLE_CATEGORY_ICONS}
+            selectedId={iconInput}
+            isSelected={(item) => item.iconName === iconInput}
+            onSelect={(item) => setIconInput(item.iconName)}
+            keyExtractor={(item) => item.id}
+            labelExtractor={(item) => item.label}
+            getItemColor={() => colorInput}
+            renderIcon={(item, active) => (
+              <CategoryIcon
+                iconName={item.iconName}
+                color={active ? colorInput : theme.colors.textSecondary}
+                size={16}
+              />
+            )}
+          />
         </View>
 
         <View style={styles.formGroup}>
@@ -224,26 +212,6 @@ const styles = StyleSheet.create({
   colorDotSelected: {
     borderColor: theme.colors.textPrimary,
     transform: [{ scale: 1.1 }],
-  },
-  iconList: {
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.xxs,
-  },
-  iconChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radii.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-  },
-  iconChipText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.semibold,
   },
   previewBox: {
     flexDirection: 'row',
