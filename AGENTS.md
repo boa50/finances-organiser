@@ -253,6 +253,61 @@ When changing a data structure, update all relevant consumers rather than introd
 
 ---
 
+## Documentation rules
+
+### README synchronization
+
+`README.md` must be kept synchronized with the implemented application.
+
+Whenever a new user-facing feature is implemented, the agent MUST review `README.md` and update it if the feature changes or adds:
+
+- application functionality;
+- supported features;
+- user workflows;
+- configuration or environment variables;
+- installation or setup requirements;
+- development commands;
+- deployment requirements;
+- supported platforms;
+- architecture or important architectural decisions;
+- integrations or external services;
+- significant limitations or prerequisites.
+
+The README update is part of the feature implementation, not a separate optional task.
+
+### README update workflow
+
+After implementing a new feature:
+
+1. Inspect the relevant sections of `README.md`.
+2. Determine whether the new behavior is already documented.
+3. If documentation is missing or outdated, update `README.md`.
+4. Keep the existing README structure and writing style.
+5. Prefer concise documentation that explains the feature from the user's/developer's perspective.
+6. Do not document implementation details that are irrelevant to users or contributors.
+7. Do not rewrite unrelated sections of the README.
+8. If the feature does not require a README change, explicitly state:
+   `README.md: no update required.`
+
+### Feature completion requirement
+
+A feature must not be considered complete until:
+
+- the implementation is complete;
+- relevant tests/validation have been performed;
+- `README.md` has been reviewed;
+- required documentation has been updated.
+
+When reporting the completed work, include:
+
+```text
+Documentation:
+- README.md updated: <yes/no>
+- Reason: <brief explanation>
+```
+
+---
+
 ## Financial data rules
 
 FinanceCloud handles financial information, so correctness is especially important.
@@ -619,7 +674,13 @@ Run the most relevant type checks, tests, builds, or endpoint checks.
 
 Fix issues caused by the implementation.
 
-### Phase 5 — Review
+### Phase 5 — Documentation
+
+Review `README.md` and update it when the implemented feature changes documented application behavior, setup, configuration, architecture, integrations, or supported functionality.
+
+Do not skip this step for new user-facing features.
+
+### Phase 6 — Review
 
 Inspect the final diff.
 
@@ -628,9 +689,10 @@ Look specifically for:
 - duplicated logic;
 - security issues;
 - financial calculation errors;
-- cross-platform problems.
+- cross-platform problems;
+- outdated README documentation.
 
-### Phase 6 — Report
+### Phase 7 — Report
 
 Give a concise summary:
 
