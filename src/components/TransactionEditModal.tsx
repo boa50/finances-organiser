@@ -15,7 +15,7 @@ import { tursoService } from '../services/tursoService';
 import { CategoryIcon } from './CategoryIcon';
 import { ChipSelector } from './ChipSelector';
 import { AppButton, AppModal, AppText, AppTextInput, FeedbackMessage } from './ui';
-import { CreditCard, Building2, Calendar, Clock } from 'lucide-react-native';
+import { CreditCard, Building2, Calendar } from 'lucide-react-native';
 import theme from '../theme';
 import { TransactionDatePicker } from './TransactionDatePicker';
 
@@ -185,7 +185,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       return;
     }
     if (Number.isNaN(date.getTime())) {
-      setErrorMessage('Enter a valid date and time.');
+      setErrorMessage('Enter a valid date.');
       return;
     }
 
@@ -372,7 +372,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         {type === 'expense' && (
           <>
             {availablePaymentMethods.length > 0 && (
-              <Field label="Payment Method">
+              <Field label="Payment Method (optional)">
                 <ChipSelector
                   items={availablePaymentMethods}
                   selectedId={paymentMethodId}
@@ -465,8 +465,8 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           </>
         )}
 
-        {/* Date & Time Picker Button */}
-        <Field label="Date & Time">
+        {/* Date Picker Button */}
+        <Field label="Date">
           <TouchableOpacity
             onPress={() => setDatePickerVisible(true)}
             style={styles.datePickerBtn}
@@ -479,12 +479,6 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                   month: 'short',
                   day: 'numeric',
                 })}
-              </AppText>
-            </View>
-            <View style={styles.datePickerBtnRight}>
-              <Clock size={14} color={theme.colors.textMuted} />
-              <AppText style={styles.datePickerTimeText}>
-                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </AppText>
             </View>
           </TouchableOpacity>
@@ -645,15 +639,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
-  },
-  datePickerBtnRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  datePickerTimeText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.sm,
   },
   actions: {
     flexDirection: 'row',
