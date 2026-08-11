@@ -18,6 +18,7 @@ import { tursoService } from '../services/tursoService';
 import { CategoryIcon } from './CategoryIcon';
 import { ChipSelector } from './ChipSelector';
 import { AppButton, AppModal, AppText, AppTextInput, FeedbackMessage } from './ui';
+import { Building2 } from 'lucide-react-native';
 import theme from '../theme';
 
 interface SubscriptionEditModalProps {
@@ -263,6 +264,23 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
               onSelect={(pm) => setPaymentMethod(pm.name === paymentMethod ? '' : pm.name)}
               keyExtractor={(pm) => pm.id || pm.name}
               labelExtractor={(pm) => pm.name}
+            />
+          </View>
+        )}
+
+        {/* Bank */}
+        {availableBanks.length > 0 && (
+          <View style={styles.fieldGroup}>
+            <AppText style={styles.label}>Bank (Optional)</AppText>
+            <ChipSelector
+              items={availableBanks}
+              selectedId={bank}
+              onSelect={(b) => setBank(b.name === bank ? '' : b.name)}
+              keyExtractor={(b) => b.id || b.name}
+              labelExtractor={(b) => b.name}
+              renderIcon={(_b, active) => (
+                <Building2 size={14} color={active ? theme.colors.accent : theme.colors.textMuted} />
+              )}
             />
           </View>
         )}

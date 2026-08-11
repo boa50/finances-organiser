@@ -124,7 +124,8 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
     const matchesSearch =
       sub.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       sub.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (sub.store && sub.store.toLowerCase().includes(searchQuery.toLowerCase()));
+      (sub.store && sub.store.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (sub.bank && sub.bank.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesStatus =
       statusFilter === 'all'
@@ -253,6 +254,12 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                         <>
                           <AppText style={styles.dot}>•</AppText>
                           <AppText style={styles.subStore}>{item.store}</AppText>
+                        </>
+                      )}
+                      {item.bank && (
+                        <>
+                          <AppText style={styles.dot}>•</AppText>
+                          <AppText style={styles.subStore}>{item.bank}</AppText>
                         </>
                       )}
                     </View>
