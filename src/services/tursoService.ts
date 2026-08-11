@@ -142,7 +142,7 @@ class TursoDatabaseService {
           type TEXT CHECK (type IN ('income', 'expense')),
           title TEXT NOT NULL,
           amount REAL NOT NULL,
-          currency TEXT NOT NULL,
+          currency_id TEXT NOT NULL,
           category_id TEXT,
           payment_method_id TEXT,
           bank_id TEXT,
@@ -157,6 +157,7 @@ class TursoDatabaseService {
         );
       `);
 
+      try { await this.client.execute('ALTER TABLE transactions RENAME COLUMN currency TO currency_id'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE transactions ADD COLUMN category_id TEXT'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE transactions ADD COLUMN payment_method_id TEXT'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE transactions ADD COLUMN bank_id TEXT'); } catch (e) {}
@@ -171,7 +172,7 @@ class TursoDatabaseService {
           id TEXT PRIMARY KEY,
           title TEXT NOT NULL,
           amount REAL NOT NULL,
-          currency TEXT NOT NULL,
+          currency_id TEXT NOT NULL,
           category_id TEXT,
           payment_method_id TEXT,
           bank_id TEXT,
@@ -184,9 +185,27 @@ class TursoDatabaseService {
         );
       `);
 
+      try { await this.client.execute('ALTER TABLE subscriptions RENAME COLUMN currency TO currency_id'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE subscriptions ADD COLUMN category_id TEXT'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE subscriptions ADD COLUMN payment_method_id TEXT'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE subscriptions ADD COLUMN bank_id TEXT'); } catch (e) {}
+
+      await this.client.execute(`
+        CREATE TABLE IF NOT EXISTS currencies (
+          id TEXT PRIMARY KEY,
+          symbol TEXT NOT NULL,
+          name TEXT NOT NULL,
+          flag TEXT NOT NULL,
+          display_order INTEGER NOT NULL DEFAULT 0
+        );
+      `);
+
+      try {
+        await this.client.execute(`
+          INSERT OR IGNORE INTO currencies (id, symbol, name, flag, display_order)
+          VALUES ('BRL', 'R$', 'Brazilian Real', '🇧🇷', 0), ('USD', '$', 'US Dollar', '🇺🇸', 1);
+        `);
+      } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS categories (
@@ -255,7 +274,7 @@ class TursoDatabaseService {
         type: row.type as any,
         title: String(row.title),
         amount: Number(row.amount),
-        currency: String(row.currency),
+        currencyId: String(row.currency_id || row.currency || 'BRL'),
         categoryId: row.category_id ? String(row.category_id) : undefined,
         paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
         bankId: row.bank_id ? String(row.bank_id) : undefined,
@@ -316,14 +335,14 @@ class TursoDatabaseService {
     if (this.client) {
       try {
         await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
+          sql: `INSERT INTO transactions (id, type, title, amount, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newTx.id,
             newTx.type,
             newTx.title,
             newTx.amount,
-            newTx.currency,
+            newTx.currencyId,
             newTx.categoryId || null,
             newTx.paymentMethodId || null,
             newTx.bankId || null,
@@ -495,13 +514,13 @@ class TursoDatabaseService {
       try {
         await this.client.execute({
           sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
+                SET type = ?, title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
                 WHERE id = ?`,
           args: [
             updatedTx.type,
             updatedTx.title,
             updatedTx.amount,
-            updatedTx.currency,
+            updatedTx.currencyId,
             updatedTx.categoryId || null,
             updatedTx.paymentMethodId || null,
             updatedTx.bankId || null,

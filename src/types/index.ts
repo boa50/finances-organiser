@@ -5,7 +5,7 @@ export interface Transaction {
   type: TransactionType;
   title: string;
   amount: number;
-  currency: string; // e.g. 'USD', 'EUR', 'BRL', 'GBP'
+  currencyId: string; // e.g. 'USD', 'EUR', 'BRL', 'GBP'
   categoryId?: string;
   paymentMethodId?: string;
   bankId?: string;
@@ -23,7 +23,7 @@ export interface Subscription {
   id: string;
   title: string;
   amount: number;
-  currency: string;
+  currencyId: string;
   categoryId?: string;
   paymentMethodId?: string;
   bankId?: string;

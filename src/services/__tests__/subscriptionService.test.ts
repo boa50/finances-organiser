@@ -8,7 +8,7 @@ describe('subscriptionService', () => {
     createdSub = await subscriptionService.addSubscription({
       title: 'Netflix HD',
       amount: 45.9,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-ent-1',
       billingDay: 15,
       active: true,
@@ -18,7 +18,7 @@ describe('subscriptionService', () => {
     expect(createdSub.id).toBeDefined();
     expect(createdSub.title).toBe('Netflix HD');
     expect(createdSub.amount).toBe(45.9);
-    expect(createdSub.currency).toBe('BRL');
+    expect(createdSub.currencyId).toBe('BRL');
     expect(createdSub.billingDay).toBe(15);
     expect(createdSub.active).toBe(true);
 

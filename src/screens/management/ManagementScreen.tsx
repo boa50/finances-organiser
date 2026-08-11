@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
-import { BankItem, CategoryItem, PaymentMethodItem, TransactionType } from '../../types';
+import { BankItem, CategoryItem, CurrencyInfo, PaymentMethodItem, TransactionType } from '../../types';
 import {
   AVAILABLE_CATEGORY_ICONS,
   PRESET_CATEGORY_COLORS,
@@ -8,6 +8,7 @@ import {
 } from '../../services/categoryService';
 import { paymentMethodService } from '../../services/paymentMethodService';
 import { bankService } from '../../services/bankService';
+import { currencyService } from '../../services/currencyService';
 import { confirmAction } from '../../utils/dialogs';
 import { AppLoadingView, AppSectionHeader, AppSegmentedControl } from '../../components/ui';
 import theme from '../../theme';
@@ -15,20 +16,24 @@ import theme from '../../theme';
 import { CategoryManagementTab } from './CategoryManagementTab';
 import { PaymentMethodManagementTab } from './PaymentMethodManagementTab';
 import { BankManagementTab } from './BankManagementTab';
+import { CurrencyManagementTab } from './CurrencyManagementTab';
 
 import { CategoryEditModal } from './CategoryEditModal';
 import { PaymentMethodEditModal } from './PaymentMethodEditModal';
 import { BankEditModal } from './BankEditModal';
+import { CurrencyAddModal } from './CurrencyAddModal';
 
-export type ManagementSectionId = 'categories' | 'payment_methods' | 'banks';
+export type ManagementSectionId = 'categories' | 'payment_methods' | 'banks' | 'currencies';
 
 interface ManagementScreenProps {
   onCategoriesUpdated?: () => void;
+  onCurrenciesUpdated?: () => void;
   initialSection?: ManagementSectionId;
 }
 
 export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   onCategoriesUpdated,
+  onCurrenciesUpdated,
   initialSection = 'categories',
 }) => {
   const [activeSection, setActiveSection] = useState<ManagementSectionId>(initialSection);
@@ -39,6 +44,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
   const [banks, setBanks] = useState<BankItem[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Category Modal State
@@ -65,17 +71,24 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   const [bankSaving, setBankSaving] = useState(false);
   const [bankErrorMsg, setBankErrorMsg] = useState<string | null>(null);
 
+  // Currency Modal State
+  const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+  const [currencySaving, setCurrencySaving] = useState(false);
+  const [currencyErrorMsg, setCurrencyErrorMsg] = useState<string | null>(null);
+
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [cats, pms, bks] = await Promise.all([
+      const [cats, pms, bks, currs] = await Promise.all([
         categoryService.getCategories(),
         paymentMethodService.getPaymentMethods(),
         bankService.getBanks(),
+        currencyService.getCurrencies(),
       ]);
       setCategories(cats);
       setPaymentMethods(pms);
       setBanks(bks);
+      setCurrencies(currs);
     } catch (e) {
       console.warn('Error loading management data:', e);
     } finally {
@@ -107,6 +120,15 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       setBanks(items);
     } catch (e) {
       console.warn('Error loading banks:', e);
+    }
+  };
+
+  const loadCurrenciesData = async () => {
+    try {
+      const items = await currencyService.getCurrencies();
+      setCurrencies(items);
+    } catch (e) {
+      console.warn('Error loading currencies:', e);
     }
   };
 
@@ -312,6 +334,50 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     });
   };
 
+  // ── Currency Handlers ──
+  const openAddCurrencyModal = () => {
+    setCurrencyErrorMsg(null);
+    setCurrencyModalVisible(true);
+  };
+
+  const handleAddCurrency = async (code: string) => {
+    setCurrencySaving(true);
+    setCurrencyErrorMsg(null);
+
+    try {
+      await currencyService.addCurrency(code);
+      await loadCurrenciesData();
+      onCurrenciesUpdated?.();
+      setCurrencyModalVisible(false);
+    } catch (err: any) {
+      setCurrencyErrorMsg(err?.message || 'Failed to add currency.');
+    } finally {
+      setCurrencySaving(false);
+    }
+  };
+
+  const handleDeleteCurrency = async (currency: CurrencyInfo) => {
+    confirmAction({
+      title: 'Remove Currency',
+      message: `Are you sure you want to remove ${currency.code} (${currency.name}) from available currencies?`,
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await currencyService.removeCurrency(currency.code);
+          await loadCurrenciesData();
+          onCurrenciesUpdated?.();
+        } catch (err: any) {
+          confirmAction({
+            title: 'Cannot Remove Currency',
+            message: err?.message || 'Failed to remove currency.',
+            destructive: false,
+            onConfirm: () => {},
+          });
+        }
+      },
+    });
+  };
+
   if (loading) {
     return <AppLoadingView message="Loading management settings..." />;
   }
@@ -321,7 +387,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <AppSectionHeader
           title="Management Center"
-          subtitle="Configure expense & income categories, payment methods, and bank options"
+          subtitle="Configure expense & income categories, payment methods, bank options, and enabled currencies"
         />
 
         <AppSegmentedControl<ManagementSectionId>
@@ -329,6 +395,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
             { label: 'Categories', value: 'categories' },
             { label: 'Payment Methods', value: 'payment_methods' },
             { label: 'Banks', value: 'banks' },
+            { label: 'Currencies', value: 'currencies' },
           ]}
           selectedValue={activeSection}
           onSelect={(sec) => {
@@ -369,6 +436,16 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
             onOpenAddModal={openAddBankModal}
             onOpenEditModal={openEditBankModal}
             onDeleteBank={handleDeleteBank}
+          />
+        )}
+
+        {activeSection === 'currencies' && (
+          <CurrencyManagementTab
+            currencies={currencies}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onOpenAddModal={openAddCurrencyModal}
+            onDeleteCurrency={handleDeleteCurrency}
           />
         )}
       </ScrollView>
@@ -412,6 +489,15 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
         bankSaving={bankSaving}
         bankErrorMsg={bankErrorMsg}
         onSave={handleSaveBank}
+      />
+
+      <CurrencyAddModal
+        visible={currencyModalVisible}
+        onClose={() => setCurrencyModalVisible(false)}
+        enabledCurrencies={currencies}
+        saving={currencySaving}
+        errorMsg={currencyErrorMsg}
+        onAddCurrency={handleAddCurrency}
       />
     </>
   );

@@ -65,7 +65,7 @@ export default function App() {
         )}
 
         {activeTab === 'categories' && (
-          <ManagementScreen onCategoriesUpdated={loadData} />
+          <ManagementScreen onCategoriesUpdated={loadData} onCurrenciesUpdated={loadData} />
         )}
       </View>
 

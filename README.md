@@ -8,12 +8,12 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **Dashboard overview** — Net balance, monthly income/expense summary, and recent activity at a glance.
 - **D3.js analytics** — Interactive donut charts, category breakdown bars, and monthly trend line/area charts rendered with `react-native-svg`.
 - **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and handle authentication, transactions, categories, payment methods, and banks.
-- **Multi-currency** — 9 supported currencies (BRL, USD, EUR, GBP, CAD, AUD, JPY, CHF, INR) with live exchange rates from [AwesomeAPI](https://docs.awesomeapi.com.br/api-de-moedas).
+- **Multi-currency & Currency management** — Dynamic currency management supporting BRL, USD, CAD, THB, JPY, KRW (WON), EUR, GBP, and COP (COL) with 2-step live exchange rate conversion (direct X-BRL or X-USD * USD-BRL fallback) and minimum 1 currency constraint.
 - **Subscription management** — Dedicated screen for managing monthly recurring subscription expenses with active/inactive toggles, payment day scheduling, and idempotent monthly transaction auto-generation.
 - **Transaction & Installment management** — Full create, edit, delete, search, and filter capabilities with monthly grouping, merchant tracking, and multi-month installment support.
-- **Comprehensive management hub** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), and Banks.
-- **Design system & UI primitives** — Centralized design tokens (`theme.ts`) and 10 reusable UI primitive components.
-- **Unit testing** — Jest test suite covering financial calculations, currency conversion, and authentication services.
+- **Comprehensive management hub** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), Banks, and Currencies.
+- **Design system & UI primitives** — Centralized design tokens (`theme.ts`) and reusable UI primitive components.
+- **Unit testing** — Jest test suite covering financial calculations, currency conversion, authentication, categories, transactions, subscriptions, and currency management.
 - **Cross-platform & Cloud sync** — Runs on Web, Android, and iOS via Expo with seamless offline/online fallback.
 
 ## 📋 Prerequisites
@@ -89,9 +89,9 @@ npm test
 
 The test suite covers:
 - **Financial calculations** — Income/expense aggregation, net balance, monthly grouping, and search filtering (`financials.test.ts`).
-- **Currency utilities** — Formatting, pivot conversion, and exchange rate caching (`currencies.test.ts`).
-- **Authentication utilities** — Password validation and timing-safe comparison (`authUtils.test.ts`).
-- **Authentication service** — Session storage persistence, server verification, and Metro fallback (`authService.test.ts`).
+- **Currency utilities & service** — Formatting, 2-step pivot conversion, exchange rate caching, and currency CRUD rules (`currencies.test.ts`, `currencyService.test.ts`).
+- **Authentication utilities & service** — Password validation, timing-safe comparison, session storage persistence, and Metro fallback (`authUtils.test.ts`, `authService.test.ts`).
+- **Services & DB operations** — CRUD and auto-generation for transactions, categories, payment methods, banks, and subscriptions (`tursoService.test.ts`, `categoryService.test.ts`, `subscriptionService.test.ts`, `subscriptionAutoGenerator.test.ts`).
 
 ## 🌐 Deploying to Vercel
 
@@ -117,9 +117,10 @@ finances-organiser/
 │   ├── auth.ts                      # POST /api/auth — timing-safe password verification
 │   ├── health.ts                    # GET /api/health — database ping & status check
 │   ├── transactions.ts              # CRUD /api/transactions — fetch, create, edit, delete
-│   ├── categories.ts                # CRUD /api/categories — fetch, create, edit, delete, reset
-│   ├── payment-methods.ts           # CRUD /api/payment-methods — fetch, create, edit, delete, reset
-│   └── banks.ts                     # CRUD /api/banks — fetch, create, edit, delete, reset
+│   ├── categories.ts                # CRUD /api/categories — fetch, create, edit, delete
+│   ├── payment-methods.ts           # CRUD /api/payment-methods — fetch, create, edit, delete
+│   ├── banks.ts                     # CRUD /api/banks — fetch, create, edit, delete
+│   └── currencies.ts                # CRUD /api/currencies — fetch, create, delete with guards
 │
 ├── App.tsx                          # Root component — auth gate, tab navigation, top bar, modals
 ├── index.ts                         # Expo entry point (registerRootComponent)
@@ -136,35 +137,38 @@ finances-organiser/
     ├── theme.ts                     # Centralized design tokens (colors, palette, typography, spacing, radii)
     │
     ├── types/
-    │   └── index.ts                 # Shared TypeScript interfaces (Transaction, CategoryItem, etc.)
+    │   └── index.ts                 # Shared TypeScript interfaces (Transaction, CurrencyInfo, etc.)
     │
     ├── services/
-    │   ├── __tests__/
-    │   │   └── authService.test.ts  # Auth service test suite
+    │   ├── __tests__/               # Service test suites
     │   ├── authService.ts           # Auth service — API check, session persistence, Metro fallback
     │   ├── tursoService.ts          # Client DB service — serverless API calls + offline fallback
     │   ├── categoryService.ts       # Category service — serverless API calls + offline fallback
     │   ├── paymentMethodService.ts  # Payment method service — serverless API calls + offline fallback
-    │   └── bankService.ts           # Bank service — serverless API calls + offline fallback
+    │   ├── bankService.ts           # Bank service — serverless API calls + offline fallback
+    │   └── currencyService.ts       # Currency service — serverless API calls + offline fallback
     │
     ├── utils/
-    │   ├── __tests__/
-    │   │   ├── authUtils.test.ts    # Auth utils test suite
-    │   │   ├── currencies.test.ts   # Currency test suite
-    │   │   └── financials.test.ts   # Financial math test suite
+    │   ├── __tests__/               # Utility test suites
     │   ├── authUtils.ts             # Password validation & timing-safe string comparison
-    │   ├── currencies.ts            # Currency definitions, formatting, live exchange rates
+    │   ├── currencies.ts            # Currency definitions, formatting, 2-step exchange rates
     │   └── financials.ts            # Pure functions for financial math & transaction grouping
     │
     ├── screens/
     │   ├── LoginScreen.tsx          # Password authentication screen
     │   ├── OverviewScreen.tsx       # Dashboard with balance summary and recent transactions
-    │   ├── AnalyticsScreen.tsx      # D3 charts with currency filter
+    │   ├── AnalyticsScreen.tsx      # D3 charts with enabled currency filter
     │   ├── TransactionsScreen.tsx   # Searchable/filterable transaction history
-    │   ├── ManagementScreen.tsx     # Tabbed management hub (Categories, Payment Methods, Banks)
-    │   └── CategoryManagementScreen.tsx # Legacy wrapper re-exporting ManagementScreen
+    │   ├── SubscriptionsScreen.tsx  # Monthly recurring subscription manager
+    │   ├── ManagementScreen.tsx     # Tabbed management hub (Categories, Payment Methods, Banks, Currencies)
+    │   └── management/              # Sub-tabs and modals for entity management
+    │       ├── CategoryManagementTab.tsx
+    │       ├── PaymentMethodManagementTab.tsx
+    │       ├── BankManagementTab.tsx
+    │       ├── CurrencyManagementTab.tsx
+    │       └── CurrencyAddModal.tsx
     │
-    └── components/
+    └── components/                  # Reusable UI primitives and domain components
         ├── ui/                      # Reusable UI primitive component library
         │   ├── AppText.tsx          # Standardized text component enforcing typography tokens
         │   ├── AppTextInput.tsx     # Styled text input with error state & clear button

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Transaction, TursoConfig } from '../types';
 import { tursoService } from '../services/tursoService';
 import { subscriptionService } from '../services/subscriptionService';
+import { currencyService } from '../services/currencyService';
 import { processSubscriptionAutoGeneration } from '../services/subscriptionAutoGenerator';
 import { refreshCurrencyRates } from '../utils/currencies';
 import { confirmAction } from '../utils/dialogs';
@@ -16,6 +17,7 @@ export function useAppData(enabled: boolean = true) {
 
   const loadData = useCallback(async () => {
     try {
+      await currencyService.getCurrencies();
       await refreshCurrencyRates();
       await tursoService.initDatabase();
       const subs = await subscriptionService.getSubscriptions();

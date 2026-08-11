@@ -64,7 +64,7 @@ class SubscriptionService {
           id: String(row.id),
           title: String(row.title),
           amount: Number(row.amount),
-          currency: String(row.currency),
+          currencyId: String(row.currency_id || row.currency || 'BRL'),
           categoryId: row.category_id ? String(row.category_id) : undefined,
           paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
           bankId: row.bank_id ? String(row.bank_id) : undefined,
@@ -123,13 +123,13 @@ class SubscriptionService {
     if (client) {
       try {
         await client.execute({
-          sql: `INSERT INTO subscriptions (id, title, amount, currency, category_id, payment_method_id, bank_id, store, billing_day, active, notes, created_at, updated_at)
+          sql: `INSERT INTO subscriptions (id, title, amount, currency_id, category_id, payment_method_id, bank_id, store, billing_day, active, notes, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newSub.id,
             newSub.title,
             newSub.amount,
-            newSub.currency,
+            newSub.currencyId,
             newSub.categoryId || null,
             newSub.paymentMethodId || null,
             newSub.bankId || null,
@@ -193,12 +193,12 @@ class SubscriptionService {
       try {
         await client.execute({
           sql: `UPDATE subscriptions
-                SET title = ?, amount = ?, currency = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
+                SET title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
                 WHERE id = ?`,
           args: [
             updatedSub.title,
             updatedSub.amount,
-            updatedSub.currency,
+            updatedSub.currencyId,
             updatedSub.categoryId || null,
             updatedSub.paymentMethodId || null,
             updatedSub.bankId || null,

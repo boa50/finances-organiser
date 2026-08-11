@@ -34,7 +34,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   bankName,
 }) => {
   const isIncome = transaction.type === 'income';
-  const currencyInfo = getCurrencyInfo(transaction.currency);
+  const currencyInfo = getCurrencyInfo(transaction.currencyId);
 
   const date = new Date(transaction.date);
   const isValidDate = !Number.isNaN(date.getTime());
@@ -114,13 +114,13 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
           ]}
         >
           {isIncome ? '+' : '-'}
-          {formatMoney(displayAmount, transaction.currency)}
+          {formatMoney(displayAmount, transaction.currencyId)}
         </AppText>
 
         <View style={styles.actionsRow}>
           {showCurrencyBadge && (
             <AppBadge
-              label={`${currencyInfo.flag} ${transaction.currency}`}
+              label={`${currencyInfo.flag} ${transaction.currencyId}`}
               variant="neutral"
               size="sm"
             />

@@ -16,7 +16,7 @@ export interface GroupedRecentItem {
   type: 'income' | 'expense';
   title: string;
   totalAmount: number;
-  currency: string;
+  currencyId: string;
   categoryId?: string;
   paymentMethodId?: string;
   bankId?: string;
@@ -51,7 +51,7 @@ export function calculateFinancialSummary(
   let currentMonthExpense = 0;
 
   transactions.forEach((tx) => {
-    const val = convertCurrency(tx.amount, tx.currency, targetCurrency);
+    const val = convertCurrency(tx.amount, tx.currencyId, targetCurrency);
     const txDate = new Date(tx.date);
     const isCurrentMonth =
       !isNaN(txDate.getTime()) &&
@@ -127,7 +127,7 @@ export function groupRecentTransactions(
       type: firstInst.type,
       title: baseTitle,
       totalAmount: totalAmount > 0 ? totalAmount : firstInst.amount * installments,
-      currency: firstInst.currency,
+      currencyId: firstInst.currencyId,
       categoryId: firstInst.categoryId,
       paymentMethodId: firstInst.paymentMethodId,
       bankId: firstInst.bankId,
@@ -144,7 +144,7 @@ export function groupRecentTransactions(
       type: tx.type,
       title: tx.title,
       totalAmount: tx.amount,
-      currency: tx.currency,
+      currencyId: tx.currencyId,
       categoryId: tx.categoryId,
       paymentMethodId: tx.paymentMethodId,
       bankId: tx.bankId,
@@ -183,7 +183,7 @@ export function aggregateTransactionsByMonth(
       };
     }
 
-    const convertedAmount = convertCurrency(tx.amount, tx.currency, targetCurrency);
+    const convertedAmount = convertCurrency(tx.amount, tx.currencyId, targetCurrency);
 
     if (tx.type === 'income') {
       monthMap[key].income += convertedAmount;
@@ -222,7 +222,7 @@ export function aggregateTransactionsByCategory(
 
   transactions.forEach((tx) => {
     if (tx.type !== targetType) return;
-    const amount = convertCurrency(tx.amount, tx.currency, targetCurrency);
+    const amount = convertCurrency(tx.amount, tx.currencyId, targetCurrency);
     const cat = tx.categoryId || 'Uncategorized';
     categoryTotals[cat] = (categoryTotals[cat] || 0) + amount;
     totalForType += amount;

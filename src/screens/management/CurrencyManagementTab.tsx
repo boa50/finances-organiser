@@ -1,0 +1,164 @@
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { CurrencyInfo } from '../../types';
+import { AppCard, AppText, AppEmptyState, AppTextInput } from '../../components/ui';
+import theme from '../../theme';
+import { Plus, Search, Trash2 } from 'lucide-react-native';
+
+interface CurrencyManagementTabProps {
+  currencies: CurrencyInfo[];
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+  onOpenAddModal: () => void;
+  onDeleteCurrency: (currency: CurrencyInfo) => void;
+}
+
+export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
+  currencies,
+  searchQuery,
+  setSearchQuery,
+  onOpenAddModal,
+  onDeleteCurrency,
+}) => {
+  const filteredCurrencies = currencies.filter(
+    (c) =>
+      c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const canDelete = currencies.length > 1;
+
+  return (
+    <View style={styles.tabContainer}>
+      <AppCard style={styles.filterCard} padding="lg">
+        <View style={styles.topControls}>
+          <TouchableOpacity style={styles.createBtn} onPress={onOpenAddModal}>
+            <Plus size={16} color={theme.colors.white} />
+            <AppText style={styles.createBtnText}>Add Currency</AppText>
+          </TouchableOpacity>
+        </View>
+
+        <AppTextInput
+          placeholder="Search currencies..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          icon={<Search size={16} color={theme.colors.textTertiary} />}
+        />
+      </AppCard>
+
+      {filteredCurrencies.length === 0 ? (
+        <AppEmptyState
+          title="No Currencies Found"
+          description={
+            searchQuery ? 'No currencies match your search query.' : 'No enabled currencies available.'
+          }
+          actionTitle={searchQuery ? undefined : 'Add Currency'}
+          onActionPress={searchQuery ? undefined : onOpenAddModal}
+        />
+      ) : (
+        <View style={styles.grid}>
+          {filteredCurrencies.map((currency) => (
+            <AppCard key={currency.code} variant="outlined" style={styles.card}>
+              <View style={styles.cardInfo}>
+                <AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>
+                <View style={styles.textContainer}>
+                  <AppText style={styles.codeText}>{currency.code}</AppText>
+                  <AppText style={styles.nameText}>{currency.name}</AppText>
+                </View>
+                <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
+              </View>
+
+              <TouchableOpacity
+                onPress={() => onDeleteCurrency(currency)}
+                disabled={!canDelete}
+                style={[styles.deleteButton, !canDelete && styles.deleteButtonDisabled]}
+                accessibilityLabel={`Delete ${currency.code}`}
+              >
+                <Trash2
+                  size={18}
+                  color={canDelete ? theme.colors.danger : theme.colors.textMuted}
+                />
+              </TouchableOpacity>
+            </AppCard>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  tabContainer: {
+    gap: theme.spacing.lg,
+  },
+  filterCard: {
+    gap: theme.spacing.lg,
+  },
+  topControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  createBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.accent,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radii.lg,
+  },
+  createBtnText: {
+    color: theme.colors.white,
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.bold,
+  },
+  grid: {
+    gap: theme.spacing.sm,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.md,
+  },
+  cardInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    flex: 1,
+  },
+  flagText: {
+    fontSize: theme.fontSize['2xl'],
+  },
+  textContainer: {
+    flex: 1,
+  },
+  codeText: {
+    fontSize: theme.fontSize.md,
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.textPrimary,
+  },
+  nameText: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.textMuted,
+  },
+  symbolBadge: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.accent,
+    backgroundColor: theme.colors.surfaceSubtle,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radii.sm,
+    marginRight: theme.spacing.md,
+  },
+  deleteButton: {
+    padding: theme.spacing.sm,
+    borderRadius: theme.radii.md,
+  },
+  deleteButtonDisabled: {
+    opacity: 0.3,
+  },
+});

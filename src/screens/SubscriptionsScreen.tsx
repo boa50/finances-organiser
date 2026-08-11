@@ -143,7 +143,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
   // Convert monthly total to BRL for summary metric
   const totalMonthlyBRL = subscriptions
     .filter((s) => s.active)
-    .reduce((sum, s) => sum + convertCurrency(s.amount, s.currency, 'BRL'), 0);
+    .reduce((sum, s) => sum + convertCurrency(s.amount, s.currencyId, 'BRL'), 0);
 
   if (loading) {
     return (
@@ -265,7 +265,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                 {/* Amount */}
                 <View style={styles.amountGroup}>
                   <AppText style={styles.subAmount}>
-                    {formatMoney(item.amount, item.currency)}
+                    {formatMoney(item.amount, item.currencyId)}
                   </AppText>
                   <AppText style={styles.perMonthText}>/ month</AppText>
                 </View>

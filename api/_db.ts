@@ -47,7 +47,7 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       type TEXT CHECK (type IN ('income', 'expense')),
       title TEXT NOT NULL,
       amount REAL NOT NULL,
-      currency TEXT NOT NULL,
+      currency_id TEXT NOT NULL,
       category_id TEXT,
       payment_method_id TEXT,
       bank_id TEXT,
@@ -61,6 +61,12 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       created_at TEXT NOT NULL
     );
   `);
+
+  try {
+    await client.execute('ALTER TABLE transactions RENAME COLUMN currency TO currency_id');
+  } catch (e) {
+    // Column already renamed or doesn't exist
+  }
 
   try {
     await client.execute('ALTER TABLE transactions ADD COLUMN category_id TEXT');
@@ -115,7 +121,7 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       amount REAL NOT NULL,
-      currency TEXT NOT NULL,
+      currency_id TEXT NOT NULL,
       category_id TEXT,
       payment_method_id TEXT,
       bank_id TEXT,
@@ -127,6 +133,12 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       updated_at TEXT NOT NULL
     );
   `);
+
+  try {
+    await client.execute('ALTER TABLE subscriptions RENAME COLUMN currency TO currency_id');
+  } catch (e) {
+    // Column already renamed or doesn't exist
+  }
 
   try {
     await client.execute('ALTER TABLE subscriptions ADD COLUMN category_id TEXT');
@@ -176,4 +188,25 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       name TEXT NOT NULL UNIQUE
     );
   `);
+
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS currencies (
+      id TEXT PRIMARY KEY,
+      symbol TEXT NOT NULL,
+      name TEXT NOT NULL,
+      flag TEXT NOT NULL,
+      display_order INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+
+  try {
+    await client.execute(`
+      INSERT OR IGNORE INTO currencies (id, symbol, name, flag, display_order)
+      VALUES
+        ('BRL', 'R$', 'Brazilian Real', '🇧🇷', 0),
+        ('USD', '$', 'US Dollar', '🇺🇸', 1);
+    `);
+  } catch (e) {
+    // Ignore seed errors
+  }
 }

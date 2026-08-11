@@ -8,7 +8,8 @@ import {
 import { Transaction } from '../types';
 import { D3EvolutionChart } from '../components/D3EvolutionChart';
 import { D3CurrentMonthCharts } from '../components/D3CurrentMonthCharts';
-import { CURRENCIES, DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
+import { DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
+import { currencyService } from '../services/currencyService';
 import { AppBadge, AppCard, AppSectionHeader } from '../components/ui';
 import theme from '../theme';
 
@@ -17,14 +18,17 @@ interface AnalyticsScreenProps {
 }
 
 export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }) => {
-  const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_CURRENCY);
+  const enabledCurrencies = currencyService.getCurrenciesSync();
+  const [selectedCurrency, setSelectedCurrency] = useState(
+    enabledCurrencies.length > 0 ? enabledCurrencies[0].code : DEFAULT_CURRENCY
+  );
 
   // Compute total statistics across all recorded transactions
   let totalIncomeConverted = 0;
   let totalExpenseConverted = 0;
 
   transactions.forEach((tx) => {
-    const val = convertCurrency(tx.amount, tx.currency, selectedCurrency);
+    const val = convertCurrency(tx.amount, tx.currencyId, selectedCurrency);
     if (tx.type === 'income') {
       totalIncomeConverted += val;
     } else {
@@ -51,7 +55,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: theme.spacing.sm }}
           >
-            {CURRENCIES.slice(0, 5).map((c) => {
+            {enabledCurrencies.map((c) => {
               const selected = selectedCurrency === c.code;
               return (
                 <AppBadge

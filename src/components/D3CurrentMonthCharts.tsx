@@ -34,7 +34,7 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
   const categoryExpenseMap: { [cat: string]: number } = {};
 
   monthTransactions.forEach((tx) => {
-    const converted = convertCurrency(tx.amount, tx.currency, targetCurrency);
+    const converted = convertCurrency(tx.amount, tx.currencyId, targetCurrency);
     if (tx.type === 'income') {
       totalIncome += converted;
     } else {

@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: String(row.id),
         title: String(row.title),
         amount: Number(row.amount),
-        currency: String(row.currency),
+        currencyId: String(row.currency_id || row.currency || 'BRL'),
         categoryId: row.category_id ? String(row.category_id) : undefined,
         paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
         bankId: row.bank_id ? String(row.bank_id) : undefined,
@@ -37,8 +37,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST /api/subscriptions
     if (req.method === 'POST') {
-      const { title, amount, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
-      if (!title || amount === undefined || !currency) {
+      const { title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
+      const currVal = currencyId || currency;
+      if (!title || amount === undefined || !currVal) {
         return res.status(400).json({ error: 'Missing required subscription fields' });
       }
 
@@ -53,13 +54,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const storeVal = store ? String(store).trim() : null;
 
       await client.execute({
-        sql: `INSERT INTO subscriptions (id, title, amount, currency, category_id, payment_method_id, bank_id, store, billing_day, active, notes, created_at, updated_at)
+        sql: `INSERT INTO subscriptions (id, title, amount, currency_id, category_id, payment_method_id, bank_id, store, billing_day, active, notes, created_at, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           id,
           title.trim(),
           Number(amount),
-          currency.trim(),
+          String(currVal).trim(),
           catIdVal,
           pmIdVal,
           bankIdVal,
@@ -76,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id,
         title: title.trim(),
         amount: Number(amount),
-        currency: currency.trim(),
+        currencyId: String(currVal).trim(),
         categoryId: catIdVal || undefined,
         paymentMethodId: pmIdVal || undefined,
         bankId: bankIdVal || undefined,
@@ -93,8 +94,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // PUT /api/subscriptions
     if (req.method === 'PUT') {
-      const { id, title, amount, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
-      if (!id || !title || amount === undefined || !currency) {
+      const { id, title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
+      const currVal = currencyId || currency;
+      if (!id || !title || amount === undefined || !currVal) {
         return res.status(400).json({ error: 'Missing required subscription fields for update' });
       }
 
@@ -109,12 +111,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       await client.execute({
         sql: `UPDATE subscriptions
-              SET title = ?, amount = ?, currency = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
+              SET title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
               WHERE id = ?`,
         args: [
           title.trim(),
           Number(amount),
-          currency.trim(),
+          String(currVal).trim(),
           catIdVal,
           pmIdVal,
           bankIdVal,
@@ -131,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id,
         title: title.trim(),
         amount: Number(amount),
-        currency: currency.trim(),
+        currencyId: String(currVal).trim(),
         categoryId: catIdVal || undefined,
         paymentMethodId: pmIdVal || undefined,
         bankId: bankIdVal || undefined,

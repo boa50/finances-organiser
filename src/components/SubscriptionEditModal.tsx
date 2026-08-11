@@ -5,8 +5,8 @@ import {
   Switch,
   View,
 } from 'react-native';
-import { BankItem, CategoryItem, PaymentMethodItem, Subscription } from '../types';
-import { CURRENCIES } from '../utils/currencies';
+import { BankItem, CategoryItem, CurrencyInfo, PaymentMethodItem, Subscription } from '../types';
+import { currencyService } from '../services/currencyService';
 import { categoryService } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
 import { bankService } from '../services/bankService';
@@ -34,7 +34,8 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('BRL');
+  const [currencyId, setCurrencyId] = useState('BRL');
+  const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyInfo[]>([]);
   const [categoryId, setCategoryId] = useState('');
   const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
   const [paymentMethodId, setPaymentMethodId] = useState<string>('');
@@ -59,11 +60,13 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       setAvailablePaymentMethods(pms);
       const bks = await bankService.getBanks();
       setAvailableBanks(bks);
+      const currs = await currencyService.getCurrencies();
+      setAvailableCurrencies(currs);
 
       if (subscription) {
         setTitle(subscription.title);
         setAmount(String(subscription.amount));
-        setCurrency(subscription.currency || 'BRL');
+        setCurrencyId(subscription.currencyId || 'BRL');
 
         const initialCatId = subscription.categoryId || '';
         setCategoryId(initialCatId);
@@ -81,7 +84,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       } else {
         setTitle('');
         setAmount('');
-        setCurrency('BRL');
+        setCurrencyId(currs.length > 0 ? currs[0].code : 'BRL');
         setCategoryId(cats.length > 0 ? cats[0].id : '');
         setPaymentMethodId(pms.length > 0 ? pms[0].id : '');
         setBankId('');
@@ -119,7 +122,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       const subPayload = {
         title: title.trim(),
         amount: numAmount,
-        currency,
+        currencyId,
         categoryId: categoryId || undefined,
         paymentMethodId: paymentMethodId || undefined,
         bankId: bankId || undefined,
@@ -183,16 +186,18 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
               placeholder="0.00"
             />
           </View>
-          <View style={styles.flex1}>
-            <AppText style={styles.label}>Currency</AppText>
-            <ChipSelector
-              items={CURRENCIES}
-              selectedId={currency}
-              onSelect={(c) => setCurrency(c.code)}
-              keyExtractor={(c) => c.code}
-              labelExtractor={(c) => `${c.flag} ${c.code}`}
-            />
-          </View>
+          {availableCurrencies.length > 0 && (
+            <View style={styles.flex1}>
+              <AppText style={styles.label}>Currency</AppText>
+              <ChipSelector
+                items={availableCurrencies}
+                selectedId={currencyId}
+                onSelect={(c) => setCurrencyId(c.code)}
+                keyExtractor={(c) => c.code}
+                labelExtractor={(c) => `${c.flag} ${c.code}`}
+              />
+            </View>
+          )}
         </View>
 
         {/* Billing Day */}

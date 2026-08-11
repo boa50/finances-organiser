@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { CategoryItem, PaymentMethodItem, BankItem, Transaction, TransactionType } from '../types';
-import { CURRENCIES } from '../utils/currencies';
+import { CategoryItem, PaymentMethodItem, BankItem, CurrencyInfo, Transaction, TransactionType } from '../types';
+import { currencyService } from '../services/currencyService';
 import { categoryService } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
 import { bankService } from '../services/bankService';
@@ -40,7 +40,8 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [type, setType] = useState<TransactionType>('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('BRL');
+  const [currencyId, setCurrencyId] = useState('BRL');
+  const [availableCurrencies, setAvailableCurrencies] = useState<CurrencyInfo[]>([]);
   const [categoryId, setCategoryId] = useState('');
   const [availableCategories, setAvailableCategories] = useState<CategoryItem[]>([]);
   const [paymentMethodId, setPaymentMethodId] = useState('');
@@ -74,6 +75,12 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     return bks;
   };
 
+  const loadCurrencies = async () => {
+    const currs = await currencyService.getCurrencies();
+    setAvailableCurrencies(currs);
+    return currs;
+  };
+
   useEffect(() => {
     if (!visible) return;
 
@@ -85,9 +92,10 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       const cats = await loadCategories(activeType);
       const pms = await loadPaymentMethods();
       const bks = await loadBanks();
+      const currs = await loadCurrencies();
 
       if (transaction) {
-        setCurrency(transaction.currency);
+        setCurrencyId(transaction.currencyId);
 
         const initialCatId = transaction.categoryId || '';
         setCategoryId(initialCatId);
@@ -125,7 +133,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       } else {
         setTitle('');
         setAmount('');
-        setCurrency('BRL');
+        setCurrencyId(currs.length > 0 ? currs[0].code : 'BRL');
         setCategoryId(cats.length > 0 ? cats[0].id : '');
         const defaultPmId = pms.length > 0 ? pms[0].id : '';
         setPaymentMethodId(defaultPmId);
@@ -189,7 +197,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         type,
         title: title.trim(),
         amount: parsedAmount,
-        currency,
+        currencyId,
         categoryId: categoryId || undefined,
         paymentMethodId: type === 'expense' ? (paymentMethodId || undefined) : undefined,
         bankId: type === 'expense' ? (bankId || undefined) : undefined,
@@ -327,15 +335,17 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         </Field>
 
         {/* Currency */}
-        <Field label="Currency">
-          <ChipSelector
-            items={CURRENCIES}
-            selectedId={currency}
-            onSelect={(item) => setCurrency(item.code)}
-            keyExtractor={(item) => item.code}
-            labelExtractor={(item) => `${item.flag} ${item.code}`}
-          />
-        </Field>
+        {availableCurrencies.length > 0 && (
+          <Field label="Currency">
+            <ChipSelector
+              items={availableCurrencies}
+              selectedId={currencyId}
+              onSelect={(item) => setCurrencyId(item.code)}
+              keyExtractor={(item) => item.code}
+              labelExtractor={(item) => `${item.flag} ${item.code}`}
+            />
+          </Field>
+        )}
 
         {/* Category */}
         {availableCategories.length > 0 && (
@@ -421,7 +431,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
                 {installments > 1 && parsedAmountNum > 0 && (
                   <AppText style={styles.installmentHint}>
-                    {installments}× of {currency} {(parsedAmountNum / installments).toFixed(2)} / month
+                    {installments}× of {currencyId} {(parsedAmountNum / installments).toFixed(2)} / month
                   </AppText>
                 )}
               </Field>

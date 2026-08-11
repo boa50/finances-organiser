@@ -10,7 +10,7 @@ describe('tursoService', () => {
       type: 'expense',
       title: 'Coffee',
       amount: 12.5,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-test-1',
       date: '2026-08-11',
     });
@@ -27,7 +27,7 @@ describe('tursoService', () => {
       type: 'expense',
       title: 'Groceries',
       amount: 150,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-test-1',
       date: '2026-08-10',
     });
@@ -36,7 +36,7 @@ describe('tursoService', () => {
       type: 'expense',
       title: 'Supermarket Groceries',
       amount: 200,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-test-1',
       date: '2026-08-10',
     });
@@ -55,7 +55,7 @@ describe('tursoService', () => {
         type: 'expense',
         title: 'Ghost',
         amount: 50,
-        currency: 'BRL',
+        currencyId: 'BRL',
         categoryId: 'cat-test-1',
         date: '2026-08-10',
       })
@@ -67,7 +67,7 @@ describe('tursoService', () => {
       type: 'income',
       title: 'Freelance Work',
       amount: 800,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-test-1',
       date: '2026-08-01',
     });
@@ -86,7 +86,7 @@ describe('tursoService', () => {
       type: 'expense',
       title: 'Laptop (1/2)',
       amount: 1500,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-test-1',
       installments: 2,
       installmentNumber: 1,
@@ -98,7 +98,7 @@ describe('tursoService', () => {
       type: 'expense',
       title: 'Laptop (2/2)',
       amount: 1500,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-test-1',
       installments: 2,
       installmentNumber: 2,
@@ -119,7 +119,7 @@ describe('tursoService', () => {
       type: 'expense',
       title: 'Rent',
       amount: 1200,
-      currency: 'BRL',
+      currencyId: 'BRL',
       categoryId: 'cat-test-1',
       date: '2026-08-01',
     });

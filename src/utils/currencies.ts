@@ -1,16 +1,18 @@
 import { CurrencyInfo } from '../types';
 
-export const CURRENCIES: CurrencyInfo[] = [
+export const VALID_CURRENCIES: CurrencyInfo[] = [
   { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', flag: '🇧🇷' },
   { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
+  { code: 'CAD', symbol: 'CA$', name: 'Canadian Dollar', flag: '🇨🇦' },
+  { code: 'THB', symbol: '฿', name: 'Thai Baht', flag: '🇹🇭' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen', flag: '🇯🇵' },
+  { code: 'KRW', symbol: '₩', name: 'South Korean Won', flag: '🇰🇷' },
   { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
   { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧' },
-  { code: 'CAD', symbol: 'CA$', name: 'Canadian Dollar', flag: '🇨🇦' },
-  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', flag: '🇦🇺' },
-  { code: 'JPY', symbol: '¥', name: 'Japanese Yen', flag: '🇯🇵' },
-  { code: 'CHF', symbol: 'CHF', name: 'Swiss Franc', flag: '🇨🇭' },
-  { code: 'INR', symbol: '₹', name: 'Indian Rupee', flag: '🇮🇳' },
+  { code: 'COP', symbol: '$', name: 'Colombian Peso', flag: '🇨🇴' },
 ];
+
+export const CURRENCIES = VALID_CURRENCIES;
 
 export const DEFAULT_CURRENCY = 'BRL';
 
@@ -30,8 +32,12 @@ let ratesFetchedAt = 0;
 let pendingRateRequest: Promise<boolean> | null = null;
 
 export function getCurrencyInfo(code: string): CurrencyInfo {
+  let normalizedCode = (code || '').toUpperCase();
+  if (normalizedCode === 'WON') normalizedCode = 'KRW';
+  if (normalizedCode === 'COL') normalizedCode = 'COP';
+
   return (
-    CURRENCIES.find((c) => c.code.toUpperCase() === code.toUpperCase()) || {
+    VALID_CURRENCIES.find((c) => c.code.toUpperCase() === normalizedCode) || {
       code,
       symbol: '$',
       name: code,
@@ -51,8 +57,10 @@ export function formatMoney(amount: number, currencyCode: string = DEFAULT_CURRE
 }
 
 /**
- * Loads the latest available bid prices from AwesomeAPI. Their `last` endpoint
- * accepts multiple comma-separated currency pairs in one request.
+ * Loads the latest available bid prices from AwesomeAPI.
+ * Uses a two-step fetch strategy:
+ * 1. Request direct X-BRL pairs for all supported non-BRL currencies.
+ * 2. For any currency missing a direct BRL rate, request X-USD pairs and convert via USD -> BRL.
  */
 export async function refreshCurrencyRates(force = false): Promise<boolean> {
   if (!force && Date.now() - ratesFetchedAt < RATE_CACHE_DURATION_MS) {
@@ -61,27 +69,54 @@ export async function refreshCurrencyRates(force = false): Promise<boolean> {
 
   if (pendingRateRequest) return pendingRateRequest;
 
-  const pairs = CURRENCIES
-    .filter((currency) => currency.code !== DEFAULT_CURRENCY)
-    .map((currency) => `${currency.code}-${DEFAULT_CURRENCY}`)
-    .join(',');
-
   pendingRateRequest = (async () => {
     try {
-      const response = await fetch(`${AWESOME_API_URL}/${pairs}`);
-      if (!response.ok) {
-        throw new Error(`AwesomeAPI returned ${response.status}`);
-      }
-
-      const quotes: Record<string, AwesomeApiQuote> = await response.json();
       const nextRates: Record<string, number> = { BRL: 1 };
 
-      Object.values(quotes).forEach((quote) => {
-        const rate = Number(quote.bid);
-        if (quote.codein === DEFAULT_CURRENCY && Number.isFinite(rate) && rate > 0) {
-          nextRates[quote.code] = rate;
+      // Step 1: Direct BRL pairs
+      const directPairs = VALID_CURRENCIES
+        .filter((currency) => currency.code !== DEFAULT_CURRENCY)
+        .map((currency) => `${currency.code}-${DEFAULT_CURRENCY}`)
+        .join(',');
+
+      try {
+        const response = await fetch(`${AWESOME_API_URL}/${directPairs}`);
+        if (response.ok) {
+          const quotes: Record<string, AwesomeApiQuote> = await response.json();
+          Object.values(quotes).forEach((quote) => {
+            const rate = Number(quote.bid);
+            if (quote.codein === DEFAULT_CURRENCY && Number.isFinite(rate) && rate > 0) {
+              nextRates[quote.code] = rate;
+            }
+          });
         }
-      });
+      } catch (err) {
+        console.warn('Direct BRL rate fetch failed, trying fallback strategy:', err);
+      }
+
+      // Step 2: USD indirect pairs for currencies missing from direct rates
+      const missingCurrencies = VALID_CURRENCIES.filter(
+        (c) => c.code !== 'BRL' && c.code !== 'USD' && !nextRates[c.code]
+      );
+
+      if (missingCurrencies.length > 0 && nextRates['USD']) {
+        const usdPairs = missingCurrencies.map((c) => `${c.code}-USD`).join(',');
+        try {
+          const usdResponse = await fetch(`${AWESOME_API_URL}/${usdPairs}`);
+          if (usdResponse.ok) {
+            const usdQuotes: Record<string, AwesomeApiQuote> = await usdResponse.json();
+            Object.values(usdQuotes).forEach((quote) => {
+              const rateXtoUSD = Number(quote.bid);
+              if (quote.codein === 'USD' && Number.isFinite(rateXtoUSD) && rateXtoUSD > 0) {
+                // Compute rate to BRL: (X -> USD) * (USD -> BRL)
+                nextRates[quote.code] = rateXtoUSD * nextRates['USD'];
+              }
+            });
+          }
+        } catch (err) {
+          console.warn('USD fallback rate fetch failed:', err);
+        }
+      }
 
       if (Object.keys(nextRates).length === 1) {
         throw new Error('AwesomeAPI returned no usable currency quotes');
