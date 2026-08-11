@@ -41,7 +41,5 @@ yarn-error.*
 /ios
 /android
 
-.agents
-AGENTS.md
 .plans
 .vercel
