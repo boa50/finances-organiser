@@ -16,6 +16,7 @@ import { subscriptionService } from '../services/subscriptionService';
 import { handleSubscriptionBillingDayUpdate } from '../services/subscriptionAutoGenerator';
 import { tursoService } from '../services/tursoService';
 import { CategoryIcon } from './CategoryIcon';
+import { ChipSelector } from './ChipSelector';
 import { AppButton, AppModal, AppText, AppTextInput, FeedbackMessage } from './ui';
 import theme from '../theme';
 
@@ -193,25 +194,13 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           </View>
           <View style={styles.flex1}>
             <AppText style={styles.label}>Currency</AppText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {CURRENCIES.map((c) => (
-                <TouchableOpacity
-                  key={c.code}
-                  style={[styles.currencyChip, currency === c.code && styles.currencyChipActive]}
-                  onPress={() => setCurrency(c.code)}
-                >
-                  <AppText style={styles.currencyFlag}>{c.flag}</AppText>
-                  <AppText
-                    style={[
-                      styles.currencyText,
-                      currency === c.code && styles.currencyTextActive,
-                    ]}
-                  >
-                    {c.code}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <ChipSelector
+              items={CURRENCIES}
+              selectedId={currency}
+              onSelect={(c) => setCurrency(c.code)}
+              keyExtractor={(c) => c.code}
+              labelExtractor={(c) => `${c.flag} ${c.code}`}
+            />
           </View>
         </View>
 
@@ -247,58 +236,34 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         {/* Category */}
         <View style={styles.fieldGroup}>
           <AppText style={styles.label}>Category *</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-            {availableCategories.map((cat) => {
-              const isSelected = category === cat.name;
-              return (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={[
-                    styles.categoryChip,
-                    isSelected && { backgroundColor: cat.color + '22', borderColor: cat.color },
-                  ]}
-                  onPress={() => setCategory(cat.name)}
-                >
-                  <CategoryIcon iconName={cat.icon} size={16} color={isSelected ? cat.color : theme.colors.textMuted} />
-                  <AppText
-                    style={[
-                      styles.categoryChipText,
-                      isSelected && { color: cat.color, fontWeight: theme.fontWeight.bold },
-                    ]}
-                  >
-                    {cat.name}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          <ChipSelector
+            items={availableCategories}
+            selectedId={category}
+            onSelect={(cat) => setCategory(cat.name)}
+            keyExtractor={(cat) => cat.id || cat.name}
+            labelExtractor={(cat) => cat.name}
+            getItemColor={(cat) => cat.color}
+            renderIcon={(cat) => (
+              <CategoryIcon
+                iconName={cat.icon}
+                size={16}
+                color={cat.color}
+              />
+            )}
+          />
         </View>
 
         {/* Payment Method */}
         {availablePaymentMethods.length > 0 && (
           <View style={styles.fieldGroup}>
             <AppText style={styles.label}>Payment Method (Optional)</AppText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-              {availablePaymentMethods.map((pm) => {
-                const isSelected = paymentMethod === pm.name;
-                return (
-                  <TouchableOpacity
-                    key={pm.id}
-                    style={[styles.pmChip, isSelected && styles.pmChipActive]}
-                    onPress={() => setPaymentMethod(isSelected ? '' : pm.name)}
-                  >
-                    <AppText
-                      style={[
-                        styles.pmChipText,
-                        isSelected && styles.pmChipTextActive,
-                      ]}
-                    >
-                      {pm.name}
-                    </AppText>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+            <ChipSelector
+              items={availablePaymentMethods}
+              selectedId={paymentMethod}
+              onSelect={(pm) => setPaymentMethod(pm.name === paymentMethod ? '' : pm.name)}
+              keyExtractor={(pm) => pm.id || pm.name}
+              labelExtractor={(pm) => pm.name}
+            />
           </View>
         )}
 
@@ -405,72 +370,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
     marginTop: 2,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    marginVertical: theme.spacing.xs,
-  },
-  currencyChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radii.md,
-    borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
-    marginRight: theme.spacing.xs,
-    gap: 4,
-  },
-  currencyChipActive: {
-    borderColor: theme.colors.accent,
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-  },
-  currencyFlag: {
-    fontSize: theme.fontSize.sm,
-  },
-  currencyText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.semibold,
-  },
-  currencyTextActive: {
-    color: theme.colors.accent,
-    fontWeight: theme.fontWeight.bold,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
-    marginRight: theme.spacing.xs,
-    gap: theme.spacing.xs,
-  },
-  categoryChipText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.xs,
-  },
-  pmChip: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
-    marginRight: theme.spacing.xs,
-  },
-  pmChipActive: {
-    borderColor: theme.colors.accent,
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-  },
-  pmChipText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.xs,
-  },
-  pmChipTextActive: {
-    color: theme.colors.accent,
-    fontWeight: theme.fontWeight.bold,
   },
   actions: {
     flexDirection: 'row',

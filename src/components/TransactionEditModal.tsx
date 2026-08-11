@@ -307,10 +307,11 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
               onSelect={(item) => setCategory(item.name)}
               keyExtractor={(item) => item.id || item.name}
               labelExtractor={(item) => item.name}
+              getItemColor={(item) => item.color}
               renderIcon={(item) => (
                 <CategoryIcon
                   iconName={item.icon}
-                  color={category === item.name ? theme.colors.accent : item.color || theme.colors.textSecondary}
+                  color={item.color}
                   size={14}
                 />
               )}
@@ -319,7 +320,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
           {type === 'expense' && (
             <>
-              <Field label="Way of Payment">
+              <Field label="Payment Method">
                 <ChipSelector
                   items={availablePaymentMethods}
                   selectedId={paymentMethod}

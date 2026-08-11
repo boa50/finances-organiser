@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { AppText } from './ui/AppText';
 import theme from '../theme';
 
@@ -9,7 +9,8 @@ export interface ChipSelectorProps<T> {
   onSelect: (item: T) => void;
   keyExtractor: (item: T) => string;
   labelExtractor: (item: T) => string;
-  renderIcon?: (item: T) => React.ReactNode;
+  renderIcon?: (item: T, active: boolean) => React.ReactNode;
+  getItemColor?: (item: T) => string;
 }
 
 export function ChipSelector<T>({
@@ -19,21 +20,50 @@ export function ChipSelector<T>({
   keyExtractor,
   labelExtractor,
   renderIcon,
+  getItemColor,
 }: ChipSelectorProps<T>) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipList}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chipList}
+      style={styles.scrollView}
+    >
       {items.map((item) => {
         const key = keyExtractor(item);
-        const active = key === String(selectedId);
+        const label = labelExtractor(item);
+        const active = key === String(selectedId) || label === String(selectedId);
+        const itemColor = getItemColor ? getItemColor(item) : undefined;
+
+        let activeChipStyle = {};
+        let activeTextStyle = {};
+
+        if (active) {
+          if (itemColor) {
+            activeChipStyle = {
+              borderColor: itemColor,
+              backgroundColor: itemColor + '22',
+            };
+            activeTextStyle = {
+              color: itemColor,
+              fontWeight: theme.fontWeight.bold,
+            };
+          } else {
+            activeChipStyle = styles.chipActiveDefault;
+            activeTextStyle = styles.chipTextActiveDefault;
+          }
+        }
+
         return (
           <TouchableOpacity
             key={key}
-            style={[styles.chip, active && styles.chipActive]}
+            style={[styles.chip, active && activeChipStyle]}
             onPress={() => onSelect(item)}
+            activeOpacity={0.75}
           >
-            {renderIcon && <View>{renderIcon(item)}</View>}
-            <AppText style={[styles.chipText, active && styles.chipTextActive]}>
-              {labelExtractor(item)}
+            {renderIcon && <View style={styles.iconWrapper}>{renderIcon(item, active)}</View>}
+            <AppText style={[styles.chipText, active && activeTextStyle]}>
+              {label}
             </AppText>
           </TouchableOpacity>
         );
@@ -43,32 +73,41 @@ export function ChipSelector<T>({
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    marginVertical: theme.spacing.xs,
+  },
   chipList: {
-    gap: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
     paddingVertical: theme.spacing.xxs,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radii['3xl'],
-    paddingHorizontal: theme.spacing.base,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
+    borderColor: theme.colors.borderSubtle,
+    backgroundColor: 'transparent',
+    gap: 4,
   },
-  chipActive: {
-    backgroundColor: theme.colors.accentDark,
+  chipActiveDefault: {
     borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.accentBg,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chipText: {
-    color: theme.colors.textLight,
+    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.semibold,
+    fontWeight: theme.fontWeight.medium,
   },
-  chipTextActive: {
-    color: theme.colors.textPrimary,
+  chipTextActiveDefault: {
+    color: theme.colors.accent,
     fontWeight: theme.fontWeight.bold,
   },
 });
