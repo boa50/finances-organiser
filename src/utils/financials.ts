@@ -1,5 +1,6 @@
 import { CategoryAggregate, MonthlyAggregate, Transaction } from '../types';
 import { convertCurrency, DEFAULT_CURRENCY } from './currencies';
+import { categoryService } from '../services/categoryService';
 
 export interface FinancialSummary {
   totalIncome: number;
@@ -257,7 +258,11 @@ export function filterTransactions(
     if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const titleMatch = tx.title.toLowerCase().includes(q);
-      const categoryMatch = tx.categoryId ? tx.categoryId.toLowerCase().includes(q) : false;
+      const catObj = tx.categoryId
+        ? categoryService.getCategoriesSync().find((c) => c.id === tx.categoryId || c.name.toLowerCase() === tx.categoryId?.toLowerCase())
+        : null;
+      const catName = catObj ? catObj.name : (tx.categoryId || '');
+      const categoryMatch = catName ? catName.toLowerCase().includes(q) : false;
       const storeMatch = tx.store ? tx.store.toLowerCase().includes(q) : false;
       const notesMatch = tx.notes ? tx.notes.toLowerCase().includes(q) : false;
       if (!titleMatch && !categoryMatch && !storeMatch && !notesMatch) return false;

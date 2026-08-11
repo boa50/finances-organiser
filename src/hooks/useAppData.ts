@@ -3,6 +3,9 @@ import { Transaction, TursoConfig } from '../types';
 import { tursoService } from '../services/tursoService';
 import { subscriptionService } from '../services/subscriptionService';
 import { currencyService } from '../services/currencyService';
+import { categoryService } from '../services/categoryService';
+import { paymentMethodService } from '../services/paymentMethodService';
+import { bankService } from '../services/bankService';
 import { processSubscriptionAutoGeneration } from '../services/subscriptionAutoGenerator';
 import { refreshCurrencyRates } from '../utils/currencies';
 import { confirmAction } from '../utils/dialogs';
@@ -17,9 +20,14 @@ export function useAppData(enabled: boolean = true) {
 
   const loadData = useCallback(async () => {
     try {
-      await currencyService.getCurrencies();
-      await refreshCurrencyRates();
-      await tursoService.initDatabase();
+      await Promise.all([
+        currencyService.getCurrencies(),
+        categoryService.getCategories(),
+        paymentMethodService.getPaymentMethods(),
+        bankService.getBanks(),
+        refreshCurrencyRates(),
+        tursoService.initDatabase(),
+      ]);
       const subs = await subscriptionService.getSubscriptions();
       let items = await tursoService.getTransactions();
       

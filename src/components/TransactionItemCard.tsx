@@ -2,6 +2,9 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Transaction } from '../types';
 import { formatMoney, getCurrencyInfo } from '../utils/currencies';
+import { categoryService } from '../services/categoryService';
+import { paymentMethodService } from '../services/paymentMethodService';
+import { bankService } from '../services/bankService';
 import { AppCard, AppIconBadge, AppBadge, AppText } from './ui';
 import { TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../theme';
@@ -52,9 +55,34 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       : ''
   );
 
-  const catLabel = categoryName || (transaction.categoryId ? 'Category' : 'Uncategorized');
-  const pmLabel = paymentMethodName;
-  const bkLabel = bankName;
+  const resolvedCategory = categoryName || (() => {
+    if (!transaction.categoryId) return 'Uncategorized';
+    const cats = categoryService.getCategoriesSync();
+    const found = cats.find(
+      (c) => c.id === transaction.categoryId || c.name.toLowerCase() === transaction.categoryId?.toLowerCase()
+    );
+    return found ? found.name : transaction.categoryId;
+  })();
+
+  const pmLabel = paymentMethodName || (() => {
+    if (!transaction.paymentMethodId) return undefined;
+    const pms = paymentMethodService.getPaymentMethodsSync();
+    const found = pms.find(
+      (p) => p.id === transaction.paymentMethodId || p.name.toLowerCase() === transaction.paymentMethodId?.toLowerCase()
+    );
+    return found ? found.name : transaction.paymentMethodId;
+  })();
+
+  const bkLabel = bankName || (() => {
+    if (!transaction.bankId) return undefined;
+    const bks = bankService.getBanksSync();
+    const found = bks.find(
+      (b) => b.id === transaction.bankId || b.name.toLowerCase() === transaction.bankId?.toLowerCase()
+    );
+    return found ? found.name : transaction.bankId;
+  })();
+
+  const catLabel = resolvedCategory;
 
   return (
     <AppCard style={styles.txRow} padding="lg">
