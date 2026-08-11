@@ -2,6 +2,7 @@ import { CategoryItem, TransactionType } from '../types';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/currencies';
 import { tursoService } from './tursoService';
 import { generateId } from '../utils/idGenerator';
+import { isJsonResponse } from './apiClient';
 
 const CATEGORIES_STORAGE_KEY = 'finances_custom_categories';
 
@@ -81,7 +82,7 @@ class CategoryService {
           method: 'GET',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const items: CategoryItem[] = await res.json();
           this.categories = items;
           this.saveToCache();
@@ -169,7 +170,7 @@ class CategoryService {
           headers: tursoService.getApiHeaders(),
           body: JSON.stringify(cat),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const created: CategoryItem = await res.json();
           return created;
         }
@@ -242,7 +243,7 @@ class CategoryService {
           headers: tursoService.getApiHeaders(),
           body: JSON.stringify({ id, ...updated }),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const updatedCat: CategoryItem = await res.json();
           return updatedCat;
         }
@@ -284,7 +285,7 @@ class CategoryService {
           method: 'DELETE',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           return true;
         }
       }
@@ -318,7 +319,7 @@ class CategoryService {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const resetItems: CategoryItem[] = await res.json();
           this.categories = resetItems;
           this.saveToCache();

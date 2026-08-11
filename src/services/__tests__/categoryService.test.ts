@@ -1,0 +1,44 @@
+import { categoryService } from '../categoryService';
+
+describe('categoryService', () => {
+  beforeEach(async () => {
+    await categoryService.resetToDefaults();
+  });
+
+  it('adds a new category and allows deleting it', async () => {
+    const initialCategories = await categoryService.getCategories('expense');
+    const initialCount = initialCategories.length;
+
+    const newCat = await categoryService.addCategory({
+      name: 'Test Custom Expense',
+      icon: 'utensils',
+      color: '#FF0000',
+      type: 'expense',
+    });
+
+    expect(newCat.name).toBe('Test Custom Expense');
+    expect(newCat.id).toBeDefined();
+
+    const afterAdd = await categoryService.getCategories('expense');
+    expect(afterAdd.length).toBe(initialCount + 1);
+    expect(afterAdd.some((c) => c.id === newCat.id)).toBe(true);
+
+    const deleteResult = await categoryService.deleteCategory(newCat.id);
+    expect(deleteResult).toBe(true);
+
+    const afterDelete = await categoryService.getCategories('expense');
+    expect(afterDelete.length).toBe(initialCount);
+    expect(afterDelete.some((c) => c.id === newCat.id)).toBe(false);
+  });
+
+  it('prevents adding duplicate category names for the same type', async () => {
+    await expect(
+      categoryService.addCategory({
+        name: 'Food & Dining',
+        icon: 'utensils',
+        color: '#EF4444',
+        type: 'expense',
+      })
+    ).rejects.toThrow();
+  });
+});

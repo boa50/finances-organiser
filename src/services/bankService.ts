@@ -1,6 +1,7 @@
 import { BankItem } from '../types';
 import { tursoService } from './tursoService';
 import { generateId } from '../utils/idGenerator';
+import { isJsonResponse } from './apiClient';
 
 const BANKS_STORAGE_KEY = 'finances_custom_banks';
 
@@ -55,7 +56,7 @@ class BankService {
           method: 'GET',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const items: BankItem[] = await res.json();
           this.banks = items;
           this.saveToLocalStorage();
@@ -132,7 +133,7 @@ class BankService {
           headers: tursoService.getApiHeaders(),
           body: JSON.stringify({ name: trimmed }),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const created: BankItem = await res.json();
           return created;
         }
@@ -189,7 +190,7 @@ class BankService {
           headers: tursoService.getApiHeaders(),
           body: JSON.stringify({ id, name: trimmed }),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const updatedBank: BankItem = await res.json();
           return updatedBank;
         }
@@ -225,7 +226,7 @@ class BankService {
           method: 'DELETE',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           return true;
         }
       }
@@ -260,7 +261,7 @@ class BankService {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const resetItems: BankItem[] = await res.json();
           this.banks = resetItems;
           this.saveToLocalStorage();

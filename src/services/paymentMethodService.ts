@@ -1,6 +1,7 @@
 import { PaymentMethodItem } from '../types';
 import { tursoService } from './tursoService';
 import { generateId } from '../utils/idGenerator';
+import { isJsonResponse } from './apiClient';
 
 const PAYMENT_METHODS_STORAGE_KEY = 'finances_custom_payment_methods';
 
@@ -55,7 +56,7 @@ class PaymentMethodService {
           method: 'GET',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const items: PaymentMethodItem[] = await res.json();
           this.paymentMethods = items;
           this.saveToLocalStorage();
@@ -134,7 +135,7 @@ class PaymentMethodService {
           headers: tursoService.getApiHeaders(),
           body: JSON.stringify({ name: trimmed, allowInstallments: Boolean(allowInstallments) }),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const created: PaymentMethodItem = await res.json();
           return created;
         }
@@ -192,7 +193,7 @@ class PaymentMethodService {
           headers: tursoService.getApiHeaders(),
           body: JSON.stringify({ id, name: trimmed, allowInstallments: updated.allowInstallments }),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const updatedPm: PaymentMethodItem = await res.json();
           return updatedPm;
         }
@@ -228,7 +229,7 @@ class PaymentMethodService {
           method: 'DELETE',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           return true;
         }
       }
@@ -263,7 +264,7 @@ class PaymentMethodService {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const resetItems: PaymentMethodItem[] = await res.json();
           this.paymentMethods = resetItems;
           this.saveToLocalStorage();

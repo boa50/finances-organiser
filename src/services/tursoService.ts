@@ -3,6 +3,7 @@ import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CATEGORIES } from './categoryService';
 import { generateId } from '../utils/idGenerator';
 import { parseInstallmentTitle } from '../utils/financials';
+import { isJsonResponse } from './apiClient';
 
 const LOCAL_TX_KEY = 'finances_local_transactions';
 
@@ -119,7 +120,7 @@ class TursoDatabaseService {
           method: 'GET',
           headers: this.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const data = await res.json();
           if (data.isConnected) {
             this.config.isConnected = true;
@@ -294,7 +295,7 @@ class TursoDatabaseService {
           method: 'GET',
           headers: this.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const items: Transaction[] = await res.json();
           this.localMemoryTx = items;
           this.saveLocalCache();
@@ -364,7 +365,7 @@ class TursoDatabaseService {
           headers: this.getApiHeaders(),
           body: JSON.stringify(txData),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const created: Transaction = await res.json();
           this.config.isConnected = true;
           return created;
@@ -418,7 +419,7 @@ class TursoDatabaseService {
           method: 'DELETE',
           headers: this.getApiHeaders(),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           this.config.isConnected = true;
           return true;
         }
@@ -550,7 +551,7 @@ class TursoDatabaseService {
           headers: this.getApiHeaders(),
           body: JSON.stringify({ id, ...txData }),
         });
-        if (res.ok) {
+        if (isJsonResponse(res)) {
           const updated: Transaction = await res.json();
           this.config.isConnected = true;
           return updated;
