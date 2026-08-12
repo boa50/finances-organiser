@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Transaction } from '../types';
-import { formatMoney, getCurrencyInfo } from '../utils/currencies';
+import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
 import { bankService } from '../services/bankService';
@@ -47,6 +47,12 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
     : transaction.date);
 
   const displayAmount = amountToDisplay ?? transaction.amount;
+  const currencyCode = (transaction.currencyId || DEFAULT_CURRENCY).toUpperCase();
+  const needsConversion = currencyCode !== DEFAULT_CURRENCY;
+  const brlAmount = needsConversion
+    ? convertCurrency(displayAmount, currencyCode, DEFAULT_CURRENCY)
+    : displayAmount;
+
   const instText = installmentsLabel ?? (
     transaction.installments && transaction.installments > 1
       ? `${transaction.installmentNumber || 1}/${transaction.installments}`
@@ -131,15 +137,22 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       </View>
 
       <View style={styles.txRightCol}>
-        <AppText
-          style={[
-            styles.txAmount,
-            { color: isIncome ? theme.colors.success : theme.colors.danger },
-          ]}
-        >
-          {isIncome ? '+' : '-'}
-          {formatMoney(displayAmount, transaction.currencyId)}
-        </AppText>
+        <View style={styles.amountContainer}>
+          {needsConversion && (
+            <AppText style={styles.originalAmount}>
+              {`(${formatMoney(displayAmount, currencyCode)})`}
+            </AppText>
+          )}
+          <AppText
+            style={[
+              styles.txAmount,
+              { color: isIncome ? theme.colors.success : theme.colors.danger },
+            ]}
+          >
+            {isIncome ? '+' : '-'}
+            {formatMoney(brlAmount, DEFAULT_CURRENCY)}
+          </AppText>
+        </View>
 
         <View style={styles.actionsRow}>
           {showCurrencyBadge && (
@@ -238,6 +251,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: theme.spacing.xs,
   },
+  amountContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+    gap: theme.spacing.xs,
+  },
+  originalAmount: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.fontWeight.medium,
+  },
   txAmount: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.extrabold,
@@ -258,3 +283,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 });
+
