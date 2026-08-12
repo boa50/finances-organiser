@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getTursoClient, ensureTablesExist } from './_db';
 import { generateId } from '../src/utils/idGenerator';
+import { normalizeTransactionDate } from '../src/utils/financials';
 
 import { setCorsHeaders } from './_helpers';
 
@@ -32,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         installmentNumber: Number(row.installment_number) || 0,
         installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
         subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
-        date: String(row.date),
+        date: normalizeTransactionDate(String(row.date)),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at || row.date),
       }));
@@ -47,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing required transaction fields' });
       }
 
+      const normDate = normalizeTransactionDate(date);
       const id = generateId('tx');
       const createdAt = new Date().toISOString();
       const catIdVal = categoryId ? String(categoryId).trim() : null;
@@ -61,7 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await client.execute({
         sql: `INSERT INTO transactions (id, type, title, amount, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [id, type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, date, notes || '', createdAt],
+        args: [id, type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, normDate, notes || '', createdAt],
       });
 
       const newTx = {
@@ -78,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         installmentNumber: instNumVal || undefined,
         installmentGroupId: instGroupIdVal || undefined,
         subscriptionId: subIdVal || undefined,
-        date,
+        date: normDate,
         notes: notes || undefined,
         createdAt,
       };
@@ -93,6 +95,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Missing required transaction fields for update' });
       }
 
+      const normDate = normalizeTransactionDate(date);
       const catIdVal = categoryId ? String(categoryId).trim() : null;
       const pmIdVal = type === 'expense' && paymentMethodId ? String(paymentMethodId).trim() : null;
       const bankIdVal = type === 'expense' && bankId ? String(bankId).trim() : null;
@@ -106,7 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sql: `UPDATE transactions
               SET type = ?, title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
               WHERE id = ?`,
-        args: [type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, date, notes || '', id],
+        args: [type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, normDate, notes || '', id],
       });
 
       const updatedTx = {
@@ -123,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         installmentNumber: instNumVal || undefined,
         installmentGroupId: instGroupIdVal || undefined,
         subscriptionId: subIdVal || undefined,
-        date,
+        date: normDate,
         notes: notes || undefined,
       };
       return res.status(200).json(updatedTx);

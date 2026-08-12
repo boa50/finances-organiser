@@ -14,7 +14,6 @@ export interface TransactionItemCardProps {
   onEdit: (transaction: Transaction) => void;
   onDelete?: (transaction: Transaction) => void;
   showCurrencyBadge?: boolean;
-  showTime?: boolean;
   amountToDisplay?: number;
   installmentsLabel?: string;
   dateString?: string;
@@ -28,7 +27,6 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   onEdit,
   onDelete,
   showCurrencyBadge = false,
-  showTime = false,
   amountToDisplay,
   installmentsLabel,
   dateString,
@@ -44,9 +42,6 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   const formattedDate = dateString ?? (isValidDate
     ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : transaction.date);
-  const formattedTime = showTime && isValidDate
-    ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : '';
 
   const displayAmount = amountToDisplay ?? transaction.amount;
   const instText = installmentsLabel ?? (
@@ -127,9 +122,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
             </>
           ) : null}
           <AppText style={styles.dotSeparator}>•</AppText>
-          <AppText style={styles.txDate}>
-            {formattedDate}{formattedTime ? ` ${formattedTime}` : ''}
-          </AppText>
+          <AppText style={styles.txDate}>{formattedDate}</AppText>
         </View>
         {transaction.notes ? <AppText style={styles.txNotes}>{transaction.notes}</AppText> : null}
       </View>

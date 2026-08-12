@@ -1,7 +1,7 @@
 import { createClient, Client } from '@libsql/client/web';
 import { Transaction, TursoConfig } from '../types';
 import { generateId } from '../utils/idGenerator';
-import { parseInstallmentTitle } from '../utils/financials';
+import { normalizeTransactionDate, parseInstallmentTitle } from '../utils/financials';
 import { isJsonResponse } from './apiClient';
 
 const LOCAL_TX_KEY = 'finances_local_transactions';
@@ -283,7 +283,7 @@ class TursoDatabaseService {
         installmentNumber: Number(row.installment_number) || 0,
         installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
         subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
-        date: String(row.date),
+        date: normalizeTransactionDate(String(row.date)),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at || row.date),
       }));
@@ -306,8 +306,12 @@ class TursoDatabaseService {
   public async addTransaction(
     txData: Omit<Transaction, 'id' | 'createdAt'>
   ): Promise<Transaction> {
-    const newTx: Transaction = {
+    const normalizedData = {
       ...txData,
+      date: normalizeTransactionDate(txData.date),
+    };
+    const newTx: Transaction = {
+      ...normalizedData,
       id: generateId('tx'),
       createdAt: new Date().toISOString(),
     };
@@ -320,7 +324,7 @@ class TursoDatabaseService {
         const res = await fetch('/api/transactions', {
           method: 'POST',
           headers: this.getApiHeaders(),
-          body: JSON.stringify(txData),
+          body: JSON.stringify(normalizedData),
         });
         if (isJsonResponse(res)) {
           const created: Transaction = await res.json();
@@ -483,9 +487,14 @@ class TursoDatabaseService {
       throw new Error('Transaction not found');
     }
 
+    const normalizedData = {
+      ...txData,
+      date: normalizeTransactionDate(txData.date),
+    };
+
     const updatedTx: Transaction = {
       ...existing,
-      ...txData,
+      ...normalizedData,
     };
 
     this.localMemoryTx = this.localMemoryTx.map((transaction) =>
@@ -498,7 +507,7 @@ class TursoDatabaseService {
         const res = await fetch('/api/transactions', {
           method: 'PUT',
           headers: this.getApiHeaders(),
-          body: JSON.stringify({ id, ...txData }),
+          body: JSON.stringify({ id, ...normalizedData }),
         });
         if (isJsonResponse(res)) {
           const updated: Transaction = await res.json();

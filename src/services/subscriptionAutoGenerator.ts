@@ -1,5 +1,6 @@
 import { Subscription, Transaction } from '../types';
 import { tursoService } from './tursoService';
+import { normalizeTransactionDate } from '../utils/financials';
 
 /**
  * Calculates the target Date object for a given billing day in a specific year and month.
@@ -12,7 +13,7 @@ export function getSubscriptionTargetDate(
 ): Date {
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
   const validDay = Math.min(Math.max(billingDay, 1), daysInMonth);
-  return new Date(year, monthIndex, validDay, 12, 0, 0, 0);
+  return new Date(year, monthIndex, validDay, 0, 0, 0, 0);
 }
 
 /**
@@ -46,7 +47,7 @@ export async function processSubscriptionAutoGeneration(
 
     if (!existingForMonth) {
       const targetDate = getSubscriptionTargetDate(sub.billingDay, year, monthIndex);
-      const targetIso = targetDate.toISOString();
+      const targetIso = normalizeTransactionDate(targetDate);
 
       try {
         const createdTx = await tursoService.addTransaction({
@@ -93,7 +94,7 @@ export async function handleSubscriptionBillingDayUpdate(
 
   if (currentMonthTx) {
     const newTargetDate = getSubscriptionTargetDate(updatedSub.billingDay, year, monthIndex);
-    const newIso = newTargetDate.toISOString();
+    const newIso = normalizeTransactionDate(newTargetDate);
 
     if (currentMonthTx.date !== newIso) {
       try {

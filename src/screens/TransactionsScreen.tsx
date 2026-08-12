@@ -191,7 +191,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                   <TransactionItemCard
                     transaction={transaction}
                     showCurrencyBadge
-                    showTime
                     onEdit={handleEdit}
                     onDelete={(tx) => handleDelete(tx)}
                   />

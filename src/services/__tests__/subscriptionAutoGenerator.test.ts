@@ -167,7 +167,7 @@ describe('subscriptionAutoGenerator', () => {
       expect(tursoService.updateTransaction).toHaveBeenCalledWith(
         'tx-august-1',
         expect.objectContaining({
-          date: new Date(2026, 7, 25, 12, 0, 0, 0).toISOString(),
+          date: '2026-08-25T00:00:00.000Z',
         })
       );
     });

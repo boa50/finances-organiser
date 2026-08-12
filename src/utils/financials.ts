@@ -35,6 +35,38 @@ export interface TransactionFilterOptions {
 }
 
 /**
+ * Normalizes a transaction date string or Date object so that the time part
+ * is set to the beginning of the day (00:00:00.000Z), preserving the date part.
+ */
+export function normalizeTransactionDate(dateInput: Date | string): string {
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) {
+      return `${match[1]}T00:00:00.000Z`;
+    }
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}T00:00:00.000Z`;
+    }
+  } else if (dateInput instanceof Date && !Number.isNaN(dateInput.getTime())) {
+    const year = dateInput.getFullYear();
+    const month = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const day = String(dateInput.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}T00:00:00.000Z`;
+  }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T00:00:00.000Z`;
+}
+
+/**
  * Calculates overall and current-month financial totals (income, expense, net balance)
  * converted to a target currency (default: BRL).
  */

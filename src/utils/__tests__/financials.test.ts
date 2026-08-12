@@ -5,6 +5,7 @@ import {
   calculateFinancialSummary,
   filterTransactions,
   groupRecentTransactions,
+  normalizeTransactionDate,
   parseInstallmentTitle,
 } from '../financials';
 
@@ -181,6 +182,21 @@ describe('Financial Utilities', () => {
 
     it('handles titles with parentheses that are not installments', () => {
       expect(parseInstallmentTitle('Gift (birthday)')).toBe('Gift (birthday)');
+    });
+  });
+
+  describe('normalizeTransactionDate', () => {
+    it('normalizes string dates with non-zero time to beginning of day 00:00:00.000Z', () => {
+      expect(normalizeTransactionDate('2026-08-12T15:45:00.000Z')).toBe('2026-08-12T00:00:00.000Z');
+    });
+
+    it('normalizes date-only string YYYY-MM-DD to beginning of day 00:00:00.000Z', () => {
+      expect(normalizeTransactionDate('2026-08-12')).toBe('2026-08-12T00:00:00.000Z');
+    });
+
+    it('normalizes Date object to beginning of day 00:00:00.000Z', () => {
+      const d = new Date(2026, 7, 12, 14, 30, 0); // Aug 12, 2026 14:30
+      expect(normalizeTransactionDate(d)).toBe('2026-08-12T00:00:00.000Z');
     });
   });
 });

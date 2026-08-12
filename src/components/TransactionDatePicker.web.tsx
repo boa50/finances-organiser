@@ -16,7 +16,7 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
   onClose,
 }) => {
   const handleChange = (event: any) => {
-    const selectedDate = new Date(`${event.target.value}T12:00:00`);
+    const selectedDate = new Date(`${event.target.value}T00:00:00`);
     if (!Number.isNaN(selectedDate.getTime())) onChange(selectedDate);
   };
 

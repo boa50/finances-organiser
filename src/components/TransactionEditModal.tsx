@@ -18,6 +18,7 @@ import { AppButton, AppModal, AppText, AppTextInput, FeedbackMessage } from './u
 import { CreditCard, Building2, Calendar } from 'lucide-react-native';
 import theme from '../theme';
 import { TransactionDatePicker } from './TransactionDatePicker';
+import { normalizeTransactionDate } from '../utils/financials';
 
 export interface TransactionEditModalProps {
   visible: boolean;
@@ -202,7 +203,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         paymentMethodId: type === 'expense' ? (paymentMethodId || undefined) : undefined,
         bankId: type === 'expense' ? (bankId || undefined) : undefined,
         store: type === 'expense' ? (store.trim() || undefined) : undefined,
-        date: date.toISOString(),
+        date: normalizeTransactionDate(date),
         notes: notes.trim() || undefined,
       };
 
@@ -219,7 +220,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             ...transactionData,
             title: `${title.trim()} (${i}/${finalInstallments})`,
             amount: perAmount,
-            date: installmentDate.toISOString(),
+            date: normalizeTransactionDate(installmentDate),
             installments: finalInstallments,
             installmentNumber: i,
             installmentGroupId: groupId,
@@ -241,7 +242,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             ...transactionData,
             title: `${title.trim()} (${i}/${finalInstallments})`,
             amount: perAmount,
-            date: installmentDate.toISOString(),
+            date: normalizeTransactionDate(installmentDate),
             installments: finalInstallments,
             installmentNumber: i,
             installmentGroupId: groupId,
