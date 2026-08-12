@@ -13,6 +13,12 @@ export interface SegmentedControlOption<T extends string = string> {
   label: string;
   value: T;
   icon?: React.ReactNode;
+  /** Custom background color when this segment is selected */
+  selectedBackgroundColor?: string;
+  /** Custom border color when this segment is selected */
+  selectedBorderColor?: string;
+  /** Custom text color when this segment is selected */
+  selectedTextColor?: string;
 }
 
 export interface AppSegmentedControlProps<T extends string = string> {
@@ -35,6 +41,23 @@ export function AppSegmentedControl<T extends string = string>({
       {options.map((option) => {
         const isSelected = option.value === selectedValue;
 
+        const customSelectedStyle: ViewStyle = {};
+        if (isSelected) {
+          if (option.selectedBackgroundColor) {
+            customSelectedStyle.backgroundColor = option.selectedBackgroundColor;
+          }
+          if (option.selectedBorderColor) {
+            customSelectedStyle.borderColor = option.selectedBorderColor;
+          } else if (option.selectedBackgroundColor) {
+            customSelectedStyle.borderColor = 'transparent';
+          }
+        }
+
+        const customSelectedTextStyle =
+          isSelected && option.selectedTextColor
+            ? { color: option.selectedTextColor }
+            : null;
+
         return (
           <TouchableOpacity
             key={option.value}
@@ -42,6 +65,7 @@ export function AppSegmentedControl<T extends string = string>({
               styles.tab,
               fullWidth && styles.flexTab,
               isSelected && styles.selectedTab,
+              customSelectedStyle,
             ]}
             onPress={() => onSelect(option.value)}
             activeOpacity={0.8}
@@ -51,6 +75,7 @@ export function AppSegmentedControl<T extends string = string>({
               style={[
                 styles.tabText,
                 isSelected && styles.selectedTabText,
+                customSelectedTextStyle,
               ]}
             >
               {option.label}
@@ -82,6 +107,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing['2xl'],
     borderRadius: theme.radii.md,
     gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   flexTab: {
     flex: 1,
@@ -104,3 +131,4 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.bold,
   },
 });
+

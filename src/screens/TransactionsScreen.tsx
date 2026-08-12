@@ -155,8 +155,20 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           <AppSegmentedControl<'all' | 'income' | 'expense'>
             options={[
               { label: 'All', value: 'all' },
-              { label: 'Incomes', value: 'income' },
-              { label: 'Expenses', value: 'expense' },
+              {
+              label: 'Incomes',
+              value: 'income',
+              selectedBackgroundColor: theme.colors.successBg,
+              selectedBorderColor: theme.colors.success,
+              selectedTextColor: theme.colors.success,
+            },
+            {
+              label: 'Expenses',
+              value: 'expense',
+              selectedBackgroundColor: theme.colors.dangerBg,
+              selectedBorderColor: theme.colors.danger,
+              selectedTextColor: theme.colors.danger,
+            },
             ]}
             selectedValue={filterType}
             onSelect={setFilterType}

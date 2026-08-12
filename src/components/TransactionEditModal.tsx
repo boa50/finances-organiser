@@ -14,7 +14,7 @@ import { bankService } from '../services/bankService';
 import { tursoService } from '../services/tursoService';
 import { CategoryIcon } from './CategoryIcon';
 import { ChipSelector } from './ChipSelector';
-import { AppButton, AppModal, AppText, AppTextInput, FeedbackMessage } from './ui';
+import { AppButton, AppModal, AppSegmentedControl, AppText, AppTextInput, FeedbackMessage } from './ui';
 import { CreditCard, Building2, Calendar } from 'lucide-react-native';
 import theme from '../theme';
 import { TransactionDatePicker } from './TransactionDatePicker';
@@ -294,28 +294,26 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         )}
 
         {/* Type selector */}
-        <View style={styles.typeSelector}>
-          <TouchableOpacity
-            style={[styles.typeBtn, type === 'expense' && styles.typeBtnExpense]}
-            onPress={() => changeType('expense')}
-          >
-            <AppText
-              style={[styles.typeBtnText, type === 'expense' && styles.typeBtnTextActive]}
-            >
-              Expense
-            </AppText>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.typeBtn, type === 'income' && styles.typeBtnIncome]}
-            onPress={() => changeType('income')}
-          >
-            <AppText
-              style={[styles.typeBtnText, type === 'income' && styles.typeBtnTextActive]}
-            >
-              Income
-            </AppText>
-          </TouchableOpacity>
-        </View>
+        <AppSegmentedControl<TransactionType>
+          options={[
+            {
+              label: 'Income',
+              value: 'income',
+              selectedBackgroundColor: theme.colors.successBg,
+              selectedBorderColor: theme.colors.success,
+              selectedTextColor: theme.colors.success,
+            },
+            {
+              label: 'Expense',
+              value: 'expense',
+              selectedBackgroundColor: theme.colors.dangerBg,
+              selectedBorderColor: theme.colors.danger,
+              selectedTextColor: theme.colors.danger,
+            },
+          ]}
+          selectedValue={type}
+          onSelect={(nextType) => changeType(nextType)}
+        />
 
         {/* Title */}
         <Field label="Title *">
@@ -545,34 +543,6 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     marginBottom: theme.spacing.xs,
-  },
-  typeSelector: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radii.lg,
-    padding: theme.spacing.xs,
-    gap: theme.spacing.xs,
-  },
-  typeBtn: {
-    flex: 1,
-    paddingVertical: theme.spacing.sm,
-    alignItems: 'center',
-    borderRadius: theme.radii.md,
-  },
-  typeBtnExpense: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-  },
-  typeBtnIncome: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-  },
-  typeBtnText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.semibold,
-  },
-  typeBtnTextActive: {
-    color: theme.colors.textPrimary,
-    fontWeight: theme.fontWeight.bold,
   },
   field: {
     gap: theme.spacing.xs,

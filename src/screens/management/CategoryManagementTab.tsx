@@ -40,8 +40,20 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
         <View style={styles.topControls}>
           <AppSegmentedControl<TransactionType>
             options={[
-              { label: 'Expenses', value: 'expense' },
-              { label: 'Incomes', value: 'income' },
+              {
+              label: 'Incomes',
+              value: 'income',
+              selectedBackgroundColor: theme.colors.successBg,
+              selectedBorderColor: theme.colors.success,
+              selectedTextColor: theme.colors.success,
+            },
+            {
+              label: 'Expenses',
+              value: 'expense',
+              selectedBackgroundColor: theme.colors.dangerBg,
+              selectedBorderColor: theme.colors.danger,
+              selectedTextColor: theme.colors.danger,
+            },
             ]}
             selectedValue={activeCategoryType}
             onSelect={setActiveCategoryType}
