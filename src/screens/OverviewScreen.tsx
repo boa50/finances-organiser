@@ -96,6 +96,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                   <TransactionItemCard
                     key={item.id}
                     transaction={item.representativeTx}
+                    title={item.title}
                     amountToDisplay={item.totalAmount}
                     installmentsLabel={item.installments && item.installments > 1 ? `${item.installments}x` : ''}
                     dateString={dateStr}

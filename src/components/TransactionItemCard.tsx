@@ -13,6 +13,7 @@ export interface TransactionItemCardProps {
   transaction: Transaction;
   onEdit: (transaction: Transaction) => void;
   onDelete?: (transaction: Transaction) => void;
+  title?: string;
   showCurrencyBadge?: boolean;
   amountToDisplay?: number;
   installmentsLabel?: string;
@@ -26,6 +27,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   transaction,
   onEdit,
   onDelete,
+  title,
   showCurrencyBadge = false,
   amountToDisplay,
   installmentsLabel,
@@ -36,6 +38,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
 }) => {
   const isIncome = transaction.type === 'income';
   const currencyInfo = getCurrencyInfo(transaction.currencyId);
+  const displayTitle = title ?? transaction.title;
 
   const date = new Date(transaction.date);
   const isValidDate = !Number.isNaN(date.getTime());
@@ -94,7 +97,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       />
 
       <View style={styles.txMainInfo}>
-        <AppText style={styles.txTitle}>{transaction.title}</AppText>
+        <AppText style={styles.txTitle}>{displayTitle}</AppText>
         <View style={styles.txMetaRow}>
           <AppText style={styles.txCategory}>{catLabel}</AppText>
           {transaction.store ? (
