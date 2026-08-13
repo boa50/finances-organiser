@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { Transaction } from '../types';
 import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
@@ -170,23 +170,23 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
               size="sm"
             />
           ) : (
-            <TouchableOpacity
+            <Pressable
               onPress={() => onEdit(transaction)}
-              style={styles.editBtn}
+              style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
               accessibilityLabel={`Edit ${transaction.title}`}
             >
               <Pencil size={14} color={theme.colors.accent} />
-            </TouchableOpacity>
+            </Pressable>
           )}
 
           {onDelete && (
-            <TouchableOpacity
+            <Pressable
               onPress={() => onDelete(transaction)}
-              style={styles.deleteBtn}
+              style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]}
               accessibilityLabel={`Delete ${transaction.title}`}
             >
               <Trash2 size={14} color={theme.colors.danger} />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       </View>

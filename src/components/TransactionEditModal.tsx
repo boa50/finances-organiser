@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { CategoryItem, PaymentMethodItem, BankItem, CurrencyInfo, Transaction, TransactionType } from '../types';
@@ -391,16 +391,16 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             {pmSupportsInstallments && (
               <Field label="Installments">
                 <View style={styles.installmentRow}>
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       const n = Math.max(1, (installments || 1) - 1);
                       setInstallments(n);
                       setInstallmentInputText(String(n));
                     }}
-                    style={styles.installmentBtn}
+                    style={({ pressed }) => [styles.installmentBtn, pressed && { opacity: 0.7 }]}
                   >
                     <AppText style={styles.installmentBtnText}>−</AppText>
-                  </TouchableOpacity>
+                  </Pressable>
 
                   <TextInput
                     style={styles.installmentInput}
@@ -416,16 +416,16 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                     textAlign="center"
                   />
 
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => {
                       const n = (installments || 1) + 1;
                       setInstallments(n);
                       setInstallmentInputText(String(n));
                     }}
-                    style={styles.installmentBtn}
+                    style={({ pressed }) => [styles.installmentBtn, pressed && { opacity: 0.7 }]}
                   >
                     <AppText style={styles.installmentBtnText}>+</AppText>
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
 
                 {installments > 1 && parsedAmountNum > 0 && (
@@ -466,9 +466,9 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
         {/* Date Picker Button */}
         <Field label="Date">
-          <TouchableOpacity
+          <Pressable
             onPress={() => setDatePickerVisible(true)}
-            style={styles.datePickerBtn}
+            style={({ pressed }) => [styles.datePickerBtn, pressed && { opacity: 0.7 }]}
           >
             <View style={styles.datePickerBtnLeft}>
               <Calendar size={16} color={theme.colors.accent} />
@@ -480,7 +480,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                 })}
               </AppText>
             </View>
-          </TouchableOpacity>
+          </Pressable>
 
           <TransactionDatePicker
             visible={datePickerVisible}

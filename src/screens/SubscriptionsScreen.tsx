@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Switch,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Subscription } from '../types';
@@ -296,19 +296,19 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                     />
                   </View>
 
-                  <TouchableOpacity
-                    style={styles.iconBtn}
+                  <Pressable
+                    style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
                     onPress={() => handleOpenEditModal(item)}
                   >
                     <Edit2 size={16} color={theme.colors.accent} />
-                  </TouchableOpacity>
+                  </Pressable>
 
-                  <TouchableOpacity
-                    style={styles.iconBtn}
+                  <Pressable
+                    style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
                     onPress={() => handleDelete(item)}
                   >
                     <Trash2 size={16} color={theme.colors.danger} />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
               </View>
             </AppCard>

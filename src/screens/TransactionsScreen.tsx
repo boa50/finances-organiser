@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import {
   Alert,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Transaction } from '../types';
@@ -135,10 +135,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           subtitle={`${filteredTransactions.length} recorded entries`}
           rightElement={
             transactions.length > 0 ? (
-              <TouchableOpacity style={styles.clearAllBtn} onPress={handleClearAll}>
+              <Pressable
+                style={({ pressed }) => [styles.clearAllBtn, pressed && { opacity: 0.7 }]}
+                onPress={handleClearAll}
+              >
                 <Trash2 size={14} color={theme.colors.danger} />
                 <AppText style={styles.clearAllBtnText}>Clear All</AppText>
-              </TouchableOpacity>
+              </Pressable>
             ) : undefined
           }
         />

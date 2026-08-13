@@ -1,9 +1,9 @@
 import React from 'react';
 import {
+  Pressable,
   StyleProp,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -59,16 +59,16 @@ export function AppSegmentedControl<T extends string = string>({
             : null;
 
         return (
-          <TouchableOpacity
+          <Pressable
             key={option.value}
-            style={[
+            style={({ pressed }) => [
               styles.tab,
               fullWidth && styles.flexTab,
               isSelected && styles.selectedTab,
               customSelectedStyle,
+              pressed && { opacity: 0.8 },
             ]}
             onPress={() => onSelect(option.value)}
-            activeOpacity={0.8}
           >
             {option.icon && <View style={styles.iconContainer}>{option.icon}</View>}
             <Text
@@ -80,7 +80,7 @@ export function AppSegmentedControl<T extends string = string>({
             >
               {option.label}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>

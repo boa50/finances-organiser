@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { PaymentMethodItem } from '../../types';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
 import { AppCard, AppEmptyState, AppTextInput, AppText } from '../../components/ui';
@@ -31,10 +31,13 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
     <View style={styles.tabContainer}>
       <AppCard style={styles.filterCard} padding="lg">
         <View style={styles.actionButtonsRow}>
-          <TouchableOpacity style={styles.createBtn} onPress={onOpenAddModal}>
+          <Pressable
+            style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+            onPress={onOpenAddModal}
+          >
             <Plus size={16} color={theme.colors.white} />
             <AppText style={styles.createBtnText}>New Payment Method</AppText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <AppTextInput

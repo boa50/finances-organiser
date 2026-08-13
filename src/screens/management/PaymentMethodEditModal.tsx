@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { PaymentMethodItem } from '../../types';
 import { AppModal, AppText } from '../../components/ui';
 import { CreditCard } from 'lucide-react-native';
@@ -52,10 +52,13 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
 
         <View style={styles.formGroup}>
           <AppText style={styles.formLabel}>Allow Installments</AppText>
-          <TouchableOpacity
-            style={[styles.toggleRow, pmAllowInstallments && styles.toggleRowActive]}
+          <Pressable
+            style={({ pressed }) => [
+              styles.toggleRow,
+              pmAllowInstallments && styles.toggleRowActive,
+              pressed && { opacity: 0.7 },
+            ]}
             onPress={() => setPmAllowInstallments(!pmAllowInstallments)}
-            activeOpacity={0.7}
           >
             <View style={[styles.toggleTrack, pmAllowInstallments && styles.toggleTrackActive]}>
               <View style={[styles.toggleThumb, pmAllowInstallments && styles.toggleThumbActive]} />
@@ -65,7 +68,7 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
                 ? 'Users can split expenses into monthly installments'
                 : 'No installment option for this payment method'}
             </AppText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <View style={styles.formGroup}>
@@ -84,8 +87,12 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
           </View>
         )}
 
-        <TouchableOpacity
-          style={[styles.saveSubmitBtn, { backgroundColor: theme.colors.accent }]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.saveSubmitBtn,
+            { backgroundColor: theme.colors.accent },
+            pressed && !pmSaving && { opacity: 0.85 },
+          ]}
           onPress={onSave}
           disabled={pmSaving}
         >
@@ -96,7 +103,7 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
               {editingPm ? 'Save Changes' : 'Create Payment Method'}
             </AppText>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </AppModal>
   );

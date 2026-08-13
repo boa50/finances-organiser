@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { CurrencyInfo } from '../../types';
 import { VALID_CURRENCIES } from '../../utils/currencies';
 import { AppButton, AppModal, AppText, FeedbackMessage } from '../../components/ui';
@@ -57,10 +57,14 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
             {availableOptions.map((item) => {
               const isSelected = selectedCode === item.code;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={item.code}
                   onPress={() => setSelectedCode(item.code)}
-                  style={[styles.optionCard, isSelected && styles.optionCardSelected]}
+                  style={({ pressed }) => [
+                    styles.optionCard,
+                    isSelected && styles.optionCardSelected,
+                    pressed && { opacity: 0.8 },
+                  ]}
                 >
                   <AppText style={styles.flag}>{item.flag}</AppText>
                   <View style={styles.optionDetails}>
@@ -69,7 +73,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
                   </View>
                   <AppText style={styles.symbol}>{item.symbol}</AppText>
                   {isSelected && <Check size={18} color={theme.colors.accent} />}
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>

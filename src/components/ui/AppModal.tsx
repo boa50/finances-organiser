@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, TouchableOpacity, StyleSheet, ModalProps } from 'react-native';
+import { Modal, View, Pressable, StyleSheet, ModalProps } from 'react-native';
 import { AppText } from './AppText';
 import { X } from 'lucide-react-native';
 import theme from '../../theme';
@@ -30,9 +30,12 @@ export const AppModal: React.FC<AppModalProps> = ({
                 {title && <AppText style={styles.title}>{title}</AppText>}
                 {subtitle && <AppText style={styles.subtitle}>{subtitle}</AppText>}
               </View>
-              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <Pressable
+                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+                onPress={onClose}
+              >
                 <X color={theme.colors.textMuted} size={20} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           )}
           {children}

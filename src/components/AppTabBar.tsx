@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { ChartNoAxesCombined, House, List, Repeat, SlidersHorizontal } from 'lucide-react-native';
 import { AppText } from './ui';
 import theme from '../theme';
@@ -46,16 +46,20 @@ export const AppTabBar: React.FC<AppTabBarProps> = ({ activeTab, onTabChange }) 
         const isActive = activeTab === tab.id;
         const color = isActive ? theme.colors.accent : theme.colors.textMuted;
         return (
-          <TouchableOpacity
+          <Pressable
             key={tab.id}
-            style={[styles.navTab, isActive && styles.navTabActive]}
+            style={({ pressed }) => [
+              styles.navTab,
+              isActive && styles.navTabActive,
+              pressed && { opacity: 0.7 },
+            ]}
             onPress={() => onTabChange(tab.id)}
           >
             {tab.icon(color)}
             <AppText style={[styles.navText, isActive && styles.navTextActive]}>
               {tab.label}
             </AppText>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>

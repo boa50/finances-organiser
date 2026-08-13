@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from './ui/AppText';
 import theme from '../theme';
 
@@ -78,17 +78,20 @@ export function ChipSelector<T>({
         }
 
         return (
-          <TouchableOpacity
+          <Pressable
             key={key}
-            style={[styles.chip, active && activeChipStyle]}
+            style={({ pressed }) => [
+              styles.chip,
+              active && activeChipStyle,
+              pressed && { opacity: 0.75 },
+            ]}
             onPress={() => onSelect(item)}
-            activeOpacity={0.75}
           >
             {renderIcon && <View style={styles.iconWrapper}>{renderIcon(item, active)}</View>}
             <AppText style={[styles.chipText, active && activeTextStyle]}>
               {label}
             </AppText>
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </ScrollView>

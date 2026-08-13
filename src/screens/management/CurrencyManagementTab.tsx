@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { CurrencyInfo } from '../../types';
 import { AppCard, AppText, AppEmptyState, AppTextInput } from '../../components/ui';
 import theme from '../../theme';
@@ -32,10 +32,13 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
     <View style={styles.tabContainer}>
       <AppCard style={styles.filterCard} padding="lg">
         <View style={styles.topControls}>
-          <TouchableOpacity style={styles.createBtn} onPress={onOpenAddModal}>
+          <Pressable
+            style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+            onPress={onOpenAddModal}
+          >
             <Plus size={16} color={theme.colors.white} />
             <AppText style={styles.createBtnText}>Add Currency</AppText>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         <AppTextInput
@@ -68,17 +71,21 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
                 <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
               </View>
 
-              <TouchableOpacity
+              <Pressable
                 onPress={() => onDeleteCurrency(currency)}
                 disabled={!canDelete}
-                style={[styles.deleteButton, !canDelete && styles.deleteButtonDisabled]}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  !canDelete && styles.deleteButtonDisabled,
+                  pressed && canDelete && { opacity: 0.7 },
+                ]}
                 accessibilityLabel={`Delete ${currency.code}`}
               >
                 <Trash2
                   size={18}
                   color={canDelete ? theme.colors.danger : theme.colors.textMuted}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </AppCard>
           ))}
         </View>

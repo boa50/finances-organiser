@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { AppCard, AppBadge, AppText } from './ui';
 import { Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../theme';
@@ -36,12 +36,20 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.actionBtn} onPress={onEdit} accessibilityLabel={`Edit ${name}`}>
+        <Pressable
+          style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
+          onPress={onEdit}
+          accessibilityLabel={`Edit ${name}`}
+        >
           <Pencil size={14} color={theme.colors.accent} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionBtn} onPress={onDelete} accessibilityLabel={`Delete ${name}`}>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
+          onPress={onDelete}
+          accessibilityLabel={`Delete ${name}`}
+        >
           <Trash2 size={14} color={theme.colors.danger} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </AppCard>
   );

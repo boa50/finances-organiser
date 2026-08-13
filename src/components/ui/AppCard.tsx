@@ -1,8 +1,8 @@
 import React from 'react';
 import {
+  Pressable,
   StyleProp,
   StyleSheet,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -31,10 +31,7 @@ export const AppCard: React.FC<AppCardProps> = ({
         return {
           backgroundColor: theme.colors.surface,
           borderColor: theme.colors.borderStrong,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.25,
-          shadowRadius: 12,
+          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.25)',
           elevation: 6,
         };
       case 'outlined':
@@ -65,9 +62,12 @@ export const AppCard: React.FC<AppCardProps> = ({
 
   if (onPress) {
     return (
-      <TouchableOpacity style={combinedStyles} onPress={onPress} activeOpacity={0.85}>
+      <Pressable
+        style={({ pressed }) => [combinedStyles, pressed && { opacity: 0.85 }]}
+        onPress={onPress}
+      >
         {children}
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { LogOut, Trash2, Zap } from 'lucide-react-native';
 import { AppBadge, AppText } from './ui';
 import theme from '../theme';
@@ -32,15 +32,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         />
 
         {hasTransactions && (
-          <TouchableOpacity style={styles.clearBtn} onPress={onClearAll}>
+          <Pressable
+            style={({ pressed }) => [styles.clearBtn, pressed && { opacity: 0.7 }]}
+            onPress={onClearAll}
+          >
             <Trash2 size={14} color={theme.colors.danger} />
             <AppText style={styles.clearBtnText}>Clear All</AppText>
-          </TouchableOpacity>
+          </Pressable>
         )}
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
+        <Pressable
+          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
+          onPress={onLogout}
+        >
           <LogOut size={14} color={theme.colors.textSecondary} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import theme from '../theme';
 
 interface TransactionDatePickerProps {
@@ -31,9 +31,12 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
             onChange: handleChange,
             style: browserDateInputStyle,
           })}
-          <TouchableOpacity style={styles.doneButton} onPress={onClose}>
+          <Pressable
+            style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
+            onPress={onClose}
+          >
             <Text style={styles.doneText}>Done</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </Modal>

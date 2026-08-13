@@ -1,9 +1,9 @@
 import React from 'react';
 import {
+  Pressable,
   StyleProp,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -95,9 +95,12 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
 
   if (onPress) {
     return (
-      <TouchableOpacity style={badgeStyle} onPress={onPress} activeOpacity={0.8}>
+      <Pressable
+        style={({ pressed }) => [badgeStyle, pressed && { opacity: 0.8 }]}
+        onPress={onPress}
+      >
         {content}
-      </TouchableOpacity>
+      </Pressable>
     );
   }
 

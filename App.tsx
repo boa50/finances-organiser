@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   StyleSheet,
   View,
-  TouchableOpacity,
+  Pressable,
   SafeAreaView,
   StatusBar,
   Platform,
@@ -70,13 +70,12 @@ export default function App() {
       </View>
 
       {(activeTab === 'overview' || activeTab === 'transactions') && (
-        <TouchableOpacity
-          style={styles.fab}
+        <Pressable
+          style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
           onPress={() => setAddTransactionModalVisible(true)}
-          activeOpacity={0.85}
         >
           <Plus size={28} color={theme.colors.white} strokeWidth={2.5} />
-        </TouchableOpacity>
+        </Pressable>
       )}
 
       <AppTabBar activeTab={activeTab} onTabChange={setActiveTab} />
@@ -110,10 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.success,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: theme.colors.success,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
+    boxShadow: '0px 4px 12px rgba(16, 185, 129, 0.4)',
     elevation: 8,
     zIndex: 10,
   },

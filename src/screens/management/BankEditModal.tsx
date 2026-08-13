@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { BankItem } from '../../types';
 import { AppModal, AppText } from '../../components/ui';
 import { Building2 } from 'lucide-react-native';
@@ -62,8 +62,12 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
           </View>
         )}
 
-        <TouchableOpacity
-          style={[styles.saveSubmitBtn, { backgroundColor: theme.colors.accent }]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.saveSubmitBtn,
+            { backgroundColor: theme.colors.accent },
+            pressed && !bankSaving && { opacity: 0.85 },
+          ]}
           onPress={onSave}
           disabled={bankSaving}
         >
@@ -74,7 +78,7 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
               {editingBank ? 'Save Changes' : 'Create Bank'}
             </AppText>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </AppModal>
   );

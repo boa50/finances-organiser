@@ -3,7 +3,7 @@ import {
   View,
   ScrollView,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
@@ -72,12 +72,13 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
           <AppText style={styles.formLabel}>Color Theme</AppText>
           <View style={styles.colorGrid}>
             {PRESET_CATEGORY_COLORS.map((c) => (
-              <TouchableOpacity
+              <Pressable
                 key={c}
-                style={[
+                style={({ pressed }) => [
                   styles.colorDot,
                   { backgroundColor: c },
                   colorInput === c && styles.colorDotSelected,
+                  pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => setColorInput(c)}
               />
@@ -148,13 +149,14 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
           </View>
         )}
 
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => [
             styles.saveSubmitBtn,
             {
               backgroundColor:
                 activeCategoryType === 'income' ? theme.colors.success : theme.colors.accent,
             },
+            pressed && !saving && { opacity: 0.85 },
           ]}
           onPress={onSave}
           disabled={saving}
@@ -166,7 +168,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               {editingCategory ? 'Save Category' : 'Create Category'}
             </AppText>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </AppModal>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { CategoryItem, TransactionType } from '../../types';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
@@ -60,12 +60,15 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
           />
 
           <View style={styles.actionButtonsRow}>
-            <TouchableOpacity style={styles.createBtn} onPress={onOpenAddModal}>
+            <Pressable
+              style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+              onPress={onOpenAddModal}
+            >
               <Plus size={16} color={theme.colors.white} />
               <AppText style={styles.createBtnText}>
                 New {activeCategoryType === 'income' ? 'Income' : 'Expense'} Category
               </AppText>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import theme from '../theme';
 
@@ -33,9 +33,12 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
             onChange={handleChange}
           />
           {Platform.OS === 'ios' && (
-            <TouchableOpacity style={styles.doneButton} onPress={onClose}>
+            <Pressable
+              style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
+              onPress={onClose}
+            >
               <Text style={styles.doneText}>Done</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       </View>

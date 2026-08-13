@@ -1,9 +1,9 @@
 import React from 'react';
 import {
+  Pressable,
   StyleProp,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -36,9 +36,12 @@ export const AppSectionHeader: React.FC<AppSectionHeaderProps> = ({
       {rightElement ? (
         rightElement
       ) : actionLabel && onActionPress ? (
-        <TouchableOpacity onPress={onActionPress} activeOpacity={0.7}>
+        <Pressable
+          onPress={onActionPress}
+          style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+        >
           <Text style={styles.actionText}>{actionLabel}</Text>
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
     </View>
   );

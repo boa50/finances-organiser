@@ -1,9 +1,9 @@
 import React from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import theme from '../../theme';
@@ -74,16 +74,16 @@ export const AppButton: React.FC<AppButtonProps> = ({
   const variantStyles = getVariantStyles();
 
   return (
-    <TouchableOpacity
-      style={[
+    <Pressable
+      style={({ pressed }) => [
         styles.button,
         variantStyles.button,
         fullWidth && styles.fullWidth,
         !isInteractive && styles.disabled,
+        pressed && isInteractive && { opacity: 0.85 },
       ]}
       onPress={onPress}
       disabled={!isInteractive}
-      activeOpacity={0.85}
     >
       {loading ? (
         <ActivityIndicator size="small" color={variantStyles.spinnerColor} />
@@ -93,7 +93,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
           <Text style={[styles.text, variantStyles.text]}>{title}</Text>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 
