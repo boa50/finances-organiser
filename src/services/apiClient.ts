@@ -1,13 +1,7 @@
 import { tursoService } from './tursoService';
+import { isJsonResponse } from './apiResponseUtils';
 
-/**
- * Check if a fetch Response is successful and returned a JSON payload (not SPA HTML rewrite in dev mode)
- */
-export function isJsonResponse(res: Response): boolean {
-  if (!res.ok) return false;
-  const contentType = res.headers.get('content-type') || '';
-  return contentType.includes('application/json');
-}
+export { isJsonResponse };
 
 /**
  * Perform an authenticated API request to the backend Vercel serverless functions

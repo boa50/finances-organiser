@@ -2,7 +2,7 @@ import { createClient, Client } from '@libsql/client/web';
 import { Transaction, TursoConfig } from '../types';
 import { generateId } from '../utils/idGenerator';
 import { normalizeTransactionDate, parseInstallmentTitle } from '../utils/financials';
-import { isJsonResponse } from './apiClient';
+import { isJsonResponse } from './apiResponseUtils';
 
 const LOCAL_TX_KEY = 'finances_local_transactions';
 

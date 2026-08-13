@@ -1,6 +1,5 @@
-import { CategoryAggregate, MonthlyAggregate, Transaction } from '../types';
+import { CategoryAggregate, CategoryItem, MonthlyAggregate, Transaction } from '../types';
 import { convertCurrency, DEFAULT_CURRENCY } from './currencies';
-import { categoryService } from '../services/categoryService';
 
 export interface FinancialSummary {
   totalIncome: number;
@@ -32,6 +31,7 @@ export interface TransactionFilterOptions {
   searchQuery?: string;
   startDate?: string;
   endDate?: string;
+  categories?: CategoryItem[];
 }
 
 /**
@@ -281,7 +281,7 @@ export function filterTransactions(
   transactions: Transaction[],
   options: TransactionFilterOptions = {}
 ): Transaction[] {
-  const { type = 'all', category, searchQuery, startDate, endDate } = options;
+  const { type = 'all', category, searchQuery, startDate, endDate, categories } = options;
 
   return transactions.filter((tx) => {
     if (type !== 'all' && tx.type !== type) return false;
@@ -290,8 +290,8 @@ export function filterTransactions(
     if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const titleMatch = tx.title.toLowerCase().includes(q);
-      const catObj = tx.categoryId
-        ? categoryService.getCategoriesSync().find((c) => c.id === tx.categoryId || c.name.toLowerCase() === tx.categoryId?.toLowerCase())
+      const catObj = (tx.categoryId && categories)
+        ? categories.find((c) => c.id === tx.categoryId || c.name.toLowerCase() === tx.categoryId?.toLowerCase())
         : null;
       const catName = catObj ? catObj.name : (tx.categoryId || '');
       const categoryMatch = catName ? catName.toLowerCase().includes(q) : false;

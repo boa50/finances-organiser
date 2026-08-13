@@ -10,6 +10,7 @@ import {
 import { Transaction } from '../types';
 import { filterTransactions } from '../utils/financials';
 import { tursoService } from '../services/tursoService';
+import { categoryService } from '../services/categoryService';
 import { confirmAction } from '../utils/dialogs';
 import { TransactionEditModal } from '../components/TransactionEditModal';
 import { TransactionItemCard } from '../components/TransactionItemCard';
@@ -45,6 +46,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const filteredTransactions = filterTransactions(transactions, {
     type: filterType,
     searchQuery,
+    categories: categoryService.getCategoriesSync(),
   });
 
   const handleEdit = (transaction: Transaction) => {
