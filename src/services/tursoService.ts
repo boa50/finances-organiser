@@ -553,6 +553,87 @@ class TursoDatabaseService {
     return updatedTx;
   }
 
+  public async duplicateTransaction(targetTx: Transaction): Promise<Transaction[]> {
+    const transactions = await this.getTransactions();
+    const existing = transactions.find((t) => t.id === targetTx.id);
+    if (!existing) {
+      throw new Error('Transaction not found');
+    }
+
+    const currentDate = new Date();
+
+    if (existing.installments && existing.installments > 1) {
+      const groupId = existing.installmentGroupId || '';
+      const baseTitle = parseInstallmentTitle(existing.title).toLowerCase();
+      const totalInst = existing.installments;
+
+      const siblings = transactions.filter((t) => {
+        if (groupId && t.installmentGroupId === groupId) return true;
+        if (t.id === existing.id) return true;
+        if (baseTitle && totalInst > 1 && t.installments === totalInst) {
+          const tBase = parseInstallmentTitle(t.title).toLowerCase();
+          if (tBase === baseTitle) return true;
+        }
+        return false;
+      });
+
+      siblings.sort((a, b) => (a.installmentNumber || 1) - (b.installmentNumber || 1));
+
+      const cleanBaseTitle = parseInstallmentTitle(existing.title);
+      const newGroupId = `inst-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const createdTransactions: Transaction[] = [];
+
+      for (let i = 1; i <= totalInst; i++) {
+        const installmentDate = new Date(currentDate);
+        installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+
+        const template = siblings.find((s) => s.installmentNumber === i) || existing;
+
+        const duplicatedData: Omit<Transaction, 'id' | 'createdAt'> = {
+          type: template.type,
+          title: `${cleanBaseTitle} (${i}/${totalInst})`,
+          amount: template.amount,
+          currencyId: template.currencyId,
+          categoryId: template.categoryId,
+          paymentMethodId: template.paymentMethodId,
+          bankId: template.bankId,
+          store: template.store,
+          installments: totalInst,
+          installmentNumber: i,
+          installmentGroupId: newGroupId,
+          subscriptionId: undefined,
+          date: normalizeTransactionDate(installmentDate),
+          notes: template.notes,
+        };
+
+        const created = await this.addTransaction(duplicatedData);
+        createdTransactions.push(created);
+      }
+
+      return createdTransactions;
+    }
+
+    const duplicatedData: Omit<Transaction, 'id' | 'createdAt'> = {
+      type: existing.type,
+      title: existing.title,
+      amount: existing.amount,
+      currencyId: existing.currencyId,
+      categoryId: existing.categoryId,
+      paymentMethodId: existing.paymentMethodId,
+      bankId: existing.bankId,
+      store: existing.store,
+      installments: 0,
+      installmentNumber: 0,
+      installmentGroupId: undefined,
+      subscriptionId: undefined,
+      date: normalizeTransactionDate(currentDate),
+      notes: existing.notes,
+    };
+
+    const created = await this.addTransaction(duplicatedData);
+    return [created];
+  }
+
   public removeCategoryReferences(catId: string): void {
     this.localMemoryTx = this.localMemoryTx.map((tx) => {
       if (tx.categoryId === catId) {

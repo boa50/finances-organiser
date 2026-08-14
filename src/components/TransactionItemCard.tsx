@@ -6,13 +6,14 @@ import { categoryService } from '../services/categoryService';
 import { paymentMethodService } from '../services/paymentMethodService';
 import { bankService } from '../services/bankService';
 import { AppCard, AppIconBadge, AppBadge, AppText } from './ui';
-import { TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Pencil, Trash2, Copy } from 'lucide-react-native';
 import theme from '../theme';
 
 export interface TransactionItemCardProps {
   transaction: Transaction;
   onEdit: (transaction: Transaction) => void;
   onDelete?: (transaction: Transaction) => void;
+  onDuplicate?: (transaction: Transaction) => void;
   title?: string;
   showCurrencyBadge?: boolean;
   amountToDisplay?: number;
@@ -27,6 +28,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   transaction,
   onEdit,
   onDelete,
+  onDuplicate,
   title,
   showCurrencyBadge = false,
   amountToDisplay,
@@ -170,13 +172,24 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
               size="sm"
             />
           ) : (
-            <Pressable
-              onPress={() => onEdit(transaction)}
-              style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
-              accessibilityLabel={`Edit ${transaction.title}`}
-            >
-              <Pencil size={14} color={theme.colors.accent} />
-            </Pressable>
+            <>
+              {onDuplicate && (
+                <Pressable
+                  onPress={() => onDuplicate(transaction)}
+                  style={({ pressed }) => [styles.duplicateBtn, pressed && { opacity: 0.7 }]}
+                  accessibilityLabel={`Duplicate ${transaction.title}`}
+                >
+                  <Copy size={14} color={theme.colors.accent} />
+                </Pressable>
+              )}
+              <Pressable
+                onPress={() => onEdit(transaction)}
+                style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
+                accessibilityLabel={`Edit ${transaction.title}`}
+              >
+                <Pencil size={14} color={theme.colors.accent} />
+              </Pressable>
+            </>
           )}
 
           {onDelete && (
@@ -271,6 +284,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.xs,
+  },
+  duplicateBtn: {
+    padding: theme.spacing.xs,
+    borderRadius: theme.radii.sm,
+    backgroundColor: theme.colors.background,
   },
   editBtn: {
     padding: theme.spacing.xs,

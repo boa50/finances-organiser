@@ -62,6 +62,25 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     setEditingTransaction(transaction);
   };
 
+  const handleDuplicate = async (transaction: Transaction) => {
+    if (transaction.subscriptionId) {
+      confirmAction({
+        title: 'Subscription Transaction',
+        message:
+          'Subscription expenses cannot be duplicated directly from Transaction History. Please edit the subscription on the Subscriptions management page.',
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    try {
+      await tursoService.duplicateTransaction(transaction);
+      onRefresh();
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to duplicate transaction.');
+    }
+  };
+
   const handleDelete = async (transaction: Transaction) => {
     if (transaction.installments && transaction.installments > 1) {
       if (Platform.OS === 'web') {
@@ -209,6 +228,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                     transaction={transaction}
                     showCurrencyBadge
                     onEdit={handleEdit}
+                    onDuplicate={handleDuplicate}
                     onDelete={(tx) => handleDelete(tx)}
                   />
                 </View>

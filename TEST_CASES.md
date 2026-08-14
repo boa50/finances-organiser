@@ -6,14 +6,14 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Automated and passing | 72 |
-| 🟡 Implemented but not automated | 20 |
+| ✅ Automated and passing | 74 |
+| 🟡 Implemented but not automated | 21 |
 | ⬜ Not implemented | 0 |
 | 🔴 Automated but failing | 0 |
 | ⚠️ Cannot currently be verified | 0 |
-| **Total** | **92** |
+| **Total** | **95** |
 
-All 72 automated tests across 11 test suites were verified passing via `npm test` on 2026-08-11.
+All 74 automated tests across 12 test suites were verified passing via `npm test` on 2026-08-14.
 
 ### Automated Test Suites
 
@@ -1201,6 +1201,64 @@ All 72 automated tests across 11 test suites were verified passing via `npm test
 **When** The user deletes it.
 
 **Then** The user is offered a choice to delete only this installment or all installments.
+
+---
+
+### TC-082 — Duplicate single transaction
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions
+
+**Platform:** All
+
+**Given** A single transaction saved in the database.
+
+**When** `tursoService.duplicateTransaction(transaction)` is called.
+
+**Then** A new transaction is created with all original properties copied, but with date defaulted to the current day.
+
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `duplicates a single transaction with identical values and current day date`
+
+---
+
+### TC-083 — Duplicate multi-installment transaction group
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions
+
+**Platform:** All
+
+**Given** A multi-installment transaction group saved in the database.
+
+**When** `tursoService.duplicateTransaction(transaction)` is called on an installment.
+
+**Then** All installments in the group are duplicated with a new `installmentGroupId`, with installment 1 set to current date and subsequent installments incremented monthly.
+
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `duplicates all installments in a multi-installment transaction group`
+
+---
+
+### TC-084 — Duplicate transaction button displayed on TransactionsScreen only
+
+**Status:** 🟡 Implemented but not automated
+
+**Priority:** Medium
+
+**Feature:** Transactions
+
+**Platform:** Web, Android, iOS
+
+**Given** Transactions are displayed in `TransactionsScreen`.
+
+**When** The transaction item card is rendered.
+
+**Then** An icon button for duplicating the transaction is visible on `TransactionsScreen`, but hidden on `OverviewScreen`.
 
 ---
 
