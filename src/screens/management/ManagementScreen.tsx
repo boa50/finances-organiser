@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { BankItem, CategoryItem, CurrencyInfo, PaymentMethodItem, TransactionType } from '../../types';
 import {
   AVAILABLE_CATEGORY_ICONS,
@@ -384,71 +384,75 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <AppSectionHeader
-          title="Management Center"
-          subtitle="Configure expense & income categories, payment methods, bank options, and enabled currencies"
-        />
-
-        <AppSegmentedControl<ManagementSectionId>
-          options={[
-            { label: 'Categories', value: 'categories' },
-            { label: 'Payment Methods', value: 'payment_methods' },
-            { label: 'Banks', value: 'banks' },
-            { label: 'Currencies', value: 'currencies' },
-          ]}
-          selectedValue={activeSection}
-          onSelect={(sec) => {
-            setActiveSection(sec);
-            setSearchQuery('');
-          }}
-        />
-
-        {activeSection === 'categories' && (
-          <CategoryManagementTab
-            categories={categories}
-            activeCategoryType={activeCategoryType}
-            setActiveCategoryType={setActiveCategoryType}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onOpenAddModal={openAddCatModal}
-            onOpenEditModal={openEditCatModal}
-            onDeleteCategory={handleDeleteCategory}
+      <View style={styles.container}>
+        <View style={styles.fixedHeader}>
+          <AppSectionHeader
+            title="Management Center"
+            subtitle="Configure expense & income categories, payment methods, bank options, and enabled currencies"
           />
-        )}
 
-        {activeSection === 'payment_methods' && (
-          <PaymentMethodManagementTab
-            paymentMethods={paymentMethods}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onOpenAddModal={openAddPmModal}
-            onOpenEditModal={openEditPmModal}
-            onDeletePm={handleDeletePm}
+          <AppSegmentedControl<ManagementSectionId>
+            options={[
+              { label: 'Categories', value: 'categories' },
+              { label: 'Payment Methods', value: 'payment_methods' },
+              { label: 'Banks', value: 'banks' },
+              { label: 'Currencies', value: 'currencies' },
+            ]}
+            selectedValue={activeSection}
+            onSelect={(sec) => {
+              setActiveSection(sec);
+              setSearchQuery('');
+            }}
           />
-        )}
+        </View>
 
-        {activeSection === 'banks' && (
-          <BankManagementTab
-            banks={banks}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onOpenAddModal={openAddBankModal}
-            onOpenEditModal={openEditBankModal}
-            onDeleteBank={handleDeleteBank}
-          />
-        )}
+        <View style={styles.tabContent}>
+          {activeSection === 'categories' && (
+            <CategoryManagementTab
+              categories={categories}
+              activeCategoryType={activeCategoryType}
+              setActiveCategoryType={setActiveCategoryType}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onOpenAddModal={openAddCatModal}
+              onOpenEditModal={openEditCatModal}
+              onDeleteCategory={handleDeleteCategory}
+            />
+          )}
 
-        {activeSection === 'currencies' && (
-          <CurrencyManagementTab
-            currencies={currencies}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onOpenAddModal={openAddCurrencyModal}
-            onDeleteCurrency={handleDeleteCurrency}
-          />
-        )}
-      </ScrollView>
+          {activeSection === 'payment_methods' && (
+            <PaymentMethodManagementTab
+              paymentMethods={paymentMethods}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onOpenAddModal={openAddPmModal}
+              onOpenEditModal={openEditPmModal}
+              onDeletePm={handleDeletePm}
+            />
+          )}
+
+          {activeSection === 'banks' && (
+            <BankManagementTab
+              banks={banks}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onOpenAddModal={openAddBankModal}
+              onOpenEditModal={openEditBankModal}
+              onDeleteBank={handleDeleteBank}
+            />
+          )}
+
+          {activeSection === 'currencies' && (
+            <CurrencyManagementTab
+              currencies={currencies}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onOpenAddModal={openAddCurrencyModal}
+              onDeleteCurrency={handleDeleteCurrency}
+            />
+          )}
+        </View>
+      </View>
 
       {/* Modals */}
       <CategoryEditModal
@@ -508,12 +512,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  content: {
-    padding: theme.spacing['4xl'],
-    paddingBottom: 88,
-    gap: theme.spacing['3xl'],
+  fixedHeader: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingTop: theme.spacing['4xl'],
+    paddingBottom: theme.spacing.md,
+    gap: theme.spacing.lg,
     maxWidth: 720,
     alignSelf: 'center',
+    width: '100%',
+  },
+  tabContent: {
+    flex: 1,
     width: '100%',
   },
 });

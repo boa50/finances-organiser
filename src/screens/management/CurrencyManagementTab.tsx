@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { CurrencyInfo } from '../../types';
 import { AppCard, AppText, AppEmptyState, AppTextInput } from '../../components/ui';
 import theme from '../../theme';
@@ -20,83 +21,105 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
   onOpenAddModal,
   onDeleteCurrency,
 }) => {
-  const filteredCurrencies = currencies.filter(
-    (c) =>
-      c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCurrencies = useMemo(() => {
+    return currencies.filter(
+      (c) =>
+        c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [currencies, searchQuery]);
 
   const canDelete = currencies.length > 1;
 
+  const renderItem = useCallback(({ item: currency }: { item: CurrencyInfo }) => {
+    return (
+      <View style={styles.cardWrapper}>
+        <AppCard variant="outlined" style={styles.card}>
+          <View style={styles.cardInfo}>
+            <AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>
+            <View style={styles.textContainer}>
+              <AppText style={styles.codeText}>{currency.code}</AppText>
+              <AppText style={styles.nameText}>{currency.name}</AppText>
+            </View>
+            <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
+          </View>
+
+          <Pressable
+            onPress={() => onDeleteCurrency(currency)}
+            disabled={!canDelete}
+            style={({ pressed }) => [
+              styles.deleteButton,
+              !canDelete && styles.deleteButtonDisabled,
+              pressed && canDelete && { opacity: 0.7 },
+            ]}
+            accessibilityLabel={`Delete ${currency.code}`}
+          >
+            <Trash2
+              size={18}
+              color={canDelete ? theme.colors.danger : theme.colors.textMuted}
+            />
+          </Pressable>
+        </AppCard>
+      </View>
+    );
+  }, [canDelete, onDeleteCurrency]);
+
   return (
     <View style={styles.tabContainer}>
-      <AppCard style={styles.filterCard} padding="lg">
-        <View style={styles.topControls}>
-          <Pressable
-            style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
-            onPress={onOpenAddModal}
-          >
-            <Plus size={16} color={theme.colors.white} />
-            <AppText style={styles.createBtnText}>Add Currency</AppText>
-          </Pressable>
-        </View>
+      <View style={styles.filterSection}>
+        <AppCard style={styles.filterCard} padding="lg">
+          <View style={styles.topControls}>
+            <Pressable
+              style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+              onPress={onOpenAddModal}
+            >
+              <Plus size={16} color={theme.colors.white} />
+              <AppText style={styles.createBtnText}>Add Currency</AppText>
+            </Pressable>
+          </View>
 
-        <AppTextInput
-          placeholder="Search currencies..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          icon={<Search size={16} color={theme.colors.textTertiary} />}
-        />
-      </AppCard>
+          <AppTextInput
+            placeholder="Search currencies..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            icon={<Search size={16} color={theme.colors.textTertiary} />}
+          />
+        </AppCard>
+      </View>
 
-      {filteredCurrencies.length === 0 ? (
-        <AppEmptyState
-          title="No Currencies Found"
-          description={
-            searchQuery ? 'No currencies match your search query.' : 'No enabled currencies available.'
+      <View style={styles.listWrapper}>
+        <FlashList<CurrencyInfo>
+          data={filteredCurrencies}
+          keyExtractor={(item) => item.code}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={true}
+          ListEmptyComponent={
+            <AppEmptyState
+              title="No Currencies Found"
+              description={
+                searchQuery ? 'No currencies match your search query.' : 'No enabled currencies available.'
+              }
+              actionTitle={searchQuery ? undefined : 'Add Currency'}
+              onActionPress={searchQuery ? undefined : onOpenAddModal}
+            />
           }
-          actionTitle={searchQuery ? undefined : 'Add Currency'}
-          onActionPress={searchQuery ? undefined : onOpenAddModal}
+          renderItem={renderItem}
         />
-      ) : (
-        <View style={styles.grid}>
-          {filteredCurrencies.map((currency) => (
-            <AppCard key={currency.code} variant="outlined" style={styles.card}>
-              <View style={styles.cardInfo}>
-                <AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>
-                <View style={styles.textContainer}>
-                  <AppText style={styles.codeText}>{currency.code}</AppText>
-                  <AppText style={styles.nameText}>{currency.name}</AppText>
-                </View>
-                <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
-              </View>
-
-              <Pressable
-                onPress={() => onDeleteCurrency(currency)}
-                disabled={!canDelete}
-                style={({ pressed }) => [
-                  styles.deleteButton,
-                  !canDelete && styles.deleteButtonDisabled,
-                  pressed && canDelete && { opacity: 0.7 },
-                ]}
-                accessibilityLabel={`Delete ${currency.code}`}
-              >
-                <Trash2
-                  size={18}
-                  color={canDelete ? theme.colors.danger : theme.colors.textMuted}
-                />
-              </Pressable>
-            </AppCard>
-          ))}
-        </View>
-      )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   tabContainer: {
-    gap: theme.spacing.lg,
+    flex: 1,
+  },
+  filterSection: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingBottom: theme.spacing.md,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
   filterCard: {
     gap: theme.spacing.lg,
@@ -121,8 +144,19 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },
-  grid: {
-    gap: theme.spacing.sm,
+  listWrapper: {
+    flex: 1,
+    width: '100%',
+  },
+  listContent: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingBottom: 88,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  cardWrapper: {
+    paddingVertical: theme.spacing.xxs,
   },
   card: {
     flexDirection: 'row',

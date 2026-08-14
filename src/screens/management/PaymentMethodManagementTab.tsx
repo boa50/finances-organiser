@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { PaymentMethodItem } from '../../types';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
 import { AppCard, AppEmptyState, AppTextInput, AppText } from '../../components/ui';
@@ -23,57 +24,78 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
   onOpenEditModal,
   onDeletePm,
 }) => {
-  const filteredPms = paymentMethods.filter((pm) =>
-    pm.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
-  );
+  const filteredPms = useMemo(() => {
+    return paymentMethods.filter((pm) =>
+      pm.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    );
+  }, [paymentMethods, searchQuery]);
+
+  const renderItem = useCallback(({ item }: { item: PaymentMethodItem }) => {
+    return (
+      <View style={styles.cardWrapper}>
+        <EntityManagementCard
+          name={item.name}
+          subtitle={item.allowInstallments ? 'Installments enabled' : 'Single payment only'}
+          icon={<CreditCard size={20} color={theme.colors.accent} />}
+          onEdit={() => onOpenEditModal(item)}
+          onDelete={() => onDeletePm(item)}
+        />
+      </View>
+    );
+  }, [onOpenEditModal, onDeletePm]);
 
   return (
     <View style={styles.tabContainer}>
-      <AppCard style={styles.filterCard} padding="lg">
-        <View style={styles.actionButtonsRow}>
-          <Pressable
-            style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
-            onPress={onOpenAddModal}
-          >
-            <Plus size={16} color={theme.colors.white} />
-            <AppText style={styles.createBtnText}>New Payment Method</AppText>
-          </Pressable>
-        </View>
+      <View style={styles.filterSection}>
+        <AppCard style={styles.filterCard} padding="lg">
+          <View style={styles.actionButtonsRow}>
+            <Pressable
+              style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+              onPress={onOpenAddModal}
+            >
+              <Plus size={16} color={theme.colors.white} />
+              <AppText style={styles.createBtnText}>New Payment Method</AppText>
+            </Pressable>
+          </View>
 
-        <AppTextInput
-          placeholder="Search payment methods..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          icon={<Search size={16} color={theme.colors.textTertiary} />}
-        />
-      </AppCard>
+          <AppTextInput
+            placeholder="Search payment methods..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            icon={<Search size={16} color={theme.colors.textTertiary} />}
+          />
+        </AppCard>
+      </View>
 
-      {filteredPms.length === 0 ? (
-        <AppEmptyState
-          title="No payment methods found"
-          description="Try adding a new payment method or adjusting your search query."
-        />
-      ) : (
-        <View style={styles.grid}>
-          {filteredPms.map((pm) => (
-            <EntityManagementCard
-              key={pm.id}
-              name={pm.name}
-              subtitle={pm.allowInstallments ? 'Installments enabled' : 'Single payment only'}
-              icon={<CreditCard size={20} color={theme.colors.accent} />}
-              onEdit={() => onOpenEditModal(pm)}
-              onDelete={() => onDeletePm(pm)}
+      <View style={styles.listWrapper}>
+        <FlashList<PaymentMethodItem>
+          data={filteredPms}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={true}
+          ListEmptyComponent={
+            <AppEmptyState
+              title="No payment methods found"
+              description="Try adding a new payment method or adjusting your search query."
             />
-          ))}
-        </View>
-      )}
+          }
+          renderItem={renderItem}
+        />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   tabContainer: {
-    gap: theme.spacing.lg,
+    flex: 1,
+  },
+  filterSection: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingBottom: theme.spacing.md,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
   filterCard: {
     gap: theme.spacing.lg,
@@ -99,7 +121,18 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },
-  grid: {
-    gap: theme.spacing.sm,
+  listWrapper: {
+    flex: 1,
+    width: '100%',
+  },
+  listContent: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingBottom: 88,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  cardWrapper: {
+    paddingVertical: theme.spacing.xxs,
   },
 });

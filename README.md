@@ -9,6 +9,7 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **D3.js analytics** — Interactive donut charts, category breakdown bars, and monthly trend line/area charts rendered with `react-native-svg`.
 - **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and handle authentication, transactions, categories, payment methods, and banks.
 - **Multi-currency & Currency management** — Dynamic currency management supporting BRL, USD, CAD, THB, JPY, KRW (WON), EUR, GBP, and COP (COL) with 2-step live exchange rate conversion (direct X-BRL or X-USD * USD-BRL fallback) and minimum 1 currency constraint.
+- **High-performance FlashList & Screen-bounded scrolling** — List virtualization via `@shopify/flash-list` across all data screens (`TransactionsScreen`, `SubscriptionsScreen`, `ManagementScreen`, and `OverviewScreen`) with split-layout pinned headers/filters and independent list scrolling.
 - **Subscription management** — Dedicated screen for managing monthly recurring subscription expenses with active/inactive toggles, payment day scheduling, and idempotent monthly transaction auto-generation.
 - **Transaction & Installment management** — Full create, edit, duplicate, delete, search, and filter capabilities with monthly grouping, merchant tracking, BRL monetary conversion display on transaction cards (with converted original values shown alongside), single and multi-month installment support, and quick duplication defaulting to the current date.
 - **Comprehensive management hub** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), Banks, and Currencies.
@@ -203,6 +204,7 @@ finances-organiser/
 | **Data persistence** | Vercel Functions + Turso SQLite Cloud as primary store; `localStorage` as offline fallback. |
 | **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; transactions and subscriptions store ID foreign keys (`category_id`, `payment_method_id`, `bank_id`) to custom entities with `ON DELETE SET NULL` reference cascade; no hardcoded defaults. |
 | **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography. |
+| **List Virtualization** | High-performance recycling via `@shopify/flash-list` with screen-bounded split layouts (pinned headers & search bars, independent list scrolling). |
 | **Unit testing** | Jest + ts-jest test runner covering pure utility functions and auth services (31 passing unit tests across 4 suites). |
 | **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |
 | **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60s TTL). |

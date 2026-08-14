@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY, formatMoney } from '../utils/currencies';
-import { calculateFinancialSummary, groupRecentTransactions } from '../utils/financials';
+import { calculateFinancialSummary, GroupedRecentItem, groupRecentTransactions } from '../utils/financials';
 import { TransactionEditModal } from '../components/TransactionEditModal';
 import { TransactionItemCard } from '../components/TransactionItemCard';
 import { AppBadge, AppCard, AppEmptyState, AppSectionHeader } from '../components/ui';
@@ -23,91 +24,106 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 }) => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
-  const { totalNetBalance, currentMonthIncome, currentMonthExpense } =
-    calculateFinancialSummary(transactions, DEFAULT_CURRENCY);
+  const { totalNetBalance, currentMonthIncome, currentMonthExpense } = useMemo(() => {
+    return calculateFinancialSummary(transactions, DEFAULT_CURRENCY);
+  }, [transactions]);
 
-  const nonSubscriptionTransactions = transactions.filter((tx) => !tx.subscriptionId);
-  const recentItems = groupRecentTransactions(nonSubscriptionTransactions, 4);
+  const nonSubscriptionTransactions = useMemo(() => {
+    return transactions.filter((tx) => !tx.subscriptionId);
+  }, [transactions]);
+
+  const recentItems = useMemo(() => {
+    return groupRecentTransactions(nonSubscriptionTransactions, 7);
+  }, [nonSubscriptionTransactions]);
+
   const currentMonthDate = new Date();
   const monthName = currentMonthDate.toLocaleString('default', { month: 'long' });
 
+  const renderRecentItem = useCallback(({ item }: { item: GroupedRecentItem }) => {
+    const dateObj = new Date(item.date);
+    const dateStr = isNaN(dateObj.getTime())
+      ? item.date
+      : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+    return (
+      <View style={styles.cardWrapper}>
+        <TransactionItemCard
+          transaction={item.representativeTx}
+          title={item.title}
+          amountToDisplay={item.totalAmount}
+          installmentsLabel={item.installments && item.installments > 1 ? `${item.installments}x` : ''}
+          dateString={dateStr}
+          onEdit={(tx) => setEditingTransaction(tx)}
+        />
+      </View>
+    );
+  }, []);
+
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {/* Header Banner & Turso Cloud Badge */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.welcomeTitle}>Personal Finances</Text>
-            <Text style={styles.welcomeSubtitle}>Cloud-synced financial manager</Text>
-          </View>
-
-          <AppBadge
-            label={tursoConfig.isConnected ? 'Turso Cloud DB' : 'Turso Offline'}
-            variant={tursoConfig.isConnected ? 'success' : 'warning'}
-            statusDot
-          />
-        </View>
-
-        {/* Main Net Balance Hero Card */}
-        <AppCard variant="elevated" padding="6xl">
-          <Text style={styles.heroLabel}>Total Net Balance ({DEFAULT_CURRENCY})</Text>
-          <Text style={styles.heroValue}>
-            {formatMoney(totalNetBalance, DEFAULT_CURRENCY)}
-          </Text>
-
-          <View style={styles.heroMetaRow}>
-            <View style={styles.metaBox}>
-              <Text style={styles.metaLabel}>{monthName} Income</Text>
-              <Text style={[styles.metaValue, { color: theme.colors.success }]}>
-                +{formatMoney(currentMonthIncome, DEFAULT_CURRENCY)}
-              </Text>
+      <View style={styles.container}>
+        {/* Pinned Top Section: Header, Hero Card & Recent Activity Header */}
+        <View style={styles.fixedHeader}>
+          {/* Header Banner & Turso Cloud Badge */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.welcomeTitle}>Personal Finances</Text>
+              <Text style={styles.welcomeSubtitle}>Cloud-synced financial manager</Text>
             </View>
 
-            <View style={styles.metaDivider} />
-
-            <View style={styles.metaBox}>
-              <Text style={styles.metaLabel}>{monthName} Expense</Text>
-              <Text style={[styles.metaValue, { color: theme.colors.danger }]}>
-                -{formatMoney(currentMonthExpense, DEFAULT_CURRENCY)}
-              </Text>
-            </View>
+            <AppBadge
+              label={tursoConfig.isConnected ? 'Turso Cloud DB' : 'Turso Offline'}
+              variant={tursoConfig.isConnected ? 'success' : 'warning'}
+              statusDot
+            />
           </View>
-        </AppCard>
 
-        {/* Recent Activity Section */}
-        <View style={styles.section}>
+          {/* Main Net Balance Hero Card */}
+          <AppCard variant="elevated" padding="6xl">
+            <Text style={styles.heroLabel}>Total Net Balance ({DEFAULT_CURRENCY})</Text>
+            <Text style={styles.heroValue}>
+              {formatMoney(totalNetBalance, DEFAULT_CURRENCY)}
+            </Text>
+
+            <View style={styles.heroMetaRow}>
+              <View style={styles.metaBox}>
+                <Text style={styles.metaLabel}>{monthName} Income</Text>
+                <Text style={[styles.metaValue, { color: theme.colors.success }]}>
+                  +{formatMoney(currentMonthIncome, DEFAULT_CURRENCY)}
+                </Text>
+              </View>
+
+              <View style={styles.metaDivider} />
+
+              <View style={styles.metaBox}>
+                <Text style={styles.metaLabel}>{monthName} Expense</Text>
+                <Text style={[styles.metaValue, { color: theme.colors.danger }]}>
+                  -{formatMoney(currentMonthExpense, DEFAULT_CURRENCY)}
+                </Text>
+              </View>
+            </View>
+          </AppCard>
+
+          {/* Recent Activity Section Header */}
           <AppSectionHeader
             title="Recent Activity"
             actionLabel={`See all (${nonSubscriptionTransactions.length}) →`}
             onActionPress={onNavigateTransactions}
           />
-
-          {recentItems.length === 0 ? (
-            <AppEmptyState title="No recent transactions." />
-          ) : (
-            <View style={styles.recentList}>
-              {recentItems.map((item) => {
-                const dateObj = new Date(item.date);
-                const dateStr = isNaN(dateObj.getTime())
-                  ? item.date
-                  : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
-                return (
-                  <TransactionItemCard
-                    key={item.id}
-                    transaction={item.representativeTx}
-                    title={item.title}
-                    amountToDisplay={item.totalAmount}
-                    installmentsLabel={item.installments && item.installments > 1 ? `${item.installments}x` : ''}
-                    dateString={dateStr}
-                    onEdit={(tx) => setEditingTransaction(tx)}
-                  />
-                );
-              })}
-            </View>
-          )}
         </View>
-      </ScrollView>
+
+        {/* Scrollable List for Recent Activity */}
+        <View style={styles.listWrapper}>
+          <FlashList<GroupedRecentItem>
+            data={recentItems}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={true}
+            ListEmptyComponent={<AppEmptyState title="No recent transactions." />}
+            renderItem={renderRecentItem}
+          />
+        </View>
+      </View>
 
       <TransactionEditModal
         visible={Boolean(editingTransaction)}
@@ -124,13 +140,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  contentContainer: {
-    padding: theme.spacing['4xl'],
-    paddingBottom: 88,
-    gap: theme.spacing['3xl'],
+  fixedHeader: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingTop: theme.spacing['4xl'],
+    paddingBottom: theme.spacing.sm,
+    gap: theme.spacing.lg,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
+  },
+  listWrapper: {
+    flex: 1,
+    width: '100%',
+  },
+  listContent: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingBottom: 88,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  cardWrapper: {
+    paddingVertical: theme.spacing.xs,
   },
   header: {
     flexDirection: 'row',
@@ -184,11 +215,5 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
     marginTop: theme.spacing.xxs,
-  },
-  section: {
-    gap: theme.spacing.lg,
-  },
-  recentList: {
-    gap: theme.spacing.md,
   },
 });

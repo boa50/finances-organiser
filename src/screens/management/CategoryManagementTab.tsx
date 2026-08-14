@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { CategoryItem, TransactionType } from '../../types';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
@@ -28,85 +29,106 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
   onOpenEditModal,
   onDeleteCategory,
 }) => {
-  const filteredCategories = categories.filter(
-    (c) =>
-      c.type === activeCategoryType &&
-      c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
-  );
+  const filteredCategories = useMemo(() => {
+    return categories.filter(
+      (c) =>
+        c.type === activeCategoryType &&
+        c.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+    );
+  }, [categories, activeCategoryType, searchQuery]);
+
+  const renderItem = useCallback(({ item }: { item: CategoryItem }) => {
+    return (
+      <View style={styles.cardWrapper}>
+        <EntityManagementCard
+          name={item.name}
+          subtitle={item.type}
+          color={item.color}
+          icon={<CategoryIcon iconName={item.icon} color={item.color} size={20} />}
+          onEdit={() => onOpenEditModal(item)}
+          onDelete={() => onDeleteCategory(item)}
+        />
+      </View>
+    );
+  }, [onOpenEditModal, onDeleteCategory]);
 
   return (
     <View style={styles.tabContainer}>
-      <AppCard style={styles.filterCard} padding="lg">
-        <View style={styles.topControls}>
-          <AppSegmentedControl<TransactionType>
-            options={[
-              {
-              label: 'Incomes',
-              value: 'income',
-              selectedBackgroundColor: theme.colors.successBg,
-              selectedBorderColor: theme.colors.success,
-              selectedTextColor: theme.colors.success,
-            },
-            {
-              label: 'Expenses',
-              value: 'expense',
-              selectedBackgroundColor: theme.colors.dangerBg,
-              selectedBorderColor: theme.colors.danger,
-              selectedTextColor: theme.colors.danger,
-            },
-            ]}
-            selectedValue={activeCategoryType}
-            onSelect={setActiveCategoryType}
-          />
-
-          <View style={styles.actionButtonsRow}>
-            <Pressable
-              style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
-              onPress={onOpenAddModal}
-            >
-              <Plus size={16} color={theme.colors.white} />
-              <AppText style={styles.createBtnText}>
-                New {activeCategoryType === 'income' ? 'Income' : 'Expense'} Category
-              </AppText>
-            </Pressable>
-          </View>
-        </View>
-
-        <AppTextInput
-          placeholder={`Search ${activeCategoryType} categories...`}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          icon={<Search size={16} color={theme.colors.textTertiary} />}
-        />
-      </AppCard>
-
-      {filteredCategories.length === 0 ? (
-        <AppEmptyState
-          title={`No ${activeCategoryType} categories found`}
-          description="Try creating a new category or adjusting your search query."
-        />
-      ) : (
-        <View style={styles.grid}>
-          {filteredCategories.map((cat) => (
-            <EntityManagementCard
-              key={cat.id}
-              name={cat.name}
-              subtitle={cat.type}
-              color={cat.color}
-              icon={<CategoryIcon iconName={cat.icon} color={cat.color} size={20} />}
-              onEdit={() => onOpenEditModal(cat)}
-              onDelete={() => onDeleteCategory(cat)}
+      <View style={styles.filterSection}>
+        <AppCard style={styles.filterCard} padding="lg">
+          <View style={styles.topControls}>
+            <AppSegmentedControl<TransactionType>
+              options={[
+                {
+                  label: 'Incomes',
+                  value: 'income',
+                  selectedBackgroundColor: theme.colors.successBg,
+                  selectedBorderColor: theme.colors.success,
+                  selectedTextColor: theme.colors.success,
+                },
+                {
+                  label: 'Expenses',
+                  value: 'expense',
+                  selectedBackgroundColor: theme.colors.dangerBg,
+                  selectedBorderColor: theme.colors.danger,
+                  selectedTextColor: theme.colors.danger,
+                },
+              ]}
+              selectedValue={activeCategoryType}
+              onSelect={setActiveCategoryType}
             />
-          ))}
-        </View>
-      )}
+
+            <View style={styles.actionButtonsRow}>
+              <Pressable
+                style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+                onPress={onOpenAddModal}
+              >
+                <Plus size={16} color={theme.colors.white} />
+                <AppText style={styles.createBtnText}>
+                  New {activeCategoryType === 'income' ? 'Income' : 'Expense'} Category
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+
+          <AppTextInput
+            placeholder={`Search ${activeCategoryType} categories...`}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            icon={<Search size={16} color={theme.colors.textTertiary} />}
+          />
+        </AppCard>
+      </View>
+
+      <View style={styles.listWrapper}>
+        <FlashList<CategoryItem>
+          data={filteredCategories}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={true}
+          ListEmptyComponent={
+            <AppEmptyState
+              title={`No ${activeCategoryType} categories found`}
+              description="Try creating a new category or adjusting your search query."
+            />
+          }
+          renderItem={renderItem}
+        />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   tabContainer: {
-    gap: theme.spacing.lg,
+    flex: 1,
+  },
+  filterSection: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingBottom: theme.spacing.md,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
   filterCard: {
     gap: theme.spacing.lg,
@@ -135,7 +157,18 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },
-  grid: {
-    gap: theme.spacing.sm,
+  listWrapper: {
+    flex: 1,
+    width: '100%',
+  },
+  listContent: {
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingBottom: 88,
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  cardWrapper: {
+    paddingVertical: theme.spacing.xxs,
   },
 });
