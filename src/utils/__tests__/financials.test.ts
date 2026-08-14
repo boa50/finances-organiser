@@ -1,5 +1,6 @@
 import { Transaction } from '../../types';
 import {
+  aggregateEvolutionData,
   aggregateTransactionsByCategory,
   aggregateTransactionsByMonth,
   calculateFinancialSummary,
@@ -120,6 +121,30 @@ describe('Financial Utilities', () => {
       expect(monthly[1].income).toBe(5000);
       expect(monthly[1].expense).toBe(3000);
       expect(monthly[1].net).toBe(2000);
+    });
+  });
+
+  describe('aggregateEvolutionData', () => {
+    it('should produce a continuous monthly series ending at the current reference month', () => {
+      const refDate = new Date(2026, 7, 15); // August 2026
+      const monthly = aggregateEvolutionData(sampleTransactions, 'BRL', 6, refDate);
+
+      expect(monthly.length).toBe(6);
+      expect(monthly[monthly.length - 1].monthKey).toBe('2026-08'); // Last month is always August 2026
+      expect(monthly[0].monthKey).toBe('2026-03'); // 6 months: Mar to Aug
+      expect(monthly[5].income).toBe(5000);
+      expect(monthly[5].expense).toBe(3000);
+      expect(monthly[4].expense).toBe(1000); // 2026-07
+      expect(monthly[0].income).toBe(0); // 2026-03 zero data filled
+    });
+
+    it('should support 12 months (1 year) period ending at current month', () => {
+      const refDate = new Date(2026, 7, 15); // August 2026
+      const monthly = aggregateEvolutionData(sampleTransactions, 'BRL', 12, refDate);
+
+      expect(monthly.length).toBe(12);
+      expect(monthly[monthly.length - 1].monthKey).toBe('2026-08');
+      expect(monthly[0].monthKey).toBe('2025-09');
     });
   });
 

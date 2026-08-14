@@ -1,31 +1,57 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Path, Circle, Line, Text as SvgText, G, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { Transaction, MonthlyAggregate } from '../types';
-import { aggregateTransactionsByMonth } from '../utils/financials';
+import { aggregateEvolutionData } from '../utils/financials';
 import { useEvolutionChartD3 } from '../hooks/useEvolutionChartD3';
 import { SelectedMonthDetailCard } from './SelectedMonthDetailCard';
-import { AppText } from './ui';
+import { AppSegmentedControl, AppText } from './ui';
 import theme from '../theme';
+
+export type EvolutionPeriod = '5y' | '1y' | '6m';
 
 interface D3EvolutionChartProps {
   transactions: Transaction[];
   targetCurrency: string;
 }
 
+const PERIOD_OPTIONS: { label: string; value: EvolutionPeriod }[] = [
+  { label: '5 Years', value: '5y' },
+  { label: '1 Year', value: '1y' },
+  { label: '6 Months', value: '6m' },
+];
+
+function formatYAxisTick(tick: number): string {
+  if (tick === 0) return '0';
+  if (Math.abs(tick) >= 1_000_000) {
+    const val = tick / 1_000_000;
+    return val % 1 === 0 ? `${val.toFixed(0)}M` : `${val.toFixed(1)}M`;
+  }
+  if (Math.abs(tick) >= 1_000) {
+    const val = tick / 1_000;
+    return val % 1 === 0 ? `${val.toFixed(0)}k` : `${val.toFixed(1)}k`;
+  }
+  return tick % 1 === 0 ? tick.toFixed(0) : tick.toFixed(1);
+}
+
 export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
   transactions,
   targetCurrency,
 }) => {
+  const [selectedPeriod, setSelectedPeriod] = useState<EvolutionPeriod>('1y');
   const [selectedMonth, setSelectedMonth] = useState<MonthlyAggregate | null>(null);
 
-  const monthlyData: MonthlyAggregate[] = aggregateTransactionsByMonth(transactions, targetCurrency);
+  const limitMonths = selectedPeriod === '6m' ? 6 : selectedPeriod === '1y' ? 12 : 60;
+
+  const monthlyData = useMemo(() => {
+    return aggregateEvolutionData(transactions, targetCurrency, limitMonths);
+  }, [transactions, targetCurrency, limitMonths]);
 
   const width = Math.min(Dimensions.get('window').width - 48, 680);
-  const height = 260;
-  const marginTop = 20;
-  const marginRight = 20;
-  const marginBottom = 40;
+  const height = 250;
+  const marginTop = 16;
+  const marginRight = 16;
+  const marginBottom = 36;
   const marginLeft = 55;
 
   const {
@@ -48,32 +74,47 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
     marginLeft,
   });
 
-  if (monthlyData.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <AppText style={styles.emptyText}>No monthly data available to draw graph.</AppText>
-      </View>
-    );
-  }
+  const activeMonth =
+    selectedMonth && monthlyData.some((d) => d.monthKey === selectedMonth.monthKey)
+      ? selectedMonth
+      : monthlyData[monthlyData.length - 1];
 
-  const activeMonth = selectedMonth || monthlyData[monthlyData.length - 1];
+  // Calculate X-axis label density to prevent overlapping
+  const maxVisibleTicks = Math.max(2, Math.floor(innerWidth / 65));
+  const stride = Math.max(1, Math.ceil(monthlyData.length / maxVisibleTicks));
 
   return (
     <View style={styles.card}>
+      {/* Top Header Row with Title on Left and Period Selection on Right */}
       <View style={styles.headerRow}>
-        <View>
+        <View style={styles.titleCol}>
           <AppText style={styles.cardTitle}>Income vs Expense Evolution</AppText>
           <AppText style={styles.cardSubtitle}>Monthly trend built with D3.js</AppText>
         </View>
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: theme.colors.success }]} />
-            <AppText style={styles.legendText}>Income</AppText>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: theme.colors.danger }]} />
-            <AppText style={styles.legendText}>Expense</AppText>
-          </View>
+
+        <View style={styles.headerControls}>
+          <AppSegmentedControl<EvolutionPeriod>
+            options={PERIOD_OPTIONS}
+            selectedValue={selectedPeriod}
+            onSelect={(period) => {
+              setSelectedPeriod(period);
+              setSelectedMonth(null);
+            }}
+            fullWidth={false}
+            size="sm"
+          />
+        </View>
+      </View>
+
+      {/* Compact Legend Row */}
+      <View style={styles.legendContainer}>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.success }]} />
+          <AppText style={styles.legendText}>Income</AppText>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: theme.colors.danger }]} />
+          <AppText style={styles.legendText}>Expense</AppText>
         </View>
       </View>
 
@@ -81,28 +122,21 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
         <Svg width={width} height={height}>
           <Defs>
             <LinearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={theme.colors.success} stopOpacity="0.35" />
+              <Stop offset="0%" stopColor={theme.colors.success} stopOpacity="0.22" />
               <Stop offset="100%" stopColor={theme.colors.success} stopOpacity="0.0" />
             </LinearGradient>
             <LinearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={theme.colors.danger} stopOpacity="0.35" />
+              <Stop offset="0%" stopColor={theme.colors.danger} stopOpacity="0.22" />
               <Stop offset="100%" stopColor={theme.colors.danger} stopOpacity="0.0" />
             </LinearGradient>
           </Defs>
 
           <G transform={`translate(${marginLeft}, ${marginTop})`}>
+            {/* Y Axis Labels (Inner horizontal grid lines removed) */}
             {yTicks.map((tick, i) => {
               const yPos = yScale(tick);
               return (
-                <G key={`grid-${i}`}>
-                  <Line
-                    x1={0}
-                    y1={yPos}
-                    x2={innerWidth}
-                    y2={yPos}
-                    stroke="rgba(255, 255, 255, 0.08)"
-                    strokeDasharray="4 4"
-                  />
+                <G key={`y-axis-tick-${i}`}>
                   <SvgText
                     x={-10}
                     y={yPos + 4}
@@ -111,19 +145,22 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
                     fontFamily={theme.fontFamily.sans}
                     textAnchor="end"
                   >
-                    {tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : tick}
+                    {formatYAxisTick(tick)}
                   </SvgText>
                 </G>
               );
             })}
 
+            {/* Gradient Area Fills */}
             <Path d={incomeAreaPath} fill="url(#incomeGradient)" />
             <Path d={expenseAreaPath} fill="url(#expenseGradient)" />
 
+            {/* Income & Expense Lines with Sophisticated Opacity */}
             <Path
               d={incomePath}
               fill="none"
               stroke={theme.colors.success}
+              strokeOpacity={0.82}
               strokeWidth={3}
               strokeLinecap="round"
             />
@@ -131,18 +168,26 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
               d={expensePath}
               fill="none"
               stroke={theme.colors.danger}
+              strokeOpacity={0.82}
               strokeWidth={3}
               strokeLinecap="round"
             />
 
+            {/* Month Data Nodes & Dynamic Non-overlapping X Axis Labels */}
             {monthlyData.map((d, index) => {
-              const cx = xScale(d.monthLabel) || 0;
+              const cx = xScale(d.monthKey) || 0;
               const cyIncome = yScale(d.income);
               const cyExpense = yScale(d.expense);
               const isSelected = activeMonth?.monthKey === d.monthKey;
 
+              const shouldShowLabel =
+                monthlyData.length <= maxVisibleTicks ||
+                index === 0 ||
+                index === monthlyData.length - 1 ||
+                (index % stride === 0 && index < monthlyData.length - Math.floor(stride / 2));
+
               return (
-                <G key={`month-nodes-${index}`}>
+                <G key={`month-nodes-${d.monthKey}`}>
                   {isSelected && (
                     <Line
                       x1={cx}
@@ -160,6 +205,7 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
                     cy={cyIncome}
                     r={isSelected ? 6 : 4}
                     fill={theme.colors.success}
+                    fillOpacity={0.9}
                     stroke="#0F172A"
                     strokeWidth={2}
                   />
@@ -169,27 +215,30 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
                     cy={cyExpense}
                     r={isSelected ? 6 : 4}
                     fill={theme.colors.danger}
+                    fillOpacity={0.9}
                     stroke="#0F172A"
                     strokeWidth={2}
                   />
 
-                  <SvgText
-                    x={cx}
-                    y={innerHeight + 24}
-                    fill={isSelected ? theme.colors.accent : theme.colors.textSecondary}
-                    fontSize={theme.fontSize.xs}
-                    fontWeight={isSelected ? theme.fontWeight.bold : theme.fontWeight.regular}
-                    fontFamily={theme.fontFamily.sans}
-                    textAnchor="middle"
-                  >
-                    {d.monthLabel}
-                  </SvgText>
+                  {(shouldShowLabel || isSelected) && (
+                    <SvgText
+                      x={cx}
+                      y={innerHeight + 22}
+                      fill={isSelected ? theme.colors.accent : theme.colors.textSecondary}
+                      fontSize={theme.fontSize.xs}
+                      fontWeight={isSelected ? theme.fontWeight.bold : theme.fontWeight.regular}
+                      fontFamily={theme.fontFamily.sans}
+                      textAnchor="middle"
+                    >
+                      {d.monthLabel}
+                    </SvgText>
+                  )}
 
                   <Rect
                     x={cx - 20}
                     y={0}
                     width={40}
-                    height={innerHeight + 30}
+                    height={innerHeight + 28}
                     fill="transparent"
                     onPress={() => setSelectedMonth(d)}
                   />
@@ -211,62 +260,62 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radii['2xl'],
-    padding: theme.spacing['4xl'],
-    marginVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing['3xl'],
+    paddingVertical: theme.spacing.lg,
+    marginVertical: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
-  },
-  emptyContainer: {
-    padding: 30,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['2xl'],
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.md,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: theme.spacing['2xl'],
+    marginBottom: theme.spacing.xs,
     flexWrap: 'wrap',
-    gap: theme.spacing.base,
+    gap: theme.spacing.sm,
+  },
+  titleCol: {
+    flex: 1,
+    minWidth: 180,
   },
   cardTitle: {
     color: theme.colors.textPrimary,
-    fontSize: theme.fontSize['2xl'],
+    fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
   },
   cardSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
+  },
+  headerControls: {
+    alignItems: 'flex-end',
   },
   legendContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing['2xl'],
+    gap: theme.spacing.lg,
+    marginTop: theme.spacing.xxs,
+    marginBottom: theme.spacing.xs,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
   legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   legendText: {
     color: theme.colors.textMuted,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },
   chartWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: theme.spacing.xs,
+    marginVertical: theme.spacing.xxs,
   },
 });

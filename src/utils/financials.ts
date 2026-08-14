@@ -242,6 +242,66 @@ export function aggregateTransactionsByMonth(
 }
 
 /**
+ * Groups transactions by month for a specified number of past months ending at referenceDate (default: current month).
+ * Guaranteed to produce a continuous series ending at the current month.
+ */
+export function aggregateEvolutionData(
+  transactions: Transaction[],
+  targetCurrency: string = DEFAULT_CURRENCY,
+  monthsCount: number = 12,
+  referenceDate: Date = new Date()
+): MonthlyAggregate[] {
+  const monthMap: Record<string, { income: number; expense: number }> = {};
+
+  transactions.forEach((tx) => {
+    const txDate = new Date(tx.date);
+    if (isNaN(txDate.getTime())) return;
+
+    const year = txDate.getFullYear();
+    const month = String(txDate.getMonth() + 1).padStart(2, '0');
+    const key = `${year}-${month}`;
+
+    if (!monthMap[key]) {
+      monthMap[key] = { income: 0, expense: 0 };
+    }
+
+    const convertedAmount = convertCurrency(tx.amount, tx.currencyId, targetCurrency);
+
+    if (tx.type === 'income') {
+      monthMap[key].income += convertedAmount;
+    } else {
+      monthMap[key].expense += convertedAmount;
+    }
+  });
+
+  const currentYear = referenceDate.getFullYear();
+  const currentMonth = referenceDate.getMonth();
+
+  const result: MonthlyAggregate[] = [];
+  for (let i = monthsCount - 1; i >= 0; i--) {
+    const d = new Date(currentYear, currentMonth - i, 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const key = `${year}-${month}`;
+    const monthName = d.toLocaleString('default', { month: 'short' });
+    const yearShort = year.toString().slice(-2);
+    const income = monthMap[key]?.income || 0;
+    const expense = monthMap[key]?.expense || 0;
+
+    result.push({
+      monthKey: key,
+      monthLabel: `${monthName} '${yearShort}`,
+      income,
+      expense,
+      net: income - expense,
+      date: d,
+    });
+  }
+
+  return result;
+}
+
+/**
  * Aggregates transactions by category for a specific transaction type ('income' or 'expense').
  */
 export function aggregateTransactionsByCategory(

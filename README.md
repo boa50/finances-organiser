@@ -6,7 +6,7 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 
 - **Password authentication** — Password-based access control with `sessionStorage` session persistence and server timing-safe verification.
 - **Dashboard overview** — Net balance, monthly income/expense summary, and recent activity at a glance.
-- **D3.js analytics** — Interactive donut charts, category breakdown bars, and monthly trend line/area charts rendered with `react-native-svg`.
+- **D3.js analytics** — Interactive donut charts, category breakdown bars, and period-filtered (5 years, 1 year, 6 months) monthly trend line/area charts rendered with `react-native-svg`.
 - **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and handle authentication, transactions, categories, payment methods, and banks.
 - **Multi-currency & Currency management** — Dynamic currency management supporting BRL, USD, CAD, AUD, THB, JPY, KRW (WON), EUR, GBP, and COP (COL) with 2-step live exchange rate conversion (direct X-BRL or X-USD * USD-BRL fallback) and minimum 1 currency constraint.
 - **High-performance FlashList & Screen-bounded scrolling** — List virtualization via `@shopify/flash-list` across all data screens (`TransactionsScreen`, `SubscriptionsScreen`, `ManagementScreen`, and `OverviewScreen`) with split-layout pinned headers/filters and independent list scrolling.

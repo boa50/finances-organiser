@@ -20,14 +20,14 @@ export function useEvolutionChartD3({
   marginBottom = 40,
   marginLeft = 55,
 }: UseEvolutionChartD3Props) {
-  const innerWidth = width - marginLeft - marginRight;
-  const innerHeight = height - marginTop - marginBottom;
+  const innerWidth = Math.max(width - marginLeft - marginRight, 0);
+  const innerHeight = Math.max(height - marginTop - marginBottom, 0);
 
   const xScale = d3
     .scalePoint<string>()
-    .domain(monthlyData.map((d) => d.monthLabel))
+    .domain(monthlyData.map((d) => d.monthKey))
     .range([0, innerWidth])
-    .padding(0.2);
+    .padding(monthlyData.length <= 1 ? 0.5 : 0.1);
 
   const maxVal = d3.max(monthlyData, (d) => Math.max(d.income, d.expense)) || 1000;
   const yScale = d3
@@ -38,26 +38,26 @@ export function useEvolutionChartD3({
 
   const incomeLineGenerator = d3
     .line<MonthlyAggregate>()
-    .x((d) => xScale(d.monthLabel) || 0)
+    .x((d) => xScale(d.monthKey) || 0)
     .y((d) => yScale(d.income))
     .curve(d3.curveMonotoneX);
 
   const expenseLineGenerator = d3
     .line<MonthlyAggregate>()
-    .x((d) => xScale(d.monthLabel) || 0)
+    .x((d) => xScale(d.monthKey) || 0)
     .y((d) => yScale(d.expense))
     .curve(d3.curveMonotoneX);
 
   const incomeAreaGenerator = d3
     .area<MonthlyAggregate>()
-    .x((d) => xScale(d.monthLabel) || 0)
+    .x((d) => xScale(d.monthKey) || 0)
     .y0(innerHeight)
     .y1((d) => yScale(d.income))
     .curve(d3.curveMonotoneX);
 
   const expenseAreaGenerator = d3
     .area<MonthlyAggregate>()
-    .x((d) => xScale(d.monthLabel) || 0)
+    .x((d) => xScale(d.monthKey) || 0)
     .y0(innerHeight)
     .y1((d) => yScale(d.expense))
     .curve(d3.curveMonotoneX);

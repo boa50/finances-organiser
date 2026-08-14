@@ -26,6 +26,7 @@ export interface AppSegmentedControlProps<T extends string = string> {
   selectedValue: T;
   onSelect: (value: T) => void;
   fullWidth?: boolean;
+  size?: 'md' | 'sm';
   style?: StyleProp<ViewStyle>;
 }
 
@@ -34,8 +35,11 @@ export function AppSegmentedControl<T extends string = string>({
   selectedValue,
   onSelect,
   fullWidth = true,
+  size = 'md',
   style,
 }: AppSegmentedControlProps<T>) {
+  const isSm = size === 'sm';
+
   return (
     <View style={[styles.container, fullWidth && styles.fullWidth, style]}>
       {options.map((option) => {
@@ -63,6 +67,7 @@ export function AppSegmentedControl<T extends string = string>({
             key={option.value}
             style={({ pressed }) => [
               styles.tab,
+              isSm && styles.tabSm,
               fullWidth && styles.flexTab,
               isSelected && styles.selectedTab,
               customSelectedStyle,
@@ -74,6 +79,7 @@ export function AppSegmentedControl<T extends string = string>({
             <Text
               style={[
                 styles.tabText,
+                isSm && styles.tabTextSm,
                 isSelected && styles.selectedTabText,
                 customSelectedTextStyle,
               ]}
@@ -110,6 +116,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
+  tabSm: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radii.sm,
+    gap: theme.spacing.xs,
+  },
   flexTab: {
     flex: 1,
   },
@@ -125,6 +137,9 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
+  },
+  tabTextSm: {
+    fontSize: theme.fontSize.xs,
   },
   selectedTabText: {
     color: theme.colors.accent,
