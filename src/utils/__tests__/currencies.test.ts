@@ -4,6 +4,7 @@ import {
   DEFAULT_CURRENCY,
   formatMoney,
   getCurrencyInfo,
+  refreshCurrencyRates,
 } from '../currencies';
 
 describe('Currency Utilities', () => {
@@ -13,6 +14,14 @@ describe('Currency Utilities', () => {
       expect(info.code).toBe('BRL');
       expect(info.symbol).toBe('R$');
       expect(info.name).toBe('Brazilian Real');
+    });
+
+    it('should return currency info for AUD (Australian Dollar)', () => {
+      const info = getCurrencyInfo('AUD');
+      expect(info.code).toBe('AUD');
+      expect(info.symbol).toBe('A$');
+      expect(info.name).toBe('Australian Dollar');
+      expect(info.flag).toBe('🇦🇺');
     });
 
     it('should handle case insensitivity', () => {
@@ -47,6 +56,13 @@ describe('Currency Utilities', () => {
       expect(formatted).toContain('€');
       expect(formatted).toContain('0');
     });
+
+    it('should format AUD amounts with A$ symbol', () => {
+      const formatted = formatMoney(250.75, 'AUD');
+      expect(formatted).toContain('A$');
+      expect(formatted).toContain('250');
+      expect(formatted).toContain('75');
+    });
   });
 
   describe('convertCurrency', () => {
@@ -59,12 +75,39 @@ describe('Currency Utilities', () => {
       const result = convertCurrency(100, 'UNSUPPORTED_CURRENCY', 'BRL');
       expect(result).toBe(100);
     });
+
+    it('should convert AUD to BRL when exchange rate is loaded', async () => {
+      const mockQuotes = {
+        AUDBRL: {
+          code: 'AUD',
+          codein: 'BRL',
+          bid: '3.65',
+        },
+      };
+
+      global.fetch = jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockQuotes),
+        })
+      ) as any;
+
+      await refreshCurrencyRates(true);
+
+      const converted = convertCurrency(100, 'AUD', 'BRL');
+      expect(converted).toBeCloseTo(365, 1);
+    });
   });
 
   describe('CURRENCIES constant', () => {
     it('should contain default currency BRL', () => {
       const hasDefault = CURRENCIES.some((c) => c.code === DEFAULT_CURRENCY);
       expect(hasDefault).toBe(true);
+    });
+
+    it('should contain AUD in VALID_CURRENCIES', () => {
+      const hasAud = CURRENCIES.some((c) => c.code === 'AUD');
+      expect(hasAud).toBe(true);
     });
   });
 });

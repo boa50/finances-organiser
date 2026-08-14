@@ -4,6 +4,7 @@ export const VALID_CURRENCIES: CurrencyInfo[] = [
   { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', flag: '🇧🇷' },
   { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
   { code: 'CAD', symbol: 'CA$', name: 'Canadian Dollar', flag: '🇨🇦' },
+  { code: 'AUD', symbol: 'A$', name: 'Australian Dollar', flag: '🇦🇺' },
   { code: 'THB', symbol: '฿', name: 'Thai Baht', flag: '🇹🇭' },
   { code: 'JPY', symbol: '¥', name: 'Japanese Yen', flag: '🇯🇵' },
   { code: 'KRW', symbol: '₩', name: 'South Korean Won', flag: '🇰🇷' },
