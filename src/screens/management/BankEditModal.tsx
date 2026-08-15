@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { BankItem } from '../../types';
 import { AppModal, AppText } from '../../components/ui';
 import { Building2 } from 'lucide-react-native';
@@ -26,19 +27,21 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
   bankErrorMsg,
   onSave,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <AppModal
       visible={visible}
       onClose={onClose}
-      title={editingBank ? 'Edit Bank' : 'New Bank'}
-      subtitle={editingBank ? 'Rename this bank' : 'Add a new bank'}
+      title={editingBank ? t('management.editBank') : t('management.newBank')}
+      subtitle={editingBank ? t('management.editBankSubtitle') : t('management.newBankSubtitle')}
     >
       <View style={styles.modalBody}>
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Bank Name</AppText>
+          <AppText style={styles.formLabel}>{t('management.bankName')}</AppText>
           <TextInput
             style={styles.textInput}
-            placeholder="e.g. Nubank, Itaú, Bradesco"
+            placeholder={t('management.bankNamePlaceholder')}
             placeholderTextColor={theme.colors.textTertiary}
             value={bankNameInput}
             onChangeText={setBankNameInput}
@@ -47,12 +50,12 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Preview</AppText>
+          <AppText style={styles.formLabel}>{t('management.preview')}</AppText>
           <View style={styles.previewBox}>
             <View style={[styles.iconBadge, { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent }]}>
               <Building2 size={22} color={theme.colors.accent} />
             </View>
-            <AppText style={styles.previewName}>{bankNameInput.trim() || 'Bank Name'}</AppText>
+            <AppText style={styles.previewName}>{bankNameInput.trim() || t('management.bankNameFallback')}</AppText>
           </View>
         </View>
 
@@ -75,7 +78,7 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
             <ActivityIndicator color={theme.colors.background} />
           ) : (
             <AppText style={styles.saveSubmitText}>
-              {editingBank ? 'Save Changes' : 'Create Bank'}
+              {editingBank ? t('management.saveChanges') : t('management.createBank')}
             </AppText>
           )}
         </Pressable>

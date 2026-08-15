@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
 import { filterTransactions } from '../utils/financials';
 import { tursoService } from '../services/tursoService';
@@ -39,7 +40,11 @@ function monthKey(dateValue: string): string {
   return Number.isNaN(date.getTime()) ? 'undated' : `${date.getFullYear()}-${date.getMonth()}`;
 }
 
-function buildFlattenedTransactions(transactions: Transaction[]): TransactionListItem[] {
+function buildFlattenedTransactions(
+  transactions: Transaction[],
+  locale?: string,
+  undatedLabel: string = 'Undated transactions'
+): TransactionListItem[] {
   const items: TransactionListItem[] = [];
   let lastMonthKey = '';
   for (const tx of transactions) {
@@ -49,8 +54,8 @@ function buildFlattenedTransactions(transactions: Transaction[]): TransactionLis
       const date = new Date(tx.date);
       const isValid = !Number.isNaN(date.getTime());
       const label = isValid
-        ? date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
-        : 'Undated transactions';
+        ? date.toLocaleDateString(locale || undefined, { month: 'long', year: 'numeric' })
+        : undatedLabel;
       items.push({ type: 'header', id: `header-${mk}`, label });
     }
     items.push({ type: 'transaction', id: tx.id, data: tx });
@@ -62,6 +67,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   transactions,
   onRefresh,
 }) => {
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -75,28 +81,30 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   }, [transactions, filterType, searchQuery]);
 
   const flattenedList = useMemo(() => {
-    return buildFlattenedTransactions(filteredTransactions);
-  }, [filteredTransactions]);
+    return buildFlattenedTransactions(
+      filteredTransactions,
+      i18n.language,
+      t('transactions.undatedTransactions')
+    );
+  }, [filteredTransactions, i18n.language, t]);
 
   const handleEdit = useCallback((transaction: Transaction) => {
     if (transaction.subscriptionId) {
       confirmAction({
-        title: 'Subscription Transaction',
-        message:
-          'Subscription expenses cannot be edited directly from Transaction History. Please edit the subscription on the Subscriptions management page.',
+        title: t('transactions.subTxEditTitle'),
+        message: t('transactions.subTxEditMsg'),
         onConfirm: () => {},
       });
       return;
     }
     setEditingTransaction(transaction);
-  }, []);
+  }, [t]);
 
   const handleDuplicate = useCallback(async (transaction: Transaction) => {
     if (transaction.subscriptionId) {
       confirmAction({
-        title: 'Subscription Transaction',
-        message:
-          'Subscription expenses cannot be duplicated directly from Transaction History. Please edit the subscription on the Subscriptions management page.',
+        title: t('transactions.subTxEditTitle'),
+        message: t('transactions.subTxDuplicateMsg'),
         onConfirm: () => {},
       });
       return;
@@ -106,16 +114,20 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       await tursoService.duplicateTransaction(transaction);
       onRefresh();
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to duplicate transaction.');
+      Alert.alert(t('common.error'), error?.message || t('transactions.duplicateError'));
     }
-  }, [onRefresh]);
+  }, [onRefresh, t]);
 
   const handleDelete = useCallback(async (transaction: Transaction) => {
     if (transaction.installments && transaction.installments > 1) {
       if (Platform.OS === 'web') {
         confirmAction({
-          title: 'Delete Installments',
-          message: `"${transaction.title}" is part of an installment plan (${transaction.installmentNumber}/${transaction.installments}).\n\nClick OK to delete ALL installments in this group, or Cancel to delete ONLY this single installment.`,
+          title: t('transactions.deleteInstallmentsTitle'),
+          message: t('transactions.deleteInstallmentsWebMsg', {
+            title: transaction.title,
+            current: transaction.installmentNumber,
+            total: transaction.installments,
+          }),
           onConfirm: async () => {
             await tursoService.deleteTransactionGroup(
               transaction.installmentGroupId || '',
@@ -126,12 +138,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         });
       } else {
         Alert.alert(
-          'Delete Installment',
-          `"${transaction.title}" is installment ${transaction.installmentNumber} of ${transaction.installments}.`,
+          t('transactions.deleteInstallmentsTitle'),
+          t('transactions.deleteInstallmentsNativeMsg', {
+            title: transaction.title,
+            current: transaction.installmentNumber,
+            total: transaction.installments,
+          }),
           [
-            { text: 'Cancel', style: 'cancel' },
+            { text: t('common.cancel'), style: 'cancel' },
             {
-              text: 'Delete Only This',
+              text: t('transactions.deleteOnlyThis'),
               style: 'destructive',
               onPress: async () => {
                 await tursoService.deleteTransaction(transaction.id);
@@ -139,7 +155,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               },
             },
             {
-              text: 'Delete All Installments',
+              text: t('transactions.deleteAllInstallments'),
               style: 'destructive',
               onPress: async () => {
                 await tursoService.deleteTransactionGroup(
@@ -154,8 +170,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       }
     } else {
       confirmAction({
-        title: 'Delete Transaction',
-        message: `Are you sure you want to delete "${transaction.title}"?`,
+        title: t('transactions.deleteTransactionTitle'),
+        message: t('transactions.deleteTransactionMsg', { title: transaction.title }),
         destructive: true,
         onConfirm: async () => {
           await tursoService.deleteTransaction(transaction.id);
@@ -163,19 +179,19 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         },
       });
     }
-  }, [onRefresh]);
+  }, [onRefresh, t]);
 
   const handleClearAll = useCallback(async () => {
     confirmAction({
-      title: 'Clear All Transactions',
-      message: 'Are you sure you want to clear ALL transactions? This will permanently remove all expense and income records from your database.',
+      title: t('transactions.clearAllTitle'),
+      message: t('transactions.clearAllMsg'),
       destructive: true,
       onConfirm: async () => {
         await tursoService.clearAllTransactions();
         onRefresh();
       },
     });
-  }, [onRefresh]);
+  }, [onRefresh, t]);
 
   const renderItem = useCallback(({ item }: { item: TransactionListItem }) => {
     if (item.type === 'header') {
@@ -204,8 +220,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         {/* Pinned Header & Filter Bar */}
         <View style={styles.fixedHeader}>
           <AppSectionHeader
-            title="Transaction History"
-            subtitle={`${filteredTransactions.length} recorded entries`}
+            title={t('transactions.title')}
+            subtitle={t('transactions.recordedEntries', { count: filteredTransactions.length })}
             rightElement={
               transactions.length > 0 ? (
                 <Pressable
@@ -213,7 +229,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                   onPress={handleClearAll}
                 >
                   <Trash2 size={14} color={theme.colors.danger} />
-                  <AppText style={styles.clearAllBtnText}>Clear All</AppText>
+                  <AppText style={styles.clearAllBtnText}>{t('header.clearAll')}</AppText>
                 </Pressable>
               ) : undefined
             }
@@ -222,7 +238,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           {/* Search & Filter Bar */}
           <AppCard style={styles.filterCard} padding="lg">
             <AppTextInput
-              placeholder="Search by title, category or notes..."
+              placeholder={t('transactions.searchPlaceholder')}
               value={searchQuery}
               onChangeText={setSearchQuery}
               icon={<Search size={16} color={theme.colors.textTertiary} />}
@@ -230,16 +246,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
             <AppSegmentedControl<'all' | 'income' | 'expense'>
               options={[
-                { label: 'All', value: 'all' },
+                { label: t('common.all'), value: 'all' },
                 {
-                  label: 'Incomes',
+                  label: t('common.incomes'),
                   value: 'income',
                   selectedBackgroundColor: theme.colors.successBg,
                   selectedBorderColor: theme.colors.success,
                   selectedTextColor: theme.colors.success,
                 },
                 {
-                  label: 'Expenses',
+                  label: t('common.expenses'),
                   value: 'expense',
                   selectedBackgroundColor: theme.colors.dangerBg,
                   selectedBorderColor: theme.colors.danger,
@@ -262,8 +278,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             drawDistance={Platform.OS === 'web' ? 500 : 300}
             ListEmptyComponent={
               <AppEmptyState
-                title="No transactions found"
-                description="Try adjusting your search query or filter."
+                title={t('transactions.noTransactionsFound')}
+                description={t('transactions.noTransactionsDescription')}
               />
             }
             contentContainerStyle={styles.listContent}

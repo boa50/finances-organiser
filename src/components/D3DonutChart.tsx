@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import * as d3 from 'd3';
+import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../utils/currencies';
 import { AppText } from './ui';
 import theme from '../theme';
@@ -17,13 +18,14 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
   totalExpense,
   targetCurrency,
 }) => {
+  const { t } = useTranslation();
   const netBalance = totalIncome - totalExpense;
   const totalFlow = totalIncome + totalExpense;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
 
   const pieData = [
-    { label: 'Income', value: totalIncome, color: theme.colors.success },
-    { label: 'Expense', value: totalExpense, color: theme.colors.danger },
+    { label: t('common.income'), value: totalIncome, color: theme.colors.success },
+    { label: t('common.expense'), value: totalExpense, color: theme.colors.danger },
   ];
 
   const donutSize = 220;
@@ -46,8 +48,8 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
 
   return (
     <View style={styles.card}>
-      <AppText style={styles.cardTitle}>Incomes vs Expenses Ratio</AppText>
-      <AppText style={styles.cardSubtitle}>Monthly cashflow & savings distribution</AppText>
+      <AppText style={styles.cardTitle}>{t('analytics.incomeExpenseRatio')}</AppText>
+      <AppText style={styles.cardSubtitle}>{t('analytics.incomeExpenseRatioSubtitle')}</AppText>
       <View style={styles.donutRow}>
         <View style={styles.donutWrapper}>
           <Svg width={donutSize} height={donutSize}>
@@ -60,7 +62,7 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
           </Svg>
 
           <View style={styles.donutCenter}>
-            <AppText style={styles.donutCenterLabel}>Net Balance</AppText>
+            <AppText style={styles.donutCenterLabel}>{t('analytics.netBalance')}</AppText>
             <AppText
               style={[
                 styles.donutCenterValue,
@@ -82,7 +84,9 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
                   { color: savingsRate >= 0 ? theme.colors.success : theme.colors.danger },
                 ]}
               >
-                {savingsRate >= 0 ? `+${savingsRate.toFixed(0)}% saved` : `${savingsRate.toFixed(0)}% deficit`}
+                {savingsRate >= 0
+                  ? t('analytics.percentSaved', { percent: savingsRate.toFixed(0) })
+                  : t('analytics.percentDeficit', { percent: savingsRate.toFixed(0) })}
               </AppText>
             </View>
           </View>
@@ -94,7 +98,7 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
               <View style={[styles.statDot, { backgroundColor: theme.colors.success }]} />
             </View>
             <View style={styles.statInfo}>
-              <AppText style={styles.statLabel}>Total Income</AppText>
+              <AppText style={styles.statLabel}>{t('analytics.totalIncome')}</AppText>
               <AppText style={[styles.statValue, { color: theme.colors.success }]}>
                 +{formatMoney(totalIncome, targetCurrency)}
               </AppText>
@@ -106,7 +110,7 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
               <View style={[styles.statDot, { backgroundColor: theme.colors.danger }]} />
             </View>
             <View style={styles.statInfo}>
-              <AppText style={styles.statLabel}>Total Expense</AppText>
+              <AppText style={styles.statLabel}>{t('analytics.totalExpense')}</AppText>
               <AppText style={[styles.statValue, { color: theme.colors.danger }]}>
                 -{formatMoney(totalExpense, targetCurrency)}
               </AppText>
@@ -118,7 +122,7 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
               <View style={[styles.statDot, { backgroundColor: theme.colors.accent }]} />
             </View>
             <View style={styles.statInfo}>
-              <AppText style={styles.statLabel}>Total Cashflow</AppText>
+              <AppText style={styles.statLabel}>{t('analytics.totalCashflow')}</AppText>
               <AppText style={[styles.statValue, { color: theme.colors.accent }]}>
                 {formatMoney(totalFlow, targetCurrency)}
               </AppText>

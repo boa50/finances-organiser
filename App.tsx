@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './src/i18n';
 import {
   StyleSheet,
   View,

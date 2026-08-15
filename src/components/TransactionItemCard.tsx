@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
 import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
@@ -38,6 +39,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   paymentMethodName,
   bankName,
 }) => {
+  const { t, i18n } = useTranslation();
   const isIncome = transaction.type === 'income';
   const currencyInfo = getCurrencyInfo(transaction.currencyId);
   const displayTitle = title ?? transaction.title;
@@ -45,7 +47,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   const date = new Date(transaction.date);
   const isValidDate = !Number.isNaN(date.getTime());
   const formattedDate = dateString ?? (isValidDate
-    ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    ? date.toLocaleDateString(i18n.language || undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : transaction.date);
 
   const displayAmount = amountToDisplay ?? transaction.amount;
@@ -62,7 +64,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   );
 
   const resolvedCategory = categoryName || (() => {
-    if (!transaction.categoryId) return 'Uncategorized';
+    if (!transaction.categoryId) return t('common.uncategorized');
     const cats = categoryService.getCategoriesSync();
     const found = cats.find(
       (c) => c.id === transaction.categoryId || c.name.toLowerCase() === transaction.categoryId?.toLowerCase()
@@ -167,7 +169,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
 
           {transaction.subscriptionId ? (
             <AppBadge
-              label="Subscription"
+              label={t('common.subscription')}
               variant="accent"
               size="sm"
             />

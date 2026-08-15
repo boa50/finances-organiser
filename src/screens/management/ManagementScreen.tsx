@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { BankItem, CategoryItem, CurrencyInfo, PaymentMethodItem, TransactionType } from '../../types';
 import {
   AVAILABLE_CATEGORY_ICONS,
@@ -36,6 +37,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   onCurrenciesUpdated,
   initialSection = 'categories',
 }) => {
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<ManagementSectionId>(initialSection);
   const [activeCategoryType, setActiveCategoryType] = useState<TransactionType>('expense');
   const [searchQuery, setSearchQuery] = useState('');
@@ -163,7 +165,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   const handleSaveCategory = async () => {
     if (!nameInput.trim()) {
-      setErrorMsg('Please enter a category name.');
+      setErrorMsg(t('management.nameRequired'));
       return;
     }
 
@@ -190,7 +192,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       onCategoriesUpdated?.();
       setModalVisible(false);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to save category.');
+      setErrorMsg(err?.message || t('management.saveCategoryError'));
     } finally {
       setSaving(false);
     }
@@ -198,8 +200,8 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   const handleDeleteCategory = async (cat: CategoryItem) => {
     confirmAction({
-      title: 'Delete Category',
-      message: `Are you sure you want to delete "${cat.name}"? This action cannot be undone.`,
+      title: t('management.deleteCategoryTitle'),
+      message: t('management.deleteCategoryMsg', { name: cat.name }),
       destructive: true,
       onConfirm: async () => {
         try {
@@ -232,7 +234,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   const handleSavePm = async () => {
     if (!pmNameInput.trim()) {
-      setPmErrorMsg('Please enter a payment method name.');
+      setPmErrorMsg(t('management.pmNameRequired'));
       return;
     }
 
@@ -256,7 +258,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       await loadPaymentMethodsData();
       setPmModalVisible(false);
     } catch (err: any) {
-      setPmErrorMsg(err?.message || 'Failed to save payment method.');
+      setPmErrorMsg(err?.message || t('management.savePmError'));
     } finally {
       setPmSaving(false);
     }
@@ -264,8 +266,8 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   const handleDeletePm = async (pm: PaymentMethodItem) => {
     confirmAction({
-      title: 'Delete Payment Method',
-      message: `Are you sure you want to delete "${pm.name}"?`,
+      title: t('management.deletePmTitle'),
+      message: t('management.deletePmMsg', { name: pm.name }),
       destructive: true,
       onConfirm: async () => {
         try {
@@ -295,7 +297,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   const handleSaveBank = async () => {
     if (!bankNameInput.trim()) {
-      setBankErrorMsg('Please enter a bank name.');
+      setBankErrorMsg(t('management.bankNameRequired'));
       return;
     }
 
@@ -312,7 +314,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       await loadBanksData();
       setBankModalVisible(false);
     } catch (err: any) {
-      setBankErrorMsg(err?.message || 'Failed to save bank.');
+      setBankErrorMsg(err?.message || t('management.saveBankError'));
     } finally {
       setBankSaving(false);
     }
@@ -320,8 +322,8 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   const handleDeleteBank = async (bank: BankItem) => {
     confirmAction({
-      title: 'Delete Bank',
-      message: `Are you sure you want to delete "${bank.name}"?`,
+      title: t('management.deleteBankTitle'),
+      message: t('management.deleteBankMsg', { name: bank.name }),
       destructive: true,
       onConfirm: async () => {
         try {
@@ -350,16 +352,17 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       onCurrenciesUpdated?.();
       setCurrencyModalVisible(false);
     } catch (err: any) {
-      setCurrencyErrorMsg(err?.message || 'Failed to add currency.');
+      setCurrencyErrorMsg(err?.message || t('management.addCurrencyError'));
     } finally {
       setCurrencySaving(false);
     }
   };
 
   const handleDeleteCurrency = async (currency: CurrencyInfo) => {
+    const localizedName = t(`currencies.${currency.code}`, { defaultValue: currency.name });
     confirmAction({
-      title: 'Remove Currency',
-      message: `Are you sure you want to remove ${currency.code} (${currency.name}) from available currencies?`,
+      title: t('management.removeCurrencyTitle'),
+      message: t('management.removeCurrencyMsg', { code: currency.code, name: localizedName }),
       destructive: true,
       onConfirm: async () => {
         try {
@@ -368,8 +371,8 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
           onCurrenciesUpdated?.();
         } catch (err: any) {
           confirmAction({
-            title: 'Cannot Remove Currency',
-            message: err?.message || 'Failed to remove currency.',
+            title: t('management.cannotRemoveCurrencyTitle'),
+            message: err?.message || t('management.removeCurrencyError'),
             destructive: false,
             onConfirm: () => {},
           });
@@ -379,7 +382,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   };
 
   if (loading) {
-    return <AppLoadingView message="Loading management settings..." />;
+    return <AppLoadingView message={t('management.loadingSettings')} />;
   }
 
   return (
@@ -387,16 +390,16 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       <View style={styles.container}>
         <View style={styles.fixedHeader}>
           <AppSectionHeader
-            title="Management Center"
-            subtitle="Configure expense & income categories, payment methods, bank options, and enabled currencies"
+            title={t('management.title')}
+            subtitle={t('management.subtitle')}
           />
 
           <AppSegmentedControl<ManagementSectionId>
             options={[
-              { label: 'Categories', value: 'categories' },
-              { label: 'Payment Methods', value: 'payment_methods' },
-              { label: 'Banks', value: 'banks' },
-              { label: 'Currencies', value: 'currencies' },
+              { label: t('management.categoriesTab'), value: 'categories' },
+              { label: t('management.pmTab'), value: 'payment_methods' },
+              { label: t('management.banksTab'), value: 'banks' },
+              { label: t('management.currenciesTab'), value: 'currencies' },
             ]}
             selectedValue={activeSection}
             onSelect={(sec) => {

@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Lock, LogIn, Zap } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { authService } from '../services/authService';
 import { AppButton, AppTextInput, FeedbackMessage } from '../components/ui';
 import theme from '../theme';
@@ -18,13 +19,14 @@ export interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogin = async () => {
     if (!password.trim()) {
-      setErrorMessage('Please enter your password.');
+      setErrorMessage(t('auth.enterPasswordError'));
       return;
     }
 
@@ -36,11 +38,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
       if (result.success) {
         onAuthenticated();
       } else {
-        setErrorMessage(result.message || 'Invalid password. Please try again.');
+        setErrorMessage(result.message || t('auth.invalidPasswordError'));
         setPassword('');
       }
     } catch (e) {
-      setErrorMessage('An unexpected error occurred. Please try again.');
+      setErrorMessage(t('common.unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
               <Zap size={28} color={theme.colors.accent} strokeWidth={2.5} />
             </View>
             <Text style={styles.title}>FinanceCloud</Text>
-            <Text style={styles.subtitle}>Enter your password to continue</Text>
+            <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
           </View>
 
           {/* Form section */}
@@ -72,7 +74,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
                 setPassword(text);
                 if (errorMessage) setErrorMessage('');
               }}
-              placeholder="Password"
+              placeholder={t('auth.passwordPlaceholder')}
               secureTextEntry
               autoFocus
               editable={!loading}
@@ -85,7 +87,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
             <FeedbackMessage message={errorMessage} type="error" visible={Boolean(errorMessage)} />
 
             <AppButton
-              title="Unlock"
+              title={t('auth.unlock')}
               onPress={handleLogin}
               variant="primary"
               loading={loading}

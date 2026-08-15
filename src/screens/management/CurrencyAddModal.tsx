@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { CurrencyInfo } from '../../types';
 import { VALID_CURRENCIES } from '../../utils/currencies';
 import { AppButton, AppModal, AppText, FeedbackMessage } from '../../components/ui';
@@ -23,6 +24,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
   errorMsg,
   onAddCurrency,
 }) => {
+  const { t } = useTranslation();
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
   const availableOptions = VALID_CURRENCIES.filter(
@@ -39,7 +41,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
     <AppModal
       visible={visible}
       onClose={onClose}
-      title="Add Available Currency"
+      title={t('management.addAvailableCurrency')}
     >
       <View style={styles.content}>
         {errorMsg && (
@@ -50,7 +52,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
 
         {availableOptions.length === 0 ? (
           <AppText style={styles.noOptionsText}>
-            All supported currencies are already enabled!
+            {t('management.allCurrenciesEnabled')}
           </AppText>
         ) : (
           <ScrollView style={styles.optionsList} contentContainerStyle={styles.optionsContainer}>
@@ -69,7 +71,9 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
                   <AppText style={styles.flag}>{item.flag}</AppText>
                   <View style={styles.optionDetails}>
                     <AppText style={styles.code}>{item.code}</AppText>
-                    <AppText style={styles.name}>{item.name}</AppText>
+                    <AppText style={styles.name}>
+                      {t(`currencies.${item.code}`, { defaultValue: item.name })}
+                    </AppText>
                   </View>
                   <AppText style={styles.symbol}>{item.symbol}</AppText>
                   {isSelected && <Check size={18} color={theme.colors.accent} />}
@@ -81,7 +85,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
 
         <View style={styles.actions}>
           <View style={styles.btnWrapper}>
-            <AppButton variant="ghost" onPress={onClose} title="Cancel" fullWidth={false} />
+            <AppButton variant="ghost" onPress={onClose} title={t('common.cancel')} fullWidth={false} />
           </View>
           {availableOptions.length > 0 && (
             <View style={styles.btnWrapper}>
@@ -90,7 +94,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
                 onPress={handleSave}
                 loading={saving}
                 disabled={!selectedCode || saving}
-                title="Add Currency"
+                title={t('management.addCurrency')}
                 fullWidth={false}
               />
             </View>

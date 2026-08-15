@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { MonthlyAggregate } from '../types';
 import { formatMoney } from '../utils/currencies';
 import { AppText } from './ui';
@@ -14,12 +15,16 @@ export const SelectedMonthDetailCard: React.FC<SelectedMonthDetailCardProps> = (
   activeMonth,
   targetCurrency,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.monthDetailCard}>
-      <AppText style={styles.detailTitle}>{activeMonth.monthLabel} Summary</AppText>
+      <AppText style={styles.detailTitle}>
+        {t('analytics.monthSummaryTitle', { month: activeMonth.monthLabel })}
+      </AppText>
       <View style={styles.detailRow}>
         <View style={styles.detailMetric}>
-          <AppText style={styles.detailLabel}>Income</AppText>
+          <AppText style={styles.detailLabel}>{t('common.income')}</AppText>
           <AppText style={[styles.detailValue, { color: theme.colors.success }]}>
             +{formatMoney(activeMonth.income, targetCurrency)}
           </AppText>
@@ -28,7 +33,7 @@ export const SelectedMonthDetailCard: React.FC<SelectedMonthDetailCardProps> = (
         <View style={styles.detailDivider} />
 
         <View style={styles.detailMetric}>
-          <AppText style={styles.detailLabel}>Expense</AppText>
+          <AppText style={styles.detailLabel}>{t('common.expense')}</AppText>
           <AppText style={[styles.detailValue, { color: theme.colors.danger }]}>
             -{formatMoney(activeMonth.expense, targetCurrency)}
           </AppText>
@@ -37,7 +42,7 @@ export const SelectedMonthDetailCard: React.FC<SelectedMonthDetailCardProps> = (
         <View style={styles.detailDivider} />
 
         <View style={styles.detailMetric}>
-          <AppText style={styles.detailLabel}>Net Balance</AppText>
+          <AppText style={styles.detailLabel}>{t('analytics.netBalance')}</AppText>
           <AppText
             style={[
               styles.detailValue,

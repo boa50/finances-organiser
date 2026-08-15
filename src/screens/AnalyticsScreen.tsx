@@ -5,6 +5,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
 import { D3CurrentMonthCharts } from '../components/D3CurrentMonthCharts';
 import { D3EvolutionChart } from '../components/D3EvolutionChart';
@@ -17,6 +18,8 @@ interface AnalyticsScreenProps {
 }
 
 export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }) => {
+  const { t } = useTranslation();
+
   // Compute total statistics across all recorded transactions
   let totalIncomeConverted = 0;
   let totalExpenseConverted = 0;
@@ -36,30 +39,30 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Primary Page Header */}
       <View style={styles.header}>
-        <AppText style={styles.pageTitle}>Financial Analytics</AppText>
+        <AppText style={styles.pageTitle}>{t('analytics.title')}</AppText>
         <AppText style={styles.pageSubtitle}>
-          Interactive D3.js evolution & monthly breakdown charts
+          {t('analytics.subtitle')}
         </AppText>
       </View>
 
       {/* KPI Cards Row */}
       <View style={styles.kpiRow}>
         <AppCard style={styles.kpiCard} padding="xl">
-          <Text style={styles.kpiLabel}>Lifetime Incomes</Text>
+          <Text style={styles.kpiLabel}>{t('analytics.lifetimeIncomes')}</Text>
           <Text style={[styles.kpiValue, { color: theme.colors.success }]}>
             +{formatMoney(totalIncomeConverted, DEFAULT_CURRENCY)}
           </Text>
         </AppCard>
 
         <AppCard style={styles.kpiCard} padding="xl">
-          <Text style={styles.kpiLabel}>Lifetime Expenses</Text>
+          <Text style={styles.kpiLabel}>{t('analytics.lifetimeExpenses')}</Text>
           <Text style={[styles.kpiValue, { color: theme.colors.danger }]}>
             -{formatMoney(totalExpenseConverted, DEFAULT_CURRENCY)}
           </Text>
         </AppCard>
 
         <AppCard style={styles.kpiCard} padding="xl">
-          <Text style={styles.kpiLabel}>Net Accumulated</Text>
+          <Text style={styles.kpiLabel}>{t('analytics.netAccumulated')}</Text>
           <Text
             style={[
               styles.kpiValue,

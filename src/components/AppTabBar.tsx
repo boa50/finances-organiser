@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { ChartNoAxesCombined, House, List, Repeat, SlidersHorizontal } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { AppText } from './ui';
 import theme from '../theme';
 
@@ -12,30 +13,32 @@ interface AppTabBarProps {
 }
 
 export const AppTabBar: React.FC<AppTabBarProps> = ({ activeTab, onTabChange }) => {
+  const { t } = useTranslation();
+
   const tabs: { id: TabName; label: string; icon: (color: string) => React.ReactNode }[] = [
     {
       id: 'overview',
-      label: 'Overview',
+      label: t('tabs.overview'),
       icon: (color) => <House size={18} color={color} />,
     },
     {
       id: 'subscriptions',
-      label: 'Subs',
+      label: t('tabs.subscriptions'),
       icon: (color) => <Repeat size={18} color={color} />,
     },
     {
       id: 'categories',
-      label: 'Management',
+      label: t('tabs.management'),
       icon: (color) => <SlidersHorizontal size={18} color={color} />,
     },
     {
       id: 'analytics',
-      label: 'D3 Graphs',
+      label: t('tabs.analytics'),
       icon: (color) => <ChartNoAxesCombined size={18} color={color} />,
     },
     {
       id: 'transactions',
-      label: 'History',
+      label: t('tabs.transactions'),
       icon: (color) => <List size={18} color={color} />,
     },
   ];

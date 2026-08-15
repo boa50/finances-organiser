@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useTranslation } from 'react-i18next';
 import { Subscription } from '../types';
 import { subscriptionService } from '../services/subscriptionService';
 import { categoryService } from '../services/categoryService';
@@ -34,6 +35,7 @@ interface SubscriptionsScreenProps {
 export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
   onSubscriptionsUpdated,
 }) => {
+  const { t } = useTranslation();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; icon: string; color: string }>>({});
   const [loading, setLoading] = useState(true);
@@ -89,8 +91,8 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
 
   const handleDelete = useCallback((sub: Subscription) => {
     confirmAction({
-      title: 'Delete Subscription',
-      message: `Are you sure you want to delete "${sub.title}"? This will stop future auto-generation of expenses for this subscription.`,
+      title: t('subscriptions.deleteTitle'),
+      message: t('subscriptions.deleteMsg', { title: sub.title }),
       destructive: true,
       onConfirm: async () => {
         setSubscriptions((prev) => prev.filter((item) => item.id !== sub.id));
@@ -103,7 +105,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
         }
       },
     });
-  }, [loadData, onSubscriptionsUpdated]);
+  }, [loadData, onSubscriptionsUpdated, t]);
 
   const handleOpenAddModal = useCallback(() => {
     setSelectedSubscription(null);
@@ -152,11 +154,11 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
   const renderSubscriptionItem = useCallback(({ item }: { item: Subscription }) => {
     const catKey = item.categoryId || '';
     const catInfo = categoriesMap[catKey] || {
-      name: item.categoryId ? 'Category' : 'Uncategorized',
+      name: item.categoryId ? 'Category' : t('common.uncategorized'),
       icon: 'CreditCard',
       color: theme.colors.accent,
     };
-    const categoryDisplayName = catInfo.name || 'Uncategorized';
+    const categoryDisplayName = catInfo.name || t('common.uncategorized');
 
     return (
       <View style={styles.cardWrapper}>
@@ -185,7 +187,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
               <AppText style={styles.subAmount}>
                 {formatMoney(item.amount, item.currencyId)}
               </AppText>
-              <AppText style={styles.perMonthText}>/ month</AppText>
+              <AppText style={styles.perMonthText}>{t('subscriptions.perMonth')}</AppText>
             </View>
           </View>
 
@@ -194,7 +196,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
             <View style={styles.billingDayPill}>
               <Calendar size={13} color={theme.colors.accent} />
               <AppText style={styles.billingDayText}>
-                Due on day {item.billingDay} of every month
+                {t('subscriptions.dueOnDay', { day: item.billingDay })}
               </AppText>
             </View>
 
@@ -202,7 +204,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
               {/* Status toggle */}
               <View style={styles.switchWrapper}>
                 <AppBadge
-                  label={item.active ? 'Active' : 'Inactive'}
+                  label={item.active ? t('common.active') : t('common.inactive')}
                   variant={item.active ? 'success' : 'neutral'}
                 />
                 <Switch
@@ -232,7 +234,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
         </AppCard>
       </View>
     );
-  }, [categoriesMap, handleToggleActive, handleOpenEditModal, handleDelete]);
+  }, [categoriesMap, handleToggleActive, handleOpenEditModal, handleDelete, t]);
 
   if (loading) {
     return (
@@ -247,9 +249,9 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
       {/* Pinned Top Area */}
       <View style={styles.fixedHeader}>
         <AppSectionHeader
-          title="Subscriptions & Recurrent Expenses"
-          subtitle="Manage your monthly recurring service costs"
-          actionLabel="+ New"
+          title={t('subscriptions.title')}
+          subtitle={t('subscriptions.subtitle')}
+          actionLabel={t('subscriptions.newButton')}
           onActionPress={handleOpenAddModal}
         />
 
@@ -257,7 +259,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
         <AppCard variant="glass" style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View>
-              <AppText style={styles.summaryLabel}>Total Monthly Recurring Expense</AppText>
+              <AppText style={styles.summaryLabel}>{t('subscriptions.totalMonthly')}</AppText>
               <AppText style={styles.summaryValue}>
                 {formatMoney(totalMonthlyBRL, 'BRL')}
               </AppText>
@@ -265,12 +267,12 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
 
             <View style={styles.badgesRow}>
               <AppBadge
-                label={`${activeCount} Active`}
+                label={t('subscriptions.activeCount', { count: activeCount })}
                 variant="success"
                 statusDot
               />
               <AppBadge
-                label={`${inactiveCount} Inactive`}
+                label={t('subscriptions.inactiveCount', { count: inactiveCount })}
                 variant="neutral"
               />
             </View>
@@ -280,16 +282,16 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
         {/* Controls / Filter Bar */}
         <View style={styles.controlsBar}>
           <AppTextInput
-            placeholder="Search subscriptions..."
+            placeholder={t('subscriptions.searchPlaceholder')}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
 
           <AppSegmentedControl<'all' | 'active' | 'inactive'>
             options={[
-              { label: 'All', value: 'all' },
-              { label: 'Active', value: 'active' },
-              { label: 'Inactive', value: 'inactive' },
+              { label: t('common.all'), value: 'all' },
+              { label: t('common.active'), value: 'active' },
+              { label: t('common.inactive'), value: 'inactive' },
             ]}
             selectedValue={statusFilter}
             onSelect={(val) => setStatusFilter(val)}
@@ -315,13 +317,13 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
           ListEmptyComponent={
             <AppEmptyState
               icon={<CreditCard size={40} color={theme.colors.textMuted} />}
-              title="No Subscriptions Found"
+              title={t('subscriptions.noSubsFoundTitle')}
               description={
                 searchQuery || statusFilter !== 'all'
-                  ? 'No subscriptions match your search or filter criteria.'
-                  : 'You have not added any monthly recurring subscriptions yet. Tap "+ New" to add one!'
+                  ? t('subscriptions.noSubsFilteredDesc')
+                  : t('subscriptions.noSubsEmptyDesc')
               }
-              actionTitle={!searchQuery && statusFilter === 'all' ? 'Add Subscription' : undefined}
+              actionTitle={!searchQuery && statusFilter === 'all' ? t('subscriptions.addSubscription') : undefined}
               onActionPress={handleOpenAddModal}
             />
           }

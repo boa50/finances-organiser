@@ -13,8 +13,9 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **Subscription management** — Dedicated screen for managing monthly recurring subscription expenses with active/inactive toggles, payment day scheduling, and idempotent monthly transaction auto-generation.
 - **Transaction & Installment management** — Full create, edit, duplicate, delete, search, and filter capabilities with monthly grouping, merchant tracking, BRL monetary conversion display on transaction cards (with converted original values shown alongside), single and multi-month installment support, and quick duplication defaulting to the current date.
 - **Comprehensive management hub** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), Banks, and Currencies.
+- **Internationalization (i18n)** — Full bilingual support for Brazilian Portuguese (`pt-BR`) and English (Australian) (`en-AU`) using `i18next` and `react-i18next`, with a header language switcher toggle and persistent user preference in `localStorage`.
 - **Design system & UI primitives** — Centralized design tokens (`theme.ts`) and reusable UI primitive components.
-- **Unit testing** — Jest test suite covering financial calculations, currency conversion, authentication, categories, transactions, subscriptions, and currency management.
+- **Unit testing** — Jest test suite covering financial calculations, currency conversion, authentication, categories, transactions, subscriptions, currency management, and i18n key parity.
 - **Cross-platform & Cloud sync** — Runs on Web, Android, and iOS via Expo with seamless offline/online fallback.
 
 ## 📋 Prerequisites
@@ -137,6 +138,12 @@ finances-organiser/
 └── src/
     ├── theme.ts                     # Centralized design tokens (colors, palette, typography, spacing, radii)
     │
+    ├── i18n/                        # Internationalization setup and locale dictionaries
+    │   ├── index.ts                 # i18next configuration, storage persistence, and toggle helpers
+    │   └── locales/                 # JSON translation dictionaries
+    │       ├── en-AU.json           # English (Australian) translation catalog
+    │       └── pt-BR.json           # Brazilian Portuguese translation catalog
+    │
     ├── types/
     │   └── index.ts                 # Shared TypeScript interfaces (Transaction, CurrencyInfo, etc.)
     │
@@ -205,7 +212,8 @@ finances-organiser/
 | **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; transactions and subscriptions store ID foreign keys (`category_id`, `payment_method_id`, `bank_id`) to custom entities with `ON DELETE SET NULL` reference cascade; no hardcoded defaults. |
 | **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography. |
 | **List Virtualization** | High-performance recycling via `@shopify/flash-list` with screen-bounded split layouts (pinned headers & search bars, independent list scrolling). |
-| **Unit testing** | Jest + ts-jest test runner covering pure utility functions and auth services (31 passing unit tests across 4 suites). |
+| **Unit testing** | Jest + ts-jest test runner covering pure utility functions, auth services, entity CRUD, localized currencies, and i18n key parity & codebase scan (100 passing unit tests across 13 suites). |
+| **Internationalization (i18n)** | `i18next` + `react-i18next` with `pt-BR` and `en-AU` catalogs; reactive `useTranslation` hooks; language selector on header; persistence in `localStorage` (`financecloud_language`). |
 | **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |
 | **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60s TTL). |
 

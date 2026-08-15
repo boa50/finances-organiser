@@ -4,6 +4,7 @@ import {
   DEFAULT_CURRENCY,
   formatMoney,
   getCurrencyInfo,
+  getCurrencyName,
   refreshCurrencyRates,
 } from '../currencies';
 
@@ -34,6 +35,26 @@ describe('Currency Utilities', () => {
       const info = getCurrencyInfo('XYZ');
       expect(info.code).toBe('XYZ');
       expect(info.symbol).toBe('$');
+    });
+  });
+
+  describe('getCurrencyName', () => {
+    it('should return default name when no translation function provided', () => {
+      expect(getCurrencyName('BRL')).toBe('Brazilian Real');
+      expect(getCurrencyName('USD')).toBe('US Dollar');
+      expect(getCurrencyName('EUR')).toBe('Euro');
+    });
+
+    it('should use translation function if available', () => {
+      const mockT = jest.fn((key: string) => {
+        if (key === 'currencies.BRL') return 'Real Brasileiro';
+        if (key === 'currencies.USD') return 'Dólar Americano';
+        return key;
+      });
+
+      expect(getCurrencyName('BRL', mockT)).toBe('Real Brasileiro');
+      expect(getCurrencyName('USD', mockT)).toBe('Dólar Americano');
+      expect(getCurrencyName('CAD', mockT)).toBe('Canadian Dollar'); // fallback since mock returned key
     });
   });
 

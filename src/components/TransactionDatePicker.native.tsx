@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
 import theme from '../theme';
 
 interface TransactionDatePickerProps {
@@ -16,6 +17,8 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
   onChange,
   onClose,
 }) => {
+  const { t } = useTranslation();
+
   const handleChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS !== 'ios') onClose();
     if (selectedDate) onChange(selectedDate);
@@ -25,7 +28,7 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>Select date</Text>
+          <Text style={styles.title}>{t('common.selectDate')}</Text>
           <DateTimePicker
             value={value}
             mode="date"
@@ -37,7 +40,7 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
               style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
               onPress={onClose}
             >
-              <Text style={styles.doneText}>Done</Text>
+              <Text style={styles.doneText}>{t('common.done')}</Text>
             </Pressable>
           )}
         </View>

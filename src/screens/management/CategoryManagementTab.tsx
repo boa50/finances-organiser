@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useTranslation } from 'react-i18next';
 import { CategoryItem, TransactionType } from '../../types';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
@@ -29,6 +30,8 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
   onOpenEditModal,
   onDeleteCategory,
 }) => {
+  const { t } = useTranslation();
+
   const filteredCategories = useMemo(() => {
     return categories.filter(
       (c) =>
@@ -37,12 +40,14 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
     );
   }, [categories, activeCategoryType, searchQuery]);
 
+  const typeLabel = activeCategoryType === 'income' ? t('common.income') : t('common.expense');
+
   const renderItem = useCallback(({ item }: { item: CategoryItem }) => {
     return (
       <View style={styles.cardWrapper}>
         <EntityManagementCard
           name={item.name}
-          subtitle={item.type}
+          subtitle={item.type === 'income' ? t('common.income') : t('common.expense')}
           color={item.color}
           icon={<CategoryIcon iconName={item.icon} color={item.color} size={20} />}
           onEdit={() => onOpenEditModal(item)}
@@ -50,7 +55,7 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
         />
       </View>
     );
-  }, [onOpenEditModal, onDeleteCategory]);
+  }, [onOpenEditModal, onDeleteCategory, t]);
 
   return (
     <View style={styles.tabContainer}>
@@ -60,14 +65,14 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
             <AppSegmentedControl<TransactionType>
               options={[
                 {
-                  label: 'Incomes',
+                  label: t('common.incomes'),
                   value: 'income',
                   selectedBackgroundColor: theme.colors.successBg,
                   selectedBorderColor: theme.colors.success,
                   selectedTextColor: theme.colors.success,
                 },
                 {
-                  label: 'Expenses',
+                  label: t('common.expenses'),
                   value: 'expense',
                   selectedBackgroundColor: theme.colors.dangerBg,
                   selectedBorderColor: theme.colors.danger,
@@ -85,14 +90,14 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
               >
                 <Plus size={16} color={theme.colors.white} />
                 <AppText style={styles.createBtnText}>
-                  New {activeCategoryType === 'income' ? 'Income' : 'Expense'} Category
+                  {t('management.newCategory', { type: typeLabel })}
                 </AppText>
               </Pressable>
             </View>
           </View>
 
           <AppTextInput
-            placeholder={`Search ${activeCategoryType} categories...`}
+            placeholder={t('management.searchCategories', { type: typeLabel })}
             value={searchQuery}
             onChangeText={setSearchQuery}
             icon={<Search size={16} color={theme.colors.textTertiary} />}
@@ -108,8 +113,8 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
           showsVerticalScrollIndicator={true}
           ListEmptyComponent={
             <AppEmptyState
-              title={`No ${activeCategoryType} categories found`}
-              description="Try creating a new category or adjusting your search query."
+              title={t('management.noCategoriesFound', { type: typeLabel })}
+              description={t('management.noCategoriesDesc')}
             />
           }
           renderItem={renderItem}

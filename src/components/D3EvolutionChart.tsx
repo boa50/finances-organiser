@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Path, Circle, Line, Text as SvgText, G, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { Transaction, MonthlyAggregate } from '../types';
 import { aggregateEvolutionData } from '../utils/financials';
 import { useEvolutionChartD3 } from '../hooks/useEvolutionChartD3';
@@ -14,12 +15,6 @@ interface D3EvolutionChartProps {
   transactions: Transaction[];
   targetCurrency: string;
 }
-
-const PERIOD_OPTIONS: { label: string; value: EvolutionPeriod }[] = [
-  { label: '5 Years', value: '5y' },
-  { label: '1 Year', value: '1y' },
-  { label: '6 Months', value: '6m' },
-];
 
 function formatYAxisTick(tick: number): string {
   if (tick === 0) return '0';
@@ -38,8 +33,15 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
   transactions,
   targetCurrency,
 }) => {
+  const { t } = useTranslation();
   const [selectedPeriod, setSelectedPeriod] = useState<EvolutionPeriod>('1y');
   const [selectedMonth, setSelectedMonth] = useState<MonthlyAggregate | null>(null);
+
+  const periodOptions: { label: string; value: EvolutionPeriod }[] = [
+    { label: t('analytics.period5y'), value: '5y' },
+    { label: t('analytics.period1y'), value: '1y' },
+    { label: t('analytics.period6m'), value: '6m' },
+  ];
 
   const limitMonths = selectedPeriod === '6m' ? 6 : selectedPeriod === '1y' ? 12 : 60;
 
@@ -88,13 +90,13 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
       {/* Top Header Row with Title on Left and Period Selection on Right */}
       <View style={styles.headerRow}>
         <View style={styles.titleCol}>
-          <AppText style={styles.cardTitle}>Income vs Expense Evolution</AppText>
-          <AppText style={styles.cardSubtitle}>Monthly trend built with D3.js</AppText>
+          <AppText style={styles.cardTitle}>{t('analytics.evolutionTitle')}</AppText>
+          <AppText style={styles.cardSubtitle}>{t('analytics.evolutionSubtitle')}</AppText>
         </View>
 
         <View style={styles.headerControls}>
           <AppSegmentedControl<EvolutionPeriod>
-            options={PERIOD_OPTIONS}
+            options={periodOptions}
             selectedValue={selectedPeriod}
             onSelect={(period) => {
               setSelectedPeriod(period);
@@ -110,11 +112,11 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: theme.colors.success }]} />
-          <AppText style={styles.legendText}>Income</AppText>
+          <AppText style={styles.legendText}>{t('common.income')}</AppText>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: theme.colors.danger }]} />
-          <AppText style={styles.legendText}>Expense</AppText>
+          <AppText style={styles.legendText}>{t('common.expense')}</AppText>
         </View>
       </View>
 

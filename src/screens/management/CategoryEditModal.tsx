@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { CategoryItem, TransactionType } from '../../types';
 import {
   AVAILABLE_CATEGORY_ICONS,
@@ -48,19 +49,26 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   errorMsg,
   onSave,
 }) => {
+  const { t } = useTranslation();
+  const typeLabel = activeCategoryType === 'income' ? t('common.income') : t('common.expense');
+
   return (
     <AppModal
       visible={visible}
       onClose={onClose}
-      title={editingCategory ? 'Edit Category' : `New ${activeCategoryType === 'income' ? 'Income' : 'Expense'} Category`}
-      subtitle="Choose a title, custom color accent, and icon badge"
+      title={
+        editingCategory
+          ? t('management.editCategory')
+          : t('management.newCategoryModalTitle', { type: typeLabel })
+      }
+      subtitle={t('management.categoryModalSubtitle')}
     >
       <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Category Name</AppText>
+          <AppText style={styles.formLabel}>{t('management.categoryName')}</AppText>
           <TextInput
             style={styles.textInput}
-            placeholder="e.g. Subscriptions, Pet Care, Bonuses"
+            placeholder={t('management.categoryNamePlaceholder')}
             placeholderTextColor={theme.colors.textTertiary}
             value={nameInput}
             onChangeText={setNameInput}
@@ -69,7 +77,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Color Theme</AppText>
+          <AppText style={styles.formLabel}>{t('management.colorTheme')}</AppText>
           <View style={styles.colorGrid}>
             {PRESET_CATEGORY_COLORS.map((c) => (
               <Pressable
@@ -87,7 +95,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Icon Badge</AppText>
+          <AppText style={styles.formLabel}>{t('management.iconBadge')}</AppText>
           <ChipSelector
             items={AVAILABLE_CATEGORY_ICONS}
             selectedId={iconInput}
@@ -107,7 +115,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Preview</AppText>
+          <AppText style={styles.formLabel}>{t('management.preview')}</AppText>
           <View style={styles.previewBox}>
             <View
               style={[
@@ -118,7 +126,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
               <CategoryIcon iconName={iconInput} color={colorInput} size={22} />
             </View>
             <AppText style={styles.previewName}>
-              {nameInput.trim() || 'Category Name'}
+              {nameInput.trim() || t('management.categoryNameFallback')}
             </AppText>
             <View
               style={[
@@ -137,7 +145,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                   fontWeight: '700',
                 }}
               >
-                {activeCategoryType.toUpperCase()}
+                {typeLabel.toUpperCase()}
               </AppText>
             </View>
           </View>
@@ -165,7 +173,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
             <ActivityIndicator color={theme.colors.background} />
           ) : (
             <AppText style={styles.saveSubmitText}>
-              {editingCategory ? 'Save Category' : 'Create Category'}
+              {editingCategory ? t('management.saveCategory') : t('management.createCategory')}
             </AppText>
           )}
         </Pressable>

@@ -5,6 +5,7 @@ import {
   Switch,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { BankItem, CategoryItem, CurrencyInfo, PaymentMethodItem, Subscription } from '../types';
 import { currencyService } from '../services/currencyService';
 import { categoryService } from '../services/categoryService';
@@ -32,6 +33,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
   onClose,
   onSaved,
 }) => {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currencyId, setCurrencyId] = useState('BRL');
@@ -101,19 +103,19 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
   const handleSave = async () => {
     setErrorMessage(null);
     if (!title.trim()) {
-      setErrorMessage('Please enter a title for the subscription.');
+      setErrorMessage(t('subscriptionModal.titleRequired'));
       return;
     }
 
     const numAmount = parseFloat(amount.replace(',', '.'));
     if (isNaN(numAmount) || numAmount <= 0) {
-      setErrorMessage('Please enter a valid monthly amount greater than zero.');
+      setErrorMessage(t('subscriptionModal.amountRequired'));
       return;
     }
 
     const numDay = parseInt(billingDay, 10);
     if (isNaN(numDay) || numDay < 1 || numDay > 31) {
-      setErrorMessage('Please enter a valid payment day between 1 and 31.');
+      setErrorMessage(t('subscriptionModal.billingDayRequired'));
       return;
     }
 
@@ -147,7 +149,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       onSaved();
       onClose();
     } catch (e: any) {
-      setErrorMessage(e?.message || 'Error saving subscription.');
+      setErrorMessage(e?.message || t('subscriptionModal.errorSaving'));
     } finally {
       setSaving(false);
     }
@@ -157,7 +159,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
     <AppModal
       visible={visible}
       onClose={onClose}
-      title={subscription ? 'Edit Subscription' : 'Add Subscription'}
+      title={subscription ? t('subscriptionModal.editSubscription') : t('subscriptionModal.addSubscription')}
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {errorMessage && (
@@ -168,18 +170,18 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
 
         {/* Title */}
         <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>Subscription Title *</AppText>
+          <AppText style={styles.label}>{t('subscriptionModal.titleField')}</AppText>
           <AppTextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="e.g. Netflix, Spotify, Gym, Cloud Hosting"
+            placeholder={t('subscriptionModal.titlePlaceholder')}
           />
         </View>
 
         {/* Amount & Currency */}
         <View style={styles.row}>
           <View style={styles.flex2}>
-            <AppText style={styles.label}>Monthly Amount *</AppText>
+            <AppText style={styles.label}>{t('subscriptionModal.amountField')}</AppText>
             <AppTextInput
               value={amount}
               onChangeText={setAmount}
@@ -188,7 +190,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           </View>
           {availableCurrencies.length > 0 && (
             <View style={styles.flex1}>
-              <AppText style={styles.label}>Currency</AppText>
+              <AppText style={styles.label}>{t('transactionModal.currencyField')}</AppText>
               <ChipSelector
                 items={availableCurrencies}
                 selectedId={currencyId}
@@ -202,23 +204,23 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
 
         {/* Billing Day */}
         <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>Recurrent Payment Day of Month (1 - 31) *</AppText>
+          <AppText style={styles.label}>{t('subscriptionModal.billingDayField')}</AppText>
           <AppTextInput
             value={billingDay}
             onChangeText={setBillingDay}
             placeholder="1"
           />
           <AppText style={styles.fieldHint}>
-            Expenses will be auto-generated every month on or starting on day {billingDay || '1'}.
+            {t('subscriptionModal.billingDayHint', { day: billingDay || '1' })}
           </AppText>
         </View>
 
         {/* Active Toggle */}
         <View style={styles.activeToggleRow}>
           <View style={styles.activeToggleInfo}>
-            <AppText style={styles.activeToggleTitle}>Subscription Status</AppText>
+            <AppText style={styles.activeToggleTitle}>{t('subscriptionModal.statusField')}</AppText>
             <AppText style={styles.activeToggleSub}>
-              {active ? 'Active (auto-generates monthly expense)' : 'Inactive (paused)'}
+              {active ? t('subscriptionModal.activeDesc') : t('subscriptionModal.inactiveDesc')}
             </AppText>
           </View>
           <Switch
@@ -232,7 +234,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         {/* Category */}
         {availableCategories.length > 0 && (
           <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>Category</AppText>
+            <AppText style={styles.label}>{t('transactionModal.categoryField')}</AppText>
             <ChipSelector
               items={availableCategories}
               selectedId={categoryId}
@@ -254,7 +256,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         {/* Payment Method */}
         {availablePaymentMethods.length > 0 && (
           <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>Payment Method (Optional)</AppText>
+            <AppText style={styles.label}>{t('transactionModal.paymentMethodField')}</AppText>
             <ChipSelector
               items={availablePaymentMethods}
               selectedId={paymentMethodId}
@@ -268,7 +270,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         {/* Bank */}
         {availableBanks.length > 0 && (
           <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>Bank (Optional)</AppText>
+            <AppText style={styles.label}>{t('transactionModal.bankField')}</AppText>
             <ChipSelector
               items={availableBanks}
               selectedId={bankId}
@@ -284,21 +286,21 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
 
         {/* Store / Merchant */}
         <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>Store / Merchant (Optional)</AppText>
+          <AppText style={styles.label}>{t('transactionModal.storeField')}</AppText>
           <AppTextInput
             value={store}
             onChangeText={setStore}
-            placeholder="e.g. Netflix Inc."
+            placeholder={t('subscriptionModal.storePlaceholder')}
           />
         </View>
 
         {/* Notes */}
         <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>Notes (Optional)</AppText>
+          <AppText style={styles.label}>{t('transactionModal.notesField')}</AppText>
           <AppTextInput
             value={notes}
             onChangeText={setNotes}
-            placeholder="Add any extra details..."
+            placeholder={t('subscriptionModal.notesPlaceholder')}
           />
         </View>
 
@@ -306,7 +308,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         <View style={styles.actions}>
           <View style={styles.actionBtnWrapper}>
             <AppButton
-              title="Cancel"
+              title={t('common.cancel')}
               variant="ghost"
               onPress={onClose}
               disabled={saving}
@@ -315,7 +317,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           </View>
           <View style={styles.actionBtnWrapper}>
             <AppButton
-              title={saving ? 'Saving...' : subscription ? 'Save Changes' : 'Add Subscription'}
+              title={saving ? t('transactionModal.saving') : subscription ? t('management.saveChanges') : t('subscriptionModal.addSubscription')}
               variant="primary"
               onPress={handleSave}
               disabled={saving}

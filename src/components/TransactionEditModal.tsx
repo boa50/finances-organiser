@@ -6,6 +6,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { CategoryItem, PaymentMethodItem, BankItem, CurrencyInfo, Transaction, TransactionType } from '../types';
 import { currencyService } from '../services/currencyService';
 import { categoryService } from '../services/categoryService';
@@ -38,6 +39,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   onClose,
   onSaved,
 }) => {
+  const { t, i18n } = useTranslation();
   const [type, setType] = useState<TransactionType>('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -182,11 +184,11 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     const parsedAmount = Number(amount.replace(',', '.'));
 
     if (!title.trim() || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setErrorMessage('Enter a title and a valid amount greater than zero.');
+      setErrorMessage(t('transactionModal.titleAndAmountRequired'));
       return;
     }
     if (Number.isNaN(date.getTime())) {
-      setErrorMessage('Enter a valid date.');
+      setErrorMessage(t('transactionModal.validDateRequired'));
       return;
     }
 
@@ -272,7 +274,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       onSaved();
       onClose();
     } catch (e: any) {
-      setErrorMessage(e?.message || 'Error saving transaction.');
+      setErrorMessage(e?.message || t('transactionModal.errorSaving'));
     } finally {
       setSaving(false);
     }
@@ -284,7 +286,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     <AppModal
       visible={visible}
       onClose={onClose}
-      title={transaction ? 'Edit Transaction' : 'Add Transaction'}
+      title={transaction ? t('transactionModal.editTransaction') : t('transactionModal.addTransaction')}
     >
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {errorMessage && (
@@ -297,14 +299,14 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         <AppSegmentedControl<TransactionType>
           options={[
             {
-              label: 'Income',
+              label: t('common.income'),
               value: 'income',
               selectedBackgroundColor: theme.colors.successBg,
               selectedBorderColor: theme.colors.success,
               selectedTextColor: theme.colors.success,
             },
             {
-              label: 'Expense',
+              label: t('common.expense'),
               value: 'expense',
               selectedBackgroundColor: theme.colors.dangerBg,
               selectedBorderColor: theme.colors.danger,
@@ -316,16 +318,16 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         />
 
         {/* Title */}
-        <Field label="Title *">
+        <Field label={t('transactionModal.titleField')}>
           <AppTextInput
             value={title}
             onChangeText={setTitle}
-            placeholder="e.g. Grocery Store, Salary"
+            placeholder={t('transactionModal.titlePlaceholder')}
           />
         </Field>
 
         {/* Amount */}
-        <Field label="Amount *">
+        <Field label={t('transactionModal.amountField')}>
           <AppTextInput
             value={amount}
             onChangeText={setAmount}
@@ -335,7 +337,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
         {/* Currency */}
         {availableCurrencies.length > 0 && (
-          <Field label="Currency">
+          <Field label={t('transactionModal.currencyField')}>
             <ChipSelector
               items={availableCurrencies}
               selectedId={currencyId}
@@ -348,7 +350,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
         {/* Category */}
         {availableCategories.length > 0 && (
-          <Field label="Category">
+          <Field label={t('transactionModal.categoryField')}>
             <ChipSelector
               items={availableCategories}
               selectedId={categoryId}
@@ -371,7 +373,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         {type === 'expense' && (
           <>
             {availablePaymentMethods.length > 0 && (
-              <Field label="Payment Method (optional)">
+              <Field label={t('transactionModal.paymentMethodField')}>
                 <ChipSelector
                   items={availablePaymentMethods}
                   selectedId={paymentMethodId}
@@ -389,7 +391,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             )}
 
             {pmSupportsInstallments && (
-              <Field label="Installments">
+              <Field label={t('transactionModal.installmentsField')}>
                 <View style={styles.installmentRow}>
                   <Pressable
                     onPress={() => {
@@ -430,14 +432,18 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
                 {installments > 1 && parsedAmountNum > 0 && (
                   <AppText style={styles.installmentHint}>
-                    {installments}× of {currencyId} {(parsedAmountNum / installments).toFixed(2)} / month
+                    {t('transactionModal.installmentHint', {
+                      count: installments,
+                      currency: currencyId,
+                      amount: (parsedAmountNum / installments).toFixed(2),
+                    })}
                   </AppText>
                 )}
               </Field>
             )}
 
             {availableBanks.length > 0 && (
-              <Field label="Bank (optional)">
+              <Field label={t('transactionModal.bankField')}>
                 <ChipSelector
                   items={availableBanks}
                   selectedId={bankId}
@@ -454,18 +460,18 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
               </Field>
             )}
 
-            <Field label="Store / Merchant (optional)">
+            <Field label={t('transactionModal.storeField')}>
               <AppTextInput
                 value={store}
                 onChangeText={setStore}
-                placeholder="e.g. Amazon, Supermarket, Target"
+                placeholder={t('transactionModal.storePlaceholder')}
               />
             </Field>
           </>
         )}
 
         {/* Date Picker Button */}
-        <Field label="Date">
+        <Field label={t('transactionModal.dateField')}>
           <Pressable
             onPress={() => setDatePickerVisible(true)}
             style={({ pressed }) => [styles.datePickerBtn, pressed && { opacity: 0.7 }]}
@@ -473,7 +479,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             <View style={styles.datePickerBtnLeft}>
               <Calendar size={16} color={theme.colors.accent} />
               <AppText style={styles.datePickerValueText}>
-                {date.toLocaleDateString(undefined, {
+                {date.toLocaleDateString(i18n.language || undefined, {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
@@ -491,11 +497,11 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         </Field>
 
         {/* Notes */}
-        <Field label="Notes (optional)">
+        <Field label={t('transactionModal.notesField')}>
           <AppTextInput
             value={notes}
             onChangeText={setNotes}
-            placeholder="Add optional notes..."
+            placeholder={t('transactionModal.notesPlaceholder')}
           />
         </Field>
 
@@ -503,7 +509,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         <View style={styles.actions}>
           <View style={styles.actionBtnWrapper}>
             <AppButton
-              title="Cancel"
+              title={t('common.cancel')}
               variant="ghost"
               onPress={onClose}
               disabled={saving}
@@ -512,7 +518,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           </View>
           <View style={styles.actionBtnWrapper}>
             <AppButton
-              title={saving ? 'Saving...' : transaction ? 'Save Changes' : 'Add Transaction'}
+              title={saving ? t('transactionModal.saving') : transaction ? t('management.saveChanges') : t('transactionModal.addTransaction')}
               variant="primary"
               onPress={handleSave}
               disabled={saving}

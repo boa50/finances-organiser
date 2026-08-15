@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { LogOut, Trash2, Zap } from 'lucide-react-native';
+import { Globe, LogOut, Trash2, Zap } from 'lucide-react-native';
+import { useTranslation } from 'react-i18next';
 import { AppBadge, AppText } from './ui';
+import { toggleAppLanguage } from '../i18n';
 import theme from '../theme';
 
 interface AppHeaderProps {
@@ -17,6 +19,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onClearAll,
   onLogout,
 }) => {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language?.startsWith('en') ? 'EN' : 'BR';
+
   return (
     <View style={styles.topBar}>
       <View style={styles.brandContainer}>
@@ -26,7 +31,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
       <View style={styles.topActions}>
         <AppBadge
-          label={isConnected ? 'Turso Connected' : 'Turso Offline'}
+          label={isConnected ? t('header.tursoConnected') : t('header.tursoOffline')}
           variant={isConnected ? 'success' : 'warning'}
           statusDot
         />
@@ -37,13 +42,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onPress={onClearAll}
           >
             <Trash2 size={14} color={theme.colors.danger} />
-            <AppText style={styles.clearBtnText}>Clear All</AppText>
+            <AppText style={styles.clearBtnText}>{t('header.clearAll')}</AppText>
           </Pressable>
         )}
 
         <Pressable
+          style={({ pressed }) => [styles.langBtn, pressed && { opacity: 0.7 }]}
+          onPress={() => toggleAppLanguage()}
+          accessibilityLabel={t('header.switchLanguage')}
+        >
+          <Globe size={14} color={theme.colors.accent} />
+          <AppText style={styles.langBtnText}>{currentLang}</AppText>
+        </Pressable>
+
+        <Pressable
           style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
           onPress={onLogout}
+          accessibilityLabel={t('header.logout')}
         >
           <LogOut size={14} color={theme.colors.textSecondary} />
         </Pressable>
@@ -92,6 +107,22 @@ const styles = StyleSheet.create({
   },
   clearBtnText: {
     color: theme.colors.danger,
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.bold,
+  },
+  langBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    backgroundColor: theme.colors.surfaceHighlight,
+    borderColor: theme.colors.borderLight,
+    borderWidth: 1,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radii.md,
+  },
+  langBtnText: {
+    color: theme.colors.accent,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },

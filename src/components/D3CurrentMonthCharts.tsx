@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { CategoryAggregate, Transaction } from '../types';
 import { convertCurrency } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
@@ -19,6 +20,7 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
   targetCurrency,
   selectedMonthDate = new Date(),
 }) => {
+  const { t, i18n } = useTranslation();
   const currentYear = selectedMonthDate.getFullYear();
   const currentMonth = selectedMonthDate.getMonth();
 
@@ -27,7 +29,7 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
     return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
   });
 
-  const monthName = selectedMonthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthName = selectedMonthDate.toLocaleString(i18n.language || undefined, { month: 'long', year: 'numeric' });
 
   let totalIncome = 0;
   let totalExpense = 0;
@@ -39,7 +41,7 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
       totalIncome += converted;
     } else {
       totalExpense += converted;
-      const catKey = tx.categoryId || 'Uncategorized';
+      const catKey = tx.categoryId || t('common.uncategorized');
       categoryExpenseMap[catKey] = (categoryExpenseMap[catKey] || 0) + converted;
     }
   });
@@ -63,8 +65,8 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
   return (
     <View style={styles.container}>
       <AppSectionHeader
-        title={`Current Month Breakdown (${monthName})`}
-        subtitle="Income vs Expense ratio & Category analytics"
+        title={t('analytics.currentMonthBreakdown', { month: monthName })}
+        subtitle={t('analytics.currentMonthSubtitle')}
         style={styles.sectionHeader}
       />
 

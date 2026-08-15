@@ -6,17 +6,18 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Automated and passing | 74 |
+| ✅ Automated and passing | 79 |
 | 🟡 Implemented but not automated | 21 |
 | ⬜ Not implemented | 0 |
 | 🔴 Automated but failing | 0 |
 | ⚠️ Cannot currently be verified | 0 |
-| **Total** | **95** |
+| **Total** | **100** |
 
-All 74 automated tests across 12 test suites were verified passing via `npm test` on 2026-08-14.
+All 79 automated tests across 13 test suites were verified passing via `npm test` on 2026-08-15.
 
 ### Automated Test Suites
 
+- [`src/i18n/__tests__/i18n.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/i18n/__tests__/i18n.test.ts) — i18n configuration, key parity between en-AU/pt-BR, language toggling, and storage persistence
 - [`src/services/__tests__/apiClient.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/apiClient.test.ts) — API response Content-Type validation (`isJsonResponse`)
 - [`src/services/__tests__/authService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/authService.test.ts) — Authentication service login/logout flows and API/session state
 - [`src/services/__tests__/bankService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/bankService.test.ts) — Bank CRUD operations, duplicate validation, default preservation, reset
@@ -1748,3 +1749,106 @@ All 74 automated tests across 12 test suites were verified passing via `npm test
 - No automated tests verify the API to libSQL to localStorage fallback chain.
 - `isJsonResponse()` integration across all services has no automated test.
 - localStorage save/load round-trip has no automated test.
+
+---
+
+## 10. Internationalization (i18n)
+
+### TC-082 — Identical key parity between en-AU and pt-BR locales
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Internationalization
+
+**Platform:** All
+
+**Given** The translation dictionaries `en-AU.json` and `pt-BR.json`.
+
+**When** All translation key paths are compared.
+
+**Then** Both translation files have 100% key parity with identical keys.
+
+**Automation:** `src/i18n/__tests__/i18n.test.ts` — `should have identical translation key structures between en-AU and pt-BR`
+
+---
+
+### TC-083 — Supported languages configuration
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Internationalization
+
+**Platform:** All
+
+**Given** `SUPPORTED_LANGUAGES` configuration in `src/i18n/index.ts`.
+
+**When** Checking supported language codes.
+
+**Then** Both `en-AU` and `pt-BR` are configured with labels and shortLabels.
+
+**Automation:** `src/i18n/__tests__/i18n.test.ts` — `should have all supported languages configured`
+
+---
+
+### TC-084 — Language storage in localStorage
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Internationalization
+
+**Platform:** All
+
+**Given** User changes language preference.
+
+**When** `setStoredLanguage()` is invoked and `getStoredLanguage()` is checked.
+
+**Then** Language is persisted to `localStorage` under `financecloud_language` and restored correctly.
+
+**Automation:** `src/i18n/__tests__/i18n.test.ts` — `should get and set stored language in localStorage`
+
+---
+
+### TC-085 — Language switching and toggling
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Internationalization
+
+**Platform:** All
+
+**Given** The app is running in `en-AU` or `pt-BR`.
+
+**When** `toggleAppLanguage()` is called.
+
+**Then** `i18n.language` switches dynamically between `en-AU` and `pt-BR`.
+
+**Automation:** `src/i18n/__tests__/i18n.test.ts` — `should toggle between en-AU and pt-BR`
+
+---
+
+### TC-086 — Translation accuracy across locales
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Internationalization
+
+**Platform:** All
+
+**Given** Active language set to `en-AU` or `pt-BR`.
+
+**When** Translating common keys (`common.income`, `common.expense`, `tabs.overview`).
+
+**Then** The expected localized string is returned for each language.
+
+**Automation:** `src/i18n/__tests__/i18n.test.ts` — `should correctly translate sample keys in both languages`
+

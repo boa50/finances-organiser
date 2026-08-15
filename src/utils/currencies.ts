@@ -47,6 +47,18 @@ export function getCurrencyInfo(code: string): CurrencyInfo {
   );
 }
 
+export function getCurrencyName(code: string, t?: (key: string, options?: any) => string): string {
+  const info = getCurrencyInfo(code);
+  if (t) {
+    const key = `currencies.${info.code.toUpperCase()}`;
+    const translated = t(key, { defaultValue: info.name });
+    if (translated && translated !== key) {
+      return translated;
+    }
+  }
+  return info.name;
+}
+
 export function formatMoney(amount: number, currencyCode: string = DEFAULT_CURRENCY): string {
   const info = getCurrencyInfo(currencyCode);
   const formattedNumber = Math.abs(amount).toLocaleString(undefined, {

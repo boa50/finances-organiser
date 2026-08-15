@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { PaymentMethodItem } from '../../types';
 import { AppModal, AppText } from '../../components/ui';
 import { CreditCard } from 'lucide-react-native';
@@ -30,19 +31,21 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
   pmErrorMsg,
   onSave,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <AppModal
       visible={visible}
       onClose={onClose}
-      title={editingPm ? 'Edit Payment Method' : 'New Payment Method'}
-      subtitle={editingPm ? 'Rename this way of payment' : 'Add a new way of payment'}
+      title={editingPm ? t('management.editPm') : t('management.newPm')}
+      subtitle={editingPm ? t('management.editPmSubtitle') : t('management.newPmSubtitle')}
     >
       <View style={styles.modalBody}>
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Payment Method Name</AppText>
+          <AppText style={styles.formLabel}>{t('management.pmName')}</AppText>
           <TextInput
             style={styles.textInput}
-            placeholder="e.g. Pix, Apple Pay, Cash"
+            placeholder={t('management.pmNamePlaceholder')}
             placeholderTextColor={theme.colors.textTertiary}
             value={pmNameInput}
             onChangeText={setPmNameInput}
@@ -51,7 +54,7 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Allow Installments</AppText>
+          <AppText style={styles.formLabel}>{t('management.allowInstallments')}</AppText>
           <Pressable
             style={({ pressed }) => [
               styles.toggleRow,
@@ -65,19 +68,19 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
             </View>
             <AppText style={styles.toggleLabel}>
               {pmAllowInstallments
-                ? 'Users can split expenses into monthly installments'
-                : 'No installment option for this payment method'}
+                ? t('management.allowInstallmentsEnabled')
+                : t('management.allowInstallmentsDisabled')}
             </AppText>
           </Pressable>
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>Preview</AppText>
+          <AppText style={styles.formLabel}>{t('management.preview')}</AppText>
           <View style={styles.previewBox}>
             <View style={[styles.iconBadge, { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent }]}>
               <CreditCard size={22} color={theme.colors.accent} />
             </View>
-            <AppText style={styles.previewName}>{pmNameInput.trim() || 'Payment Method Name'}</AppText>
+            <AppText style={styles.previewName}>{pmNameInput.trim() || t('management.pmNameFallback')}</AppText>
           </View>
         </View>
 
@@ -100,7 +103,7 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
             <ActivityIndicator color={theme.colors.background} />
           ) : (
             <AppText style={styles.saveSubmitText}>
-              {editingPm ? 'Save Changes' : 'Create Payment Method'}
+              {editingPm ? t('management.saveChanges') : t('management.createPm')}
             </AppText>
           )}
         </Pressable>

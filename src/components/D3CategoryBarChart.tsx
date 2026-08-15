@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { CategoryAggregate } from '../types';
 import { formatMoney } from '../utils/currencies';
 import { AppText } from './ui';
@@ -16,13 +17,15 @@ export const D3CategoryBarChart: React.FC<D3CategoryBarChartProps> = ({
   monthName,
   targetCurrency,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.card}>
-      <AppText style={styles.cardTitle}>Expense Categories ({monthName})</AppText>
-      <AppText style={styles.cardSubtitle}>D3 scaling for category distribution</AppText>
+      <AppText style={styles.cardTitle}>{t('analytics.expenseCategories', { month: monthName })}</AppText>
+      <AppText style={styles.cardSubtitle}>{t('analytics.expenseCategoriesSubtitle')}</AppText>
 
       {categoryAggregates.length === 0 ? (
-        <AppText style={styles.emptyCatText}>No expense transactions found for this month.</AppText>
+        <AppText style={styles.emptyCatText}>{t('analytics.noExpensesForMonth')}</AppText>
       ) : (
         <View style={styles.categoryList}>
           {categoryAggregates.map((cat, index) => (

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useTranslation } from 'react-i18next';
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY, formatMoney } from '../utils/currencies';
 import { calculateFinancialSummary, GroupedRecentItem, groupRecentTransactions } from '../utils/financials';
@@ -22,6 +23,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   onNavigateTransactions,
   onRefresh,
 }) => {
+  const { t, i18n } = useTranslation();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const { last60DaysNetBalance, currentMonthIncome, currentMonthExpense } = useMemo(() => {
@@ -37,13 +39,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   }, [nonSubscriptionTransactions]);
 
   const currentMonthDate = new Date();
-  const monthName = currentMonthDate.toLocaleString('default', { month: 'long' });
+  const monthName = currentMonthDate.toLocaleString(i18n.language || undefined, { month: 'long' });
 
   const renderRecentItem = useCallback(({ item }: { item: GroupedRecentItem }) => {
     const dateObj = new Date(item.date);
     const dateStr = isNaN(dateObj.getTime())
       ? item.date
-      : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      : dateObj.toLocaleDateString(i18n.language || undefined, { month: 'short', day: 'numeric' });
 
     return (
       <View style={styles.cardWrapper}>
@@ -57,7 +59,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
         />
       </View>
     );
-  }, []);
+  }, [i18n.language]);
 
   return (
     <>
@@ -67,12 +69,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
           {/* Header Banner & Turso Cloud Badge */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.welcomeTitle}>Personal Finances</Text>
-              <Text style={styles.welcomeSubtitle}>Cloud-synced financial manager</Text>
+              <Text style={styles.welcomeTitle}>{t('overview.title')}</Text>
+              <Text style={styles.welcomeSubtitle}>{t('overview.subtitle')}</Text>
             </View>
 
             <AppBadge
-              label={tursoConfig.isConnected ? 'Turso Cloud DB' : 'Turso Offline'}
+              label={tursoConfig.isConnected ? t('overview.tursoDb') : t('overview.tursoOffline')}
               variant={tursoConfig.isConnected ? 'success' : 'warning'}
               statusDot
             />
@@ -80,14 +82,16 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 
           {/* Main Net Balance Hero Card */}
           <AppCard variant="elevated" padding="6xl">
-            <Text style={styles.heroLabel}>Last 60 Days Net Balance ({DEFAULT_CURRENCY})</Text>
+            <Text style={styles.heroLabel}>
+              {t('overview.netBalance60Days', { currency: DEFAULT_CURRENCY })}
+            </Text>
             <Text style={styles.heroValue}>
               {formatMoney(last60DaysNetBalance, DEFAULT_CURRENCY)}
             </Text>
 
             <View style={styles.heroMetaRow}>
               <View style={styles.metaBox}>
-                <Text style={styles.metaLabel}>{monthName} Income</Text>
+                <Text style={styles.metaLabel}>{t('overview.income', { month: monthName })}</Text>
                 <Text style={[styles.metaValue, { color: theme.colors.success }]}>
                   +{formatMoney(currentMonthIncome, DEFAULT_CURRENCY)}
                 </Text>
@@ -96,7 +100,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
               <View style={styles.metaDivider} />
 
               <View style={styles.metaBox}>
-                <Text style={styles.metaLabel}>{monthName} Expense</Text>
+                <Text style={styles.metaLabel}>{t('overview.expense', { month: monthName })}</Text>
                 <Text style={[styles.metaValue, { color: theme.colors.danger }]}>
                   -{formatMoney(currentMonthExpense, DEFAULT_CURRENCY)}
                 </Text>
@@ -106,8 +110,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 
           {/* Recent Activity Section Header */}
           <AppSectionHeader
-            title="Recent Activity"
-            actionLabel={`See all (${nonSubscriptionTransactions.length}) →`}
+            title={t('overview.recentActivity')}
+            actionLabel={t('overview.seeAll', { count: nonSubscriptionTransactions.length })}
             onActionPress={onNavigateTransactions}
           />
         </View>
@@ -119,7 +123,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={true}
-            ListEmptyComponent={<AppEmptyState title="No recent transactions." />}
+            ListEmptyComponent={<AppEmptyState title={t('overview.noRecentTransactions')} />}
             renderItem={renderRecentItem}
           />
         </View>

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useTranslation } from 'react-i18next';
 import { PaymentMethodItem } from '../../types';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
 import { AppCard, AppEmptyState, AppTextInput, AppText } from '../../components/ui';
@@ -24,6 +25,8 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
   onOpenEditModal,
   onDeletePm,
 }) => {
+  const { t } = useTranslation();
+
   const filteredPms = useMemo(() => {
     return paymentMethods.filter((pm) =>
       pm.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
@@ -35,14 +38,18 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
       <View style={styles.cardWrapper}>
         <EntityManagementCard
           name={item.name}
-          subtitle={item.allowInstallments ? 'Installments enabled' : 'Single payment only'}
+          subtitle={
+            item.allowInstallments
+              ? t('management.installmentsEnabled')
+              : t('management.singlePaymentOnly')
+          }
           icon={<CreditCard size={20} color={theme.colors.accent} />}
           onEdit={() => onOpenEditModal(item)}
           onDelete={() => onDeletePm(item)}
         />
       </View>
     );
-  }, [onOpenEditModal, onDeletePm]);
+  }, [onOpenEditModal, onDeletePm, t]);
 
   return (
     <View style={styles.tabContainer}>
@@ -54,12 +61,12 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
               onPress={onOpenAddModal}
             >
               <Plus size={16} color={theme.colors.white} />
-              <AppText style={styles.createBtnText}>New Payment Method</AppText>
+              <AppText style={styles.createBtnText}>{t('management.newPaymentMethod')}</AppText>
             </Pressable>
           </View>
 
           <AppTextInput
-            placeholder="Search payment methods..."
+            placeholder={t('management.searchPaymentMethods')}
             value={searchQuery}
             onChangeText={setSearchQuery}
             icon={<Search size={16} color={theme.colors.textTertiary} />}
@@ -75,8 +82,8 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
           showsVerticalScrollIndicator={true}
           ListEmptyComponent={
             <AppEmptyState
-              title="No payment methods found"
-              description="Try adding a new payment method or adjusting your search query."
+              title={t('management.noPaymentMethodsFound')}
+              description={t('management.noPaymentMethodsDesc')}
             />
           }
           renderItem={renderItem}

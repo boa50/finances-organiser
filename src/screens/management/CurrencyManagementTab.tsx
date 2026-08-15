@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useTranslation } from 'react-i18next';
 import { CurrencyInfo } from '../../types';
 import { AppCard, AppText, AppEmptyState, AppTextInput } from '../../components/ui';
 import theme from '../../theme';
@@ -21,17 +22,25 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
   onOpenAddModal,
   onDeleteCurrency,
 }) => {
+  const { t } = useTranslation();
+
   const filteredCurrencies = useMemo(() => {
-    return currencies.filter(
-      (c) =>
-        c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [currencies, searchQuery]);
+    const query = searchQuery.trim().toLowerCase();
+    return currencies.filter((c) => {
+      const localizedName = t(`currencies.${c.code}`, { defaultValue: c.name }).toLowerCase();
+      return (
+        c.code.toLowerCase().includes(query) ||
+        c.name.toLowerCase().includes(query) ||
+        localizedName.includes(query)
+      );
+    });
+  }, [currencies, searchQuery, t]);
 
   const canDelete = currencies.length > 1;
 
   const renderItem = useCallback(({ item: currency }: { item: CurrencyInfo }) => {
+    const localizedName = t(`currencies.${currency.code}`, { defaultValue: currency.name });
+
     return (
       <View style={styles.cardWrapper}>
         <AppCard variant="outlined" style={styles.card}>
@@ -39,7 +48,7 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
             <AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>
             <View style={styles.textContainer}>
               <AppText style={styles.codeText}>{currency.code}</AppText>
-              <AppText style={styles.nameText}>{currency.name}</AppText>
+              <AppText style={styles.nameText}>{localizedName}</AppText>
             </View>
             <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
           </View>
@@ -74,12 +83,12 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
               onPress={onOpenAddModal}
             >
               <Plus size={16} color={theme.colors.white} />
-              <AppText style={styles.createBtnText}>Add Currency</AppText>
+              <AppText style={styles.createBtnText}>{t('management.addCurrency')}</AppText>
             </Pressable>
           </View>
 
           <AppTextInput
-            placeholder="Search currencies..."
+            placeholder={t('management.searchCurrencies')}
             value={searchQuery}
             onChangeText={setSearchQuery}
             icon={<Search size={16} color={theme.colors.textTertiary} />}
@@ -95,11 +104,11 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
           showsVerticalScrollIndicator={true}
           ListEmptyComponent={
             <AppEmptyState
-              title="No Currencies Found"
+              title={t('management.noCurrenciesFound')}
               description={
-                searchQuery ? 'No currencies match your search query.' : 'No enabled currencies available.'
+                searchQuery ? t('management.noCurrenciesSearchDesc') : t('management.noCurrenciesDesc')
               }
-              actionTitle={searchQuery ? undefined : 'Add Currency'}
+              actionTitle={searchQuery ? undefined : t('management.addCurrency')}
               onActionPress={searchQuery ? undefined : onOpenAddModal}
             />
           }
