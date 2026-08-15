@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,11 +6,10 @@ import {
   View,
 } from 'react-native';
 import { Transaction } from '../types';
-import { D3EvolutionChart } from '../components/D3EvolutionChart';
 import { D3CurrentMonthCharts } from '../components/D3CurrentMonthCharts';
+import { D3EvolutionChart } from '../components/D3EvolutionChart';
 import { DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
-import { currencyService } from '../services/currencyService';
-import { AppBadge, AppCard, AppSectionHeader } from '../components/ui';
+import { AppCard, AppText } from '../components/ui';
 import theme from '../theme';
 
 interface AnalyticsScreenProps {
@@ -18,17 +17,12 @@ interface AnalyticsScreenProps {
 }
 
 export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }) => {
-  const enabledCurrencies = currencyService.getCurrenciesSync();
-  const [selectedCurrency, setSelectedCurrency] = useState(
-    enabledCurrencies.length > 0 ? enabledCurrencies[0].code : DEFAULT_CURRENCY
-  );
-
   // Compute total statistics across all recorded transactions
   let totalIncomeConverted = 0;
   let totalExpenseConverted = 0;
 
   transactions.forEach((tx) => {
-    const val = convertCurrency(tx.amount, tx.currencyId, selectedCurrency);
+    const val = convertCurrency(tx.amount, tx.currencyId, DEFAULT_CURRENCY);
     if (tx.type === 'income') {
       totalIncomeConverted += val;
     } else {
@@ -40,35 +34,12 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <AppSectionHeader
-          title="Financial Analytics"
-          subtitle="Interactive D3.js evolution & monthly breakdown charts"
-        />
-
-        {/* Currency Filter */}
-        <View style={styles.currencyFilterContainer}>
-          <Text style={styles.filterLabel}>Display Currency:</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: theme.spacing.sm }}
-          >
-            {enabledCurrencies.map((c) => {
-              const selected = selectedCurrency === c.code;
-              return (
-                <AppBadge
-                  key={c.code}
-                  label={c.code}
-                  icon={<Text style={styles.currencyFlag}>{c.flag}</Text>}
-                  variant={selected ? 'accent' : 'neutral'}
-                  onPress={() => setSelectedCurrency(c.code)}
-                />
-              );
-            })}
-          </ScrollView>
-        </View>
+      {/* Primary Page Header */}
+      <View style={styles.header}>
+        <AppText style={styles.pageTitle}>Financial Analytics</AppText>
+        <AppText style={styles.pageSubtitle}>
+          Interactive D3.js evolution & monthly breakdown charts
+        </AppText>
       </View>
 
       {/* KPI Cards Row */}
@@ -76,14 +47,14 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
         <AppCard style={styles.kpiCard} padding="xl">
           <Text style={styles.kpiLabel}>Lifetime Incomes</Text>
           <Text style={[styles.kpiValue, { color: theme.colors.success }]}>
-            +{formatMoney(totalIncomeConverted, selectedCurrency)}
+            +{formatMoney(totalIncomeConverted, DEFAULT_CURRENCY)}
           </Text>
         </AppCard>
 
         <AppCard style={styles.kpiCard} padding="xl">
           <Text style={styles.kpiLabel}>Lifetime Expenses</Text>
           <Text style={[styles.kpiValue, { color: theme.colors.danger }]}>
-            -{formatMoney(totalExpenseConverted, selectedCurrency)}
+            -{formatMoney(totalExpenseConverted, DEFAULT_CURRENCY)}
           </Text>
         </AppCard>
 
@@ -95,16 +66,16 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
               { color: netOverall >= 0 ? theme.colors.accent : theme.colors.danger },
             ]}
           >
-            {formatMoney(netOverall, selectedCurrency)}
+            {formatMoney(netOverall, DEFAULT_CURRENCY)}
           </Text>
         </AppCard>
       </View>
 
-      {/* Graph 1: D3 Evolution by Month */}
-      <D3EvolutionChart transactions={transactions} targetCurrency={selectedCurrency} />
+      {/* Graph 1: D3 Current Month Incomes & Expenses Breakdown */}
+      <D3CurrentMonthCharts transactions={transactions} targetCurrency={DEFAULT_CURRENCY} />
 
-      {/* Graph 2: D3 Current Month Incomes & Expenses Breakdown */}
-      <D3CurrentMonthCharts transactions={transactions} targetCurrency={selectedCurrency} />
+      {/* Graph 2: D3 Evolution by Month */}
+      <D3EvolutionChart transactions={transactions} targetCurrency={DEFAULT_CURRENCY} />
     </ScrollView>
   );
 };
@@ -121,23 +92,19 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  headerRow: {
-    marginBottom: theme.spacing.md,
-    gap: theme.spacing.lg,
+  header: {
+    marginBottom: theme.spacing.xs,
   },
-  currencyFilterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.base,
-    marginTop: theme.spacing.sm,
+  pageTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: theme.fontSize['3xl'],
+    fontWeight: theme.fontWeight.extrabold,
+    letterSpacing: -0.5,
   },
-  filterLabel: {
+  pageSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  currencyFlag: {
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.base,
+    marginTop: theme.spacing.xxs,
   },
   kpiRow: {
     flexDirection: 'row',
@@ -150,7 +117,9 @@ const styles = StyleSheet.create({
   kpiLabel: {
     color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.medium,
+    fontWeight: theme.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: theme.spacing.xs,
   },
   kpiValue: {
@@ -158,3 +127,4 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.extrabold,
   },
 });
+

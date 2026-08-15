@@ -158,7 +158,7 @@ finances-organiser/
     ├── screens/
     │   ├── LoginScreen.tsx          # Password authentication screen
     │   ├── OverviewScreen.tsx       # Dashboard with balance summary and recent transactions
-    │   ├── AnalyticsScreen.tsx      # D3 charts with enabled currency filter
+    │   ├── AnalyticsScreen.tsx      # D3 charts (current month breakdown & historical evolution)
     │   ├── TransactionsScreen.tsx   # Searchable/filterable transaction history
     │   ├── SubscriptionsScreen.tsx  # Monthly recurring subscription manager
     │   ├── ManagementScreen.tsx     # Tabbed management hub (Categories, Payment Methods, Banks, Currencies)

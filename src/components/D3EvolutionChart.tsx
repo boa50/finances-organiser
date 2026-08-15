@@ -260,8 +260,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radii['2xl'],
-    paddingHorizontal: theme.spacing['3xl'],
-    paddingVertical: theme.spacing.lg,
+    padding: theme.spacing['4xl'],
     marginVertical: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,

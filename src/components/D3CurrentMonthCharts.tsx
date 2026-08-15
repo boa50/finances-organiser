@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { CategoryAggregate, Transaction } from '../types';
 import { convertCurrency } from '../utils/currencies';
 import { categoryService } from '../services/categoryService';
-import { AppText } from './ui';
+import { AppSectionHeader } from './ui';
 import { D3DonutChart } from './D3DonutChart';
 import { D3CategoryBarChart } from './D3CategoryBarChart';
 import theme from '../theme';
@@ -62,10 +62,11 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.sectionHeader}>
-        <AppText style={styles.sectionTitle}>Current Month Breakdown ({monthName})</AppText>
-        <AppText style={styles.sectionSubtitle}>Income vs Expense ratio & Category analytics</AppText>
-      </View>
+      <AppSectionHeader
+        title={`Current Month Breakdown (${monthName})`}
+        subtitle="Income vs Expense ratio & Category analytics"
+        style={styles.sectionHeader}
+      />
 
       <D3DonutChart
         totalIncome={totalIncome}
@@ -85,18 +86,10 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginVertical: theme.spacing.xs,
+    gap: theme.spacing.md,
   },
   sectionHeader: {
-    marginBottom: theme.spacing.lg,
-  },
-  sectionTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.fontSize['3xl'],
-    fontWeight: theme.fontWeight.extrabold,
-  },
-  sectionSubtitle: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.base,
-    marginTop: theme.spacing.xxs,
+    marginBottom: theme.spacing.xs,
   },
 });
+

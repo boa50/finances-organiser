@@ -65,14 +65,14 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: theme.colors.textPrimary,
-    fontSize: theme.fontSize['2xl'],
+    fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
   },
   cardSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
-    marginBottom: theme.spacing['2xl'],
+    marginBottom: theme.spacing.xl,
   },
   emptyCatText: {
     color: theme.colors.textTertiary,

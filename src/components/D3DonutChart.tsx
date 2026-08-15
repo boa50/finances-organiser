@@ -47,6 +47,7 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
   return (
     <View style={styles.card}>
       <AppText style={styles.cardTitle}>Incomes vs Expenses Ratio</AppText>
+      <AppText style={styles.cardSubtitle}>Monthly cashflow & savings distribution</AppText>
       <View style={styles.donutRow}>
         <View style={styles.donutWrapper}>
           <Svg width={donutSize} height={donutSize}>
@@ -140,8 +141,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: theme.colors.textPrimary,
-    fontSize: theme.fontSize['2xl'],
+    fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
+  },
+  cardSubtitle: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.fontSize.xs,
+    marginTop: theme.spacing.xxs,
   },
   donutRow: {
     flexDirection: 'row',
