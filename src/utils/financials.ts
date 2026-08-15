@@ -8,6 +8,9 @@ export interface FinancialSummary {
   currentMonthIncome: number;
   currentMonthExpense: number;
   currentMonthNet: number;
+  last60DaysIncome: number;
+  last60DaysExpense: number;
+  last60DaysNetBalance: number;
 }
 
 export interface GroupedRecentItem {
@@ -67,7 +70,7 @@ export function normalizeTransactionDate(dateInput: Date | string): string {
 }
 
 /**
- * Calculates overall and current-month financial totals (income, expense, net balance)
+ * Calculates overall, current-month, and last 60 days financial totals (income, expense, net balance)
  * converted to a target currency (default: BRL).
  */
 export function calculateFinancialSummary(
@@ -78,28 +81,50 @@ export function calculateFinancialSummary(
   const currentYear = referenceDate.getFullYear();
   const currentMonth = referenceDate.getMonth();
 
+  const endOfRefDay = new Date(referenceDate);
+  endOfRefDay.setHours(23, 59, 59, 999);
+
+  const startOf60DaysWindow = new Date(referenceDate);
+  startOf60DaysWindow.setDate(startOf60DaysWindow.getDate() - 60);
+  startOf60DaysWindow.setHours(0, 0, 0, 0);
+
   let totalIncome = 0;
   let totalExpense = 0;
   let currentMonthIncome = 0;
   let currentMonthExpense = 0;
+  let last60DaysIncome = 0;
+  let last60DaysExpense = 0;
 
   transactions.forEach((tx) => {
     const val = convertCurrency(tx.amount, tx.currencyId, targetCurrency);
     const txDate = new Date(tx.date);
+    const isValidDate = !isNaN(txDate.getTime());
+
     const isCurrentMonth =
-      !isNaN(txDate.getTime()) &&
+      isValidDate &&
       txDate.getFullYear() === currentYear &&
       txDate.getMonth() === currentMonth;
+
+    const isLast60Days =
+      isValidDate &&
+      txDate.getTime() >= startOf60DaysWindow.getTime() &&
+      txDate.getTime() <= endOfRefDay.getTime();
 
     if (tx.type === 'income') {
       totalIncome += val;
       if (isCurrentMonth) {
         currentMonthIncome += val;
       }
+      if (isLast60Days) {
+        last60DaysIncome += val;
+      }
     } else {
       totalExpense += val;
       if (isCurrentMonth) {
         currentMonthExpense += val;
+      }
+      if (isLast60Days) {
+        last60DaysExpense += val;
       }
     }
   });
@@ -111,6 +136,9 @@ export function calculateFinancialSummary(
     currentMonthIncome,
     currentMonthExpense,
     currentMonthNet: currentMonthIncome - currentMonthExpense,
+    last60DaysIncome,
+    last60DaysExpense,
+    last60DaysNetBalance: last60DaysIncome - last60DaysExpense,
   };
 }
 

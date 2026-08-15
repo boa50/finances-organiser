@@ -81,6 +81,48 @@ describe('Financial Utilities', () => {
       expect(summary.currentMonthIncome).toBe(5000);
       expect(summary.currentMonthExpense).toBe(3000); // 1500 + 500 + 1000
       expect(summary.currentMonthNet).toBe(2000);
+      expect(summary.last60DaysIncome).toBe(5000);
+      expect(summary.last60DaysExpense).toBe(4000);
+      expect(summary.last60DaysNetBalance).toBe(1000);
+    });
+
+    it('should exclude transactions older than 60 days from last60DaysNetBalance', () => {
+      const refDate = new Date('2026-08-15T00:00:00.000Z');
+      const transactionsWithOldTx: Transaction[] = [
+        ...sampleTransactions,
+        {
+          id: 'tx-old',
+          type: 'income',
+          title: 'Old Bonus',
+          amount: 10000,
+          currencyId: 'BRL',
+          categoryId: 'Bonus',
+          date: '2026-05-01T10:00:00.000Z', // > 60 days before 2026-08-15
+          createdAt: '2026-05-01T10:00:00.000Z',
+        },
+        {
+          id: 'tx-old-expense',
+          type: 'expense',
+          title: 'Old Vacation',
+          amount: 3000,
+          currencyId: 'BRL',
+          categoryId: 'Travel',
+          date: '2026-04-15T10:00:00.000Z', // > 60 days before 2026-08-15
+          createdAt: '2026-04-15T10:00:00.000Z',
+        },
+      ];
+
+      const summary = calculateFinancialSummary(transactionsWithOldTx, 'BRL', refDate);
+
+      // Lifetime includes the old transactions
+      expect(summary.totalIncome).toBe(15000);
+      expect(summary.totalExpense).toBe(7000);
+      expect(summary.totalNetBalance).toBe(8000);
+
+      // Last 60 days excludes the old transactions
+      expect(summary.last60DaysIncome).toBe(5000);
+      expect(summary.last60DaysExpense).toBe(4000);
+      expect(summary.last60DaysNetBalance).toBe(1000);
     });
 
     it('should return zeros for an empty array of transactions', () => {
@@ -90,6 +132,9 @@ describe('Financial Utilities', () => {
       expect(summary.totalNetBalance).toBe(0);
       expect(summary.currentMonthIncome).toBe(0);
       expect(summary.currentMonthExpense).toBe(0);
+      expect(summary.last60DaysIncome).toBe(0);
+      expect(summary.last60DaysExpense).toBe(0);
+      expect(summary.last60DaysNetBalance).toBe(0);
     });
   });
 

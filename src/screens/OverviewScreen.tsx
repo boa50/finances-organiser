@@ -24,7 +24,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 }) => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
-  const { totalNetBalance, currentMonthIncome, currentMonthExpense } = useMemo(() => {
+  const { last60DaysNetBalance, currentMonthIncome, currentMonthExpense } = useMemo(() => {
     return calculateFinancialSummary(transactions, DEFAULT_CURRENCY);
   }, [transactions]);
 
@@ -80,9 +80,9 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 
           {/* Main Net Balance Hero Card */}
           <AppCard variant="elevated" padding="6xl">
-            <Text style={styles.heroLabel}>Total Net Balance ({DEFAULT_CURRENCY})</Text>
+            <Text style={styles.heroLabel}>Last 60 Days Net Balance ({DEFAULT_CURRENCY})</Text>
             <Text style={styles.heroValue}>
-              {formatMoney(totalNetBalance, DEFAULT_CURRENCY)}
+              {formatMoney(last60DaysNetBalance, DEFAULT_CURRENCY)}
             </Text>
 
             <View style={styles.heroMetaRow}>

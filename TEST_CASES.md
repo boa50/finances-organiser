@@ -616,7 +616,7 @@ All 74 automated tests across 12 test suites were verified passing via `npm test
 
 **When** `calculateFinancialSummary()` is called with a reference date of August 2026.
 
-**Then** `totalIncome=5000`, `totalExpense=4000`, `totalNetBalance=1000`, `currentMonthIncome=5000`, `currentMonthExpense=3000`, `currentMonthNet=2000`.
+**Then** `totalIncome=5000`, `totalExpense=4000`, `totalNetBalance=1000`, `currentMonthIncome=5000`, `currentMonthExpense=3000`, `currentMonthNet=2000`, `last60DaysIncome=5000`, `last60DaysExpense=4000`, `last60DaysNetBalance=1000`.
 
 **Automation:** `src/utils/__tests__/financials.test.ts` — `should calculate total income, total expense, and net balance correctly`
 
