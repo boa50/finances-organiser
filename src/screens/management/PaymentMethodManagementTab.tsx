@@ -21,6 +21,7 @@ interface PaymentMethodManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (pm: PaymentMethodItem) => void;
   onDeletePm: (pm: PaymentMethodItem) => void;
+  onTogglePm?: (pm: PaymentMethodItem, enabled: boolean) => void;
   onReorderPaymentMethods?: (reordered: PaymentMethodItem[]) => void;
 }
 
@@ -31,6 +32,7 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
   onOpenAddModal,
   onOpenEditModal,
   onDeletePm,
+  onTogglePm,
   onReorderPaymentMethods,
 }) => {
   const { t } = useTranslation();
@@ -56,6 +58,8 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
             icon={<CreditCard size={20} color={theme.colors.accent} />}
             onEdit={() => onOpenEditModal(item)}
             onDelete={() => onDeletePm(item)}
+            enabled={item.enabled !== false}
+            onToggleEnabled={onTogglePm ? (val) => onTogglePm(item, val) : undefined}
             isDraggable={!isSearching}
             dragHandleProps={dragHandleProps}
             isDragging={isDragging}
@@ -63,7 +67,7 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
         </View>
       );
     },
-    [onOpenEditModal, onDeletePm, isSearching, t]
+    [onOpenEditModal, onDeletePm, onTogglePm, isSearching, t]
   );
 
   return (

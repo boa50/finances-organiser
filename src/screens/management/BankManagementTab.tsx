@@ -21,6 +21,7 @@ interface BankManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (bank: BankItem) => void;
   onDeleteBank: (bank: BankItem) => void;
+  onToggleBank?: (bank: BankItem, enabled: boolean) => void;
   onReorderBanks?: (reordered: BankItem[]) => void;
 }
 
@@ -31,6 +32,7 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onDeleteBank,
+  onToggleBank,
   onReorderBanks,
 }) => {
   const { t } = useTranslation();
@@ -52,6 +54,8 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
             icon={<Building2 size={20} color={theme.colors.accent} />}
             onEdit={() => onOpenEditModal(item)}
             onDelete={() => onDeleteBank(item)}
+            enabled={item.enabled !== false}
+            onToggleEnabled={onToggleBank ? (val) => onToggleBank(item, val) : undefined}
             isDraggable={!isSearching}
             dragHandleProps={dragHandleProps}
             isDragging={isDragging}
@@ -59,7 +63,7 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
         </View>
       );
     },
-    [onOpenEditModal, onDeleteBank, isSearching, t]
+    [onOpenEditModal, onDeleteBank, onToggleBank, isSearching, t]
   );
 
   return (

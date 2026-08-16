@@ -196,14 +196,17 @@ class TursoDatabaseService {
           symbol TEXT NOT NULL,
           name TEXT NOT NULL,
           flag TEXT NOT NULL,
-          display_order INTEGER NOT NULL DEFAULT 0
+          display_order INTEGER NOT NULL DEFAULT 0,
+          enabled INTEGER NOT NULL DEFAULT 1
         );
       `);
 
+      try { await this.client.execute('ALTER TABLE currencies ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
+
       try {
         await this.client.execute(`
-          INSERT OR IGNORE INTO currencies (id, symbol, name, flag, display_order)
-          VALUES ('BRL', 'R$', 'Brazilian Real', '🇧🇷', 0), ('USD', '$', 'US Dollar', '🇺🇸', 1);
+          INSERT OR IGNORE INTO currencies (id, symbol, name, flag, display_order, enabled)
+          VALUES ('BRL', 'R$', 'Brazilian Real', '🇧🇷', 0, 1), ('USD', '$', 'US Dollar', '🇺🇸', 1, 1);
         `);
       } catch (e) {}
 
@@ -214,33 +217,39 @@ class TursoDatabaseService {
           icon TEXT NOT NULL,
           color TEXT NOT NULL,
           type TEXT CHECK (type IN ('income', 'expense')),
-          display_order INTEGER NOT NULL DEFAULT 0
+          display_order INTEGER NOT NULL DEFAULT 0,
+          enabled INTEGER NOT NULL DEFAULT 1
         );
       `);
 
       try { await this.client.execute('ALTER TABLE categories ADD COLUMN display_order INTEGER DEFAULT 0'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE categories ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS payment_methods (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL UNIQUE,
           allow_installments INTEGER DEFAULT 0,
-          display_order INTEGER NOT NULL DEFAULT 0
+          display_order INTEGER NOT NULL DEFAULT 0,
+          enabled INTEGER NOT NULL DEFAULT 1
         );
       `);
 
       try { await this.client.execute('ALTER TABLE payment_methods ADD COLUMN allow_installments INTEGER DEFAULT 0'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE payment_methods ADD COLUMN display_order INTEGER DEFAULT 0'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE payment_methods ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS banks (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL UNIQUE,
-          display_order INTEGER NOT NULL DEFAULT 0
+          display_order INTEGER NOT NULL DEFAULT 0,
+          enabled INTEGER NOT NULL DEFAULT 1
         );
       `);
 
       try { await this.client.execute('ALTER TABLE banks ADD COLUMN display_order INTEGER DEFAULT 0'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE banks ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
 
       this.config.isConnected = true;
       this.config.lastSyncedAt = new Date().toISOString();

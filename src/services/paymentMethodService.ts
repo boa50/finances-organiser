@@ -77,6 +77,7 @@ class PaymentMethodService {
             name: String(row.name),
             allowInstallments: Boolean(row.allow_installments),
             displayOrder: Number(row.display_order ?? 0),
+            enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
           }));
           this.paymentMethods = dbItems;
           this.saveToLocalStorage();
@@ -92,6 +93,16 @@ class PaymentMethodService {
 
   public getPaymentMethodsSync(): PaymentMethodItem[] {
     return [...this.paymentMethods];
+  }
+
+  public async getEnabledPaymentMethods(): Promise<PaymentMethodItem[]> {
+    const all = await this.getPaymentMethods();
+    return all.filter((pm) => pm.enabled !== false);
+  }
+
+  public getEnabledPaymentMethodsSync(): PaymentMethodItem[] {
+    const all = this.getPaymentMethodsSync();
+    return all.filter((pm) => pm.enabled !== false);
   }
 
   public async reorderPaymentMethods(orderedIds: string[]): Promise<PaymentMethodItem[]> {
@@ -148,7 +159,11 @@ class PaymentMethodService {
     return this.getPaymentMethods();
   }
 
-  public async addPaymentMethod(name: string, allowInstallments: boolean = false): Promise<PaymentMethodItem> {
+  public async addPaymentMethod(
+    name: string,
+    allowInstallments: boolean = false,
+    enabled: boolean = true
+  ): Promise<PaymentMethodItem> {
     const trimmed = name.trim();
     if (!trimmed) {
       throw new Error('Payment method name cannot be empty.');
@@ -163,11 +178,14 @@ class PaymentMethodService {
       ? Math.max(...this.paymentMethods.map((pm) => pm.displayOrder ?? 0)) + 1
       : 0;
 
+    const isEnabled = enabled !== undefined ? Boolean(enabled) : true;
+
     const newMethod: PaymentMethodItem = {
       id: generateId('pm'),
       name: trimmed,
       allowInstallments: Boolean(allowInstallments),
       displayOrder: nextOrder,
+      enabled: isEnabled,
     };
 
     this.paymentMethods = [...this.paymentMethods, newMethod];
@@ -178,7 +196,7 @@ class PaymentMethodService {
         const res = await fetch('/api/payment-methods', {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
-          body: JSON.stringify({ name: trimmed, allowInstallments: Boolean(allowInstallments) }),
+          body: JSON.stringify({ name: trimmed, allowInstallments: Boolean(allowInstallments), enabled: isEnabled }),
         });
         if (isJsonResponse(res)) {
           const created: PaymentMethodItem = await res.json();
@@ -193,18 +211,35 @@ class PaymentMethodService {
     if (client) {
       try {
         await client.execute({
-          sql: 'INSERT INTO payment_methods (id, name, allow_installments, display_order) VALUES (?, ?, ?, ?)',
-          args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0, nextOrder],
+          sql: 'INSERT INTO payment_methods (id, name, allow_installments, display_order, enabled) VALUES (?, ?, ?, ?, ?)',
+          args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0, nextOrder, isEnabled ? 1 : 0],
         });
-      } catch (err) {
-        console.error('Failed to sync added payment method to Turso DB:', err);
+      } catch (err: any) {
+        if (err?.message?.includes('no such column: enabled')) {
+          try {
+            await client.execute('ALTER TABLE payment_methods ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
+            await client.execute({
+              sql: 'INSERT INTO payment_methods (id, name, allow_installments, display_order, enabled) VALUES (?, ?, ?, ?, ?)',
+              args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0, nextOrder, isEnabled ? 1 : 0],
+            });
+          } catch (retryErr) {
+            console.error('Failed to sync added payment method to Turso DB after migration:', retryErr);
+          }
+        } else {
+          console.error('Failed to sync added payment method to Turso DB:', err);
+        }
       }
     }
 
     return newMethod;
   }
 
-  public async updatePaymentMethod(id: string, name: string, allowInstallments?: boolean): Promise<PaymentMethodItem> {
+  public async updatePaymentMethod(
+    id: string,
+    name: string,
+    allowInstallments?: boolean,
+    enabled?: boolean
+  ): Promise<PaymentMethodItem> {
     const trimmed = name.trim();
     if (!trimmed) {
       throw new Error('Payment method name cannot be empty.');
@@ -224,6 +259,7 @@ class PaymentMethodService {
       ...this.paymentMethods[index],
       name: trimmed,
       allowInstallments: allowInstallments !== undefined ? Boolean(allowInstallments) : Boolean(this.paymentMethods[index].allowInstallments),
+      enabled: enabled !== undefined ? Boolean(enabled) : (this.paymentMethods[index].enabled !== false),
     };
 
     this.paymentMethods[index] = updated;
@@ -234,7 +270,7 @@ class PaymentMethodService {
         const res = await fetch('/api/payment-methods', {
           method: 'PUT',
           headers: tursoService.getApiHeaders(),
-          body: JSON.stringify({ id, name: trimmed, allowInstallments: updated.allowInstallments }),
+          body: JSON.stringify({ id, name: trimmed, allowInstallments: updated.allowInstallments, enabled: updated.enabled }),
         });
         if (isJsonResponse(res)) {
           const updatedPm: PaymentMethodItem = await res.json();
@@ -249,15 +285,38 @@ class PaymentMethodService {
     if (client) {
       try {
         await client.execute({
-          sql: 'UPDATE payment_methods SET name = ?, allow_installments = ? WHERE id = ?',
-          args: [trimmed, updated.allowInstallments ? 1 : 0, id],
+          sql: 'UPDATE payment_methods SET name = ?, allow_installments = ?, enabled = ? WHERE id = ?',
+          args: [trimmed, updated.allowInstallments ? 1 : 0, updated.enabled ? 1 : 0, id],
         });
-      } catch (err) {
-        console.error('Failed to sync payment method update to Turso DB:', err);
+      } catch (err: any) {
+        if (err?.message?.includes('no such column: enabled')) {
+          try {
+            await client.execute('ALTER TABLE payment_methods ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
+            await client.execute({
+              sql: 'UPDATE payment_methods SET name = ?, allow_installments = ?, enabled = ? WHERE id = ?',
+              args: [trimmed, updated.allowInstallments ? 1 : 0, updated.enabled ? 1 : 0, id],
+            });
+          } catch (retryErr) {
+            console.error('Failed to sync payment method update to Turso DB after migration:', retryErr);
+          }
+        } else {
+          console.error('Failed to sync payment method update to Turso DB:', err);
+        }
       }
     }
 
     return updated;
+  }
+
+  public async togglePaymentMethodEnabled(id: string, nextState?: boolean): Promise<PaymentMethodItem> {
+    const index = this.paymentMethods.findIndex((pm) => pm.id === id);
+    if (index === -1) {
+      throw new Error('Payment method not found.');
+    }
+
+    const current = this.paymentMethods[index];
+    const newEnabled = nextState !== undefined ? nextState : !(current.enabled !== false);
+    return this.updatePaymentMethod(id, current.name, current.allowInstallments, newEnabled);
   }
 
   public async deletePaymentMethod(id: string): Promise<boolean> {

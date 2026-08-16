@@ -63,4 +63,25 @@ describe('bankService', () => {
     const syncList = bankService.getBanksSync();
     expect(syncList.map((b) => b.id)).toEqual([b2.id, b3.id, b1.id]);
   });
+
+  it('toggles bank enabled state and filters enabled banks correctly', async () => {
+    const bank = await bankService.addBank('Bank Four');
+    expect(bank.enabled).toBe(true);
+
+    const toggled = await bankService.toggleBankEnabled(bank.id, false);
+    expect(toggled.enabled).toBe(false);
+
+    const all = await bankService.getBanks();
+    expect(all.some((b) => b.id === bank.id && b.enabled === false)).toBe(true);
+
+    const enabledOnly = await bankService.getEnabledBanks();
+    expect(enabledOnly.some((b) => b.id === bank.id)).toBe(false);
+
+    const enabledSync = bankService.getEnabledBanksSync();
+    expect(enabledSync.some((b) => b.id === bank.id)).toBe(false);
+
+    await bankService.toggleBankEnabled(bank.id, true);
+    const reEnabled = await bankService.getEnabledBanks();
+    expect(reEnabled.some((b) => b.id === bank.id && b.enabled === true)).toBe(true);
+  });
 });

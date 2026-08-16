@@ -65,4 +65,25 @@ describe('paymentMethodService', () => {
     const syncList = paymentMethodService.getPaymentMethodsSync();
     expect(syncList.map((p) => p.id)).toEqual([pm3.id, pm1.id, pm2.id]);
   });
+
+  it('toggles payment method enabled state and filters enabled methods correctly', async () => {
+    const pm = await paymentMethodService.addPaymentMethod('Cheque', false);
+    expect(pm.enabled).toBe(true);
+
+    const toggled = await paymentMethodService.togglePaymentMethodEnabled(pm.id, false);
+    expect(toggled.enabled).toBe(false);
+
+    const all = await paymentMethodService.getPaymentMethods();
+    expect(all.some((p) => p.id === pm.id && p.enabled === false)).toBe(true);
+
+    const enabledOnly = await paymentMethodService.getEnabledPaymentMethods();
+    expect(enabledOnly.some((p) => p.id === pm.id)).toBe(false);
+
+    const enabledSync = paymentMethodService.getEnabledPaymentMethodsSync();
+    expect(enabledSync.some((p) => p.id === pm.id)).toBe(false);
+
+    await paymentMethodService.togglePaymentMethodEnabled(pm.id, true);
+    const reEnabled = await paymentMethodService.getEnabledPaymentMethods();
+    expect(reEnabled.some((p) => p.id === pm.id && p.enabled === true)).toBe(true);
+  });
 });

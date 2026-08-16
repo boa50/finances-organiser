@@ -6,23 +6,24 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Automated and passing | 79 |
+| ✅ Automated and passing | 83 |
 | 🟡 Implemented but not automated | 21 |
 | ⬜ Not implemented | 0 |
 | 🔴 Automated but failing | 0 |
 | ⚠️ Cannot currently be verified | 0 |
-| **Total** | **100** |
+| **Total** | **104** |
 
-All 79 automated tests across 13 test suites were verified passing via `npm test` on 2026-08-15.
+All 83 automated tests across 13 test suites were verified passing via `npm test` on 2026-08-16.
 
 ### Automated Test Suites
 
 - [`src/i18n/__tests__/i18n.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/i18n/__tests__/i18n.test.ts) — i18n configuration, key parity between en-AU/pt-BR, language toggling, and storage persistence
 - [`src/services/__tests__/apiClient.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/apiClient.test.ts) — API response Content-Type validation (`isJsonResponse`)
 - [`src/services/__tests__/authService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/authService.test.ts) — Authentication service login/logout flows and API/session state
-- [`src/services/__tests__/bankService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/bankService.test.ts) — Bank CRUD operations, duplicate validation, default preservation, reset
-- [`src/services/__tests__/categoryService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/categoryService.test.ts) — Category CRUD operations, update/add duplicate name validation
-- [`src/services/__tests__/paymentMethodService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/paymentMethodService.test.ts) — Payment method CRUD operations, allowInstallments flag, duplicate validation, reset
+- [`src/services/__tests__/bankService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/bankService.test.ts) — Bank CRUD operations, duplicate validation, default preservation, reset, enabled toggling, and reordering
+- [`src/services/__tests__/categoryService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/categoryService.test.ts) — Category CRUD operations, update/add duplicate name validation, enabled toggling, and reordering
+- [`src/services/__tests__/paymentMethodService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/paymentMethodService.test.ts) — Payment method CRUD operations, allowInstallments flag, duplicate validation, reset, enabled toggling, and reordering
+- [`src/services/__tests__/currencyService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/currencyService.test.ts) — Currency lookup, add, remove, minimum 1 currency constraint, enabled toggling, and reordering
 - [`src/services/__tests__/subscriptionService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/subscriptionService.test.ts) — Subscription CRUD operations, active status toggling, deletion
 - [`src/services/__tests__/subscriptionAutoGenerator.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/subscriptionAutoGenerator.test.ts) — Subscription target date calculation, monthly expense auto-generation, idempotency, billing day update scope
 - [`src/services/__tests__/tursoService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/tursoService.test.ts) — Transaction CRUD operations, single delete, installment group deletion, clear all
@@ -1933,5 +1934,86 @@ All 79 automated tests across 13 test suites were verified passing via `npm test
 **Then** The new `displayOrder` sequence is saved to localStorage, Turso DB, and API, and subsequent fetches return currencies in the custom order across modals and currency selectors.
 
 **Automation:** `src/services/__tests__/currencyService.test.ts` — `reorders currencies correctly and maintains the custom sort order`
+
+---
+
+### TC-091 — Enable and disable custom categories with historical reference preservation
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Categories
+
+**Platform:** Web, Android, iOS
+
+**Given** A user is viewing custom categories on the Management screen.
+
+**When** The user toggles the enable/disable switch on a category.
+
+**Then** The category's `enabled` property is updated and persisted; disabled categories are omitted from selection choices when creating or editing transactions and subscriptions (`getEnabledCategories()`), but remain preserved for historical reference display (`getCategories()`).
+
+**Automation:** `src/services/__tests__/categoryService.test.ts` — `toggles category enabled state and filters enabled categories correctly`
+
+---
+
+### TC-092 — Enable and disable custom payment methods with historical reference preservation
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Payment Methods
+
+**Platform:** Web, Android, iOS
+
+**Given** A user is viewing custom payment methods on the Management screen.
+
+**When** The user toggles the enable/disable switch on a payment method.
+
+**Then** The payment method's `enabled` property is updated and persisted; disabled payment methods are omitted from selection choices when creating or editing transactions and subscriptions (`getEnabledPaymentMethods()`), but remain preserved for historical reference display (`getPaymentMethods()`).
+
+**Automation:** `src/services/__tests__/paymentMethodService.test.ts` — `toggles payment method enabled state and filters enabled methods correctly`
+
+---
+
+### TC-093 — Enable and disable custom banks with historical reference preservation
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Banks
+
+**Platform:** Web, Android, iOS
+
+**Given** A user is viewing custom banks on the Management screen.
+
+**When** The user toggles the enable/disable switch on a bank.
+
+**Then** The bank's `enabled` property is updated and persisted; disabled banks are omitted from selection choices when creating or editing transactions and subscriptions (`getEnabledBanks()`), but remain preserved for historical reference display (`getBanks()`).
+
+**Automation:** `src/services/__tests__/bankService.test.ts` — `toggles bank enabled state and filters enabled banks correctly`
+
+---
+
+### TC-094 — Enable and disable custom currencies with minimum one enabled currency constraint
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Currencies
+
+**Platform:** Web, Android, iOS
+
+**Given** Multiple currencies are enabled in the database.
+
+**When** The user toggles the enable/disable switch on a currency.
+
+**Then** The currency's `enabled` state is updated and persisted, only enabled currencies appear in transaction/subscription currency selectors, and attempting to disable the last remaining enabled currency is prevented with an error message.
+
+**Automation:** `src/services/__tests__/currencyService.test.ts` — `toggles currency enabled state and enforces minimum 1 enabled currency`
+
 
 

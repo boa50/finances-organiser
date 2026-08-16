@@ -61,25 +61,25 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadCategories = async (targetType: TransactionType) => {
-    const cats = await categoryService.getCategories(targetType);
+    const cats = await categoryService.getEnabledCategories(targetType);
     setAvailableCategories(cats);
     return cats;
   };
 
   const loadPaymentMethods = async () => {
-    const pms = await paymentMethodService.getPaymentMethods();
+    const pms = await paymentMethodService.getEnabledPaymentMethods();
     setAvailablePaymentMethods(pms);
     return pms;
   };
 
   const loadBanks = async () => {
-    const bks = await bankService.getBanks();
+    const bks = await bankService.getEnabledBanks();
     setAvailableBanks(bks);
     return bks;
   };
 
   const loadCurrencies = async () => {
-    const currs = await currencyService.getCurrencies();
+    const currs = await currencyService.getEnabledCurrencies();
     setAvailableCurrencies(currs);
     return currs;
   };
@@ -98,15 +98,19 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       const currs = await loadCurrencies();
 
       if (transaction) {
-        setCurrencyId(transaction.currencyId);
+        const currExists = currs.some((c) => c.code === transaction.currencyId);
+        setCurrencyId(currExists ? transaction.currencyId : (currs.length > 0 ? currs[0].code : 'BRL'));
 
-        const initialCatId = transaction.categoryId || '';
+        const catExists = cats.some((c) => c.id === transaction.categoryId);
+        const initialCatId = catExists ? (transaction.categoryId || '') : (cats.length > 0 ? cats[0].id : '');
         setCategoryId(initialCatId);
 
-        const initialPmId = transaction.paymentMethodId || (pms.length > 0 ? pms[0].id : '');
+        const pmExists = pms.some((p) => p.id === transaction.paymentMethodId);
+        const initialPmId = pmExists ? (transaction.paymentMethodId || '') : (pms.length > 0 ? pms[0].id : '');
         setPaymentMethodId(initialPmId);
 
-        const initialBankId = transaction.bankId || '';
+        const bankExists = bks.some((b) => b.id === transaction.bankId);
+        const initialBankId = bankExists ? (transaction.bankId || '') : '';
         setBankId(initialBankId);
 
         setStore(transaction.store || '');

@@ -76,4 +76,38 @@ describe('currencyService', () => {
     expect(syncCodes.indexOf('USD')).toBeLessThan(syncCodes.indexOf('EUR'));
     expect(syncCodes.indexOf('EUR')).toBeLessThan(syncCodes.indexOf('BRL'));
   });
+
+  it('toggles currency enabled state and enforces minimum 1 enabled currency', async () => {
+    try {
+      await currencyService.addCurrency('CAD');
+    } catch (e) {}
+
+    const currs = await currencyService.getCurrencies();
+    const cad = currs.find((c) => c.code === 'CAD');
+    expect(cad?.enabled).not.toBe(false);
+
+    const toggled = await currencyService.toggleCurrencyEnabled('CAD', false);
+    expect(toggled.enabled).toBe(false);
+
+    const all = await currencyService.getCurrencies();
+    expect(all.some((c) => c.code === 'CAD' && c.enabled === false)).toBe(true);
+
+    const enabledOnly = await currencyService.getEnabledCurrencies();
+    expect(enabledOnly.some((c) => c.code === 'CAD')).toBe(false);
+
+    const enabledSync = currencyService.getEnabledCurrenciesSync();
+    expect(enabledSync.some((c) => c.code === 'CAD')).toBe(false);
+
+    // Disable until only 1 remains enabled
+    for (const c of enabledSync) {
+      if (currencyService.getEnabledCurrenciesSync().length > 1) {
+        await currencyService.toggleCurrencyEnabled(c.code, false);
+      }
+    }
+
+    const lastEnabled = currencyService.getEnabledCurrenciesSync()[0];
+    await expect(currencyService.toggleCurrencyEnabled(lastEnabled.code, false)).rejects.toThrow(
+      'At least one currency must remain enabled.'
+    );
+  });
 });

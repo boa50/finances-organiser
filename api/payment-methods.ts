@@ -27,13 +27,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         name: String(row.name),
         allowInstallments: Boolean(row.allow_installments),
         displayOrder: Number(row.display_order ?? 0),
+        enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
       }));
       return res.status(200).json(paymentMethods);
     }
 
     // POST /api/payment-methods - Add a new payment method or reset defaults
     if (req.method === 'POST') {
-      const { action, name, allowInstallments } = req.body || {};
+      const { action, name, allowInstallments, enabled } = req.body || {};
 
       if (action === 'reset' || req.query.action === 'reset') {
         await client.execute('DELETE FROM payment_methods');
@@ -57,13 +58,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const id = generateId('pm');
       const allowInstVal = Boolean(allowInstallments);
+      const isEnabled = enabled !== undefined ? (enabled ? 1 : 0) : 1;
 
       const countRes = await client.execute('SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM payment_methods');
       const displayOrder = Number(countRes.rows[0]?.next_order ?? 0);
 
       await client.execute({
-        sql: `INSERT INTO payment_methods (id, name, allow_installments, display_order) VALUES (?, ?, ?, ?)`,
-        args: [id, trimmedName, allowInstVal ? 1 : 0, displayOrder],
+        sql: `INSERT INTO payment_methods (id, name, allow_installments, display_order, enabled) VALUES (?, ?, ?, ?, ?)`,
+        args: [id, trimmedName, allowInstVal ? 1 : 0, displayOrder, isEnabled],
       });
 
       const newPm = {
@@ -71,13 +73,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         name: trimmedName,
         allowInstallments: allowInstVal,
         displayOrder,
+        enabled: isEnabled === 1,
       };
       return res.status(201).json(newPm);
     }
 
     // PUT /api/payment-methods - Update payment method or reorder
     if (req.method === 'PUT') {
-      const { action, orderedIds, id, name, allowInstallments } = req.body || {};
+      const { action, orderedIds, id, name, allowInstallments, enabled } = req.body || {};
 
       if (action === 'reorder' || Array.isArray(orderedIds)) {
         if (!Array.isArray(orderedIds)) {
@@ -92,7 +95,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, count: orderedIds.length });
       }
 
-      if (!id || !name || !name.trim()) {
+      if (!id) {
+        return res.status(400).json({ error: 'Missing payment method id for update' });
+      }
+
+      // Check toggle only update
+      if (enabled !== undefined && !name && allowInstallments === undefined) {
+        const isEnabledVal = enabled ? 1 : 0;
+        await client.execute({
+          sql: 'UPDATE payment_methods SET enabled = ? WHERE id = ?',
+          args: [isEnabledVal, id],
+        });
+        const currentRes = await client.execute({
+          sql: 'SELECT * FROM payment_methods WHERE id = ?',
+          args: [id],
+        });
+        const row: any = currentRes.rows[0];
+        if (row) {
+          return res.status(200).json({
+            id: String(row.id),
+            name: String(row.name),
+            allowInstallments: Boolean(row.allow_installments),
+            displayOrder: Number(row.display_order ?? 0),
+            enabled: isEnabledVal === 1,
+          });
+        }
+        return res.status(200).json({ id, enabled: isEnabledVal === 1 });
+      }
+
+      if (!name || !name.trim()) {
         return res.status(400).json({ error: 'Missing required fields for payment method update' });
       }
 
@@ -108,16 +139,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const allowInstVal = Boolean(allowInstallments);
+      const isEnabledVal = enabled !== undefined ? (enabled ? 1 : 0) : 1;
 
       await client.execute({
-        sql: `UPDATE payment_methods SET name = ?, allow_installments = ? WHERE id = ?`,
-        args: [trimmedName, allowInstVal ? 1 : 0, id],
+        sql: `UPDATE payment_methods SET name = ?, allow_installments = ?, enabled = ? WHERE id = ?`,
+        args: [trimmedName, allowInstVal ? 1 : 0, isEnabledVal, id],
       });
 
       const updatedPm = {
         id,
         name: trimmedName,
         allowInstallments: allowInstVal,
+        enabled: isEnabledVal === 1,
       };
       return res.status(200).json(updatedPm);
     }

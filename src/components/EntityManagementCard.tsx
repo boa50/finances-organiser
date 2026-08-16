@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Switch } from 'react-native';
 import { AppCard, AppText } from './ui';
 import { GripVertical, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../theme';
@@ -14,6 +14,8 @@ export interface EntityManagementCardProps {
   isDraggable?: boolean;
   dragHandleProps?: any;
   isDragging?: boolean;
+  enabled?: boolean;
+  onToggleEnabled?: (enabled: boolean) => void;
 }
 
 export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
@@ -26,14 +28,18 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
   isDraggable = false,
   dragHandleProps,
   isDragging = false,
+  enabled = true,
+  onToggleEnabled,
 }) => {
   const badgeBg = color ? `${color}25` : `${theme.colors.accent}25`;
+  const isItemEnabled = enabled !== false;
 
   return (
     <AppCard
       style={[
         styles.card,
         isDragging && styles.cardDragging,
+        !isItemEnabled && styles.cardDisabled,
       ]}
       padding="lg"
     >
@@ -58,27 +64,39 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
         {icon && <View style={[styles.iconBadge, { backgroundColor: badgeBg }]}>{icon}</View>}
         <View style={styles.infoCol}>
           <View style={styles.titleRow}>
-            <AppText style={styles.name}>{name}</AppText>
+            <AppText style={[styles.name, !isItemEnabled && styles.nameDisabled]}>{name}</AppText>
           </View>
           {subtitle && <AppText style={styles.subtitle}>{subtitle}</AppText>}
         </View>
       </View>
 
-      <View style={styles.actionRow}>
-        <Pressable
-          style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
-          onPress={onEdit}
-          accessibilityLabel={`Edit ${name}`}
-        >
-          <Pencil size={14} color={theme.colors.accent} />
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
-          onPress={onDelete}
-          accessibilityLabel={`Delete ${name}`}
-        >
-          <Trash2 size={14} color={theme.colors.danger} />
-        </Pressable>
+      <View style={styles.rightCol}>
+        {onToggleEnabled && (
+          <Switch
+            value={isItemEnabled}
+            onValueChange={onToggleEnabled}
+            trackColor={{ false: theme.colors.borderLight, true: theme.colors.accent }}
+            thumbColor={theme.colors.white}
+            accessibilityLabel={isItemEnabled ? `Disable ${name}` : `Enable ${name}`}
+            style={styles.switch}
+          />
+        )}
+        <View style={styles.actionRow}>
+          <Pressable
+            style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
+            onPress={onEdit}
+            accessibilityLabel={`Edit ${name}`}
+          >
+            <Pencil size={14} color={theme.colors.accent} />
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
+            onPress={onDelete}
+            accessibilityLabel={`Delete ${name}`}
+          >
+            <Trash2 size={14} color={theme.colors.danger} />
+          </Pressable>
+        </View>
       </View>
     </AppCard>
   );
@@ -96,6 +114,9 @@ const styles = StyleSheet.create({
   cardDragging: {
     borderColor: theme.colors.accent,
     backgroundColor: theme.colors.surfaceHighlight,
+  },
+  cardDisabled: {
+    opacity: 0.65,
   },
   leftCol: {
     flexDirection: 'row',
@@ -133,11 +154,22 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
+  nameDisabled: {
+    color: theme.colors.textSecondary,
+  },
   subtitle: {
     color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
     textTransform: 'capitalize',
+  },
+  rightCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
+  switch: {
+    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
   },
   actionRow: {
     flexDirection: 'row',

@@ -210,7 +210,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                 <Switch
                   value={item.active}
                   onValueChange={() => handleToggleActive(item)}
-                  trackColor={{ false: theme.colors.borderSubtle, true: theme.colors.success }}
+                  trackColor={{ false: theme.colors.borderSubtle, true: theme.colors.accent }}
                   thumbColor={theme.colors.white}
                   style={styles.switch}
                 />

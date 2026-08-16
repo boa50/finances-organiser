@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView, Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CurrencyInfo } from '../../types';
 import {
@@ -19,6 +19,7 @@ interface CurrencyManagementTabProps {
   setSearchQuery: (q: string) => void;
   onOpenAddModal: () => void;
   onDeleteCurrency: (currency: CurrencyInfo) => void;
+  onToggleCurrency?: (currency: CurrencyInfo, enabled: boolean) => void;
   onReorderCurrencies?: (reordered: CurrencyInfo[]) => void;
 }
 
@@ -28,6 +29,7 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
   setSearchQuery,
   onOpenAddModal,
   onDeleteCurrency,
+  onToggleCurrency,
   onReorderCurrencies,
 }) => {
   const { t } = useTranslation();
@@ -50,12 +52,17 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
   const renderItem = useCallback(
     ({ item: currency, isDragging, dragHandleProps }: RenderDraggableItemInfo<CurrencyInfo>) => {
       const localizedName = t(`currencies.${currency.code}`, { defaultValue: currency.name });
+      const isEnabled = currency.enabled !== false;
 
       return (
         <View style={styles.cardWrapper}>
           <AppCard
             variant="outlined"
-            style={[styles.card, isDragging && styles.cardDragging]}
+            style={[
+              styles.card,
+              isDragging && styles.cardDragging,
+              !isEnabled && styles.cardDisabled,
+            ]}
           >
             <View style={styles.leftCol}>
               {!isSearching && (
@@ -78,33 +85,47 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
               <View style={styles.cardInfo}>
                 <AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>
                 <View style={styles.textContainer}>
-                  <AppText style={styles.codeText}>{currency.code}</AppText>
+                  <AppText style={[styles.codeText, !isEnabled && styles.codeTextDisabled]}>
+                    {currency.code}
+                  </AppText>
                   <AppText style={styles.nameText}>{localizedName}</AppText>
                 </View>
                 <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
               </View>
             </View>
 
-            <Pressable
-              onPress={() => onDeleteCurrency(currency)}
-              disabled={!canDelete}
-              style={({ pressed }) => [
-                styles.deleteButton,
-                !canDelete && styles.deleteButtonDisabled,
-                pressed && canDelete && { opacity: 0.7 },
-              ]}
-              accessibilityLabel={`Delete ${currency.code}`}
-            >
-              <Trash2
-                size={18}
-                color={canDelete ? theme.colors.danger : theme.colors.textMuted}
-              />
-            </Pressable>
+            <View style={styles.rightCol}>
+              {onToggleCurrency && (
+                <Switch
+                  value={isEnabled}
+                  onValueChange={(val) => onToggleCurrency(currency, val)}
+                  trackColor={{ false: theme.colors.borderLight, true: theme.colors.accent }}
+                  thumbColor={theme.colors.white}
+                  accessibilityLabel={isEnabled ? `Disable ${currency.code}` : `Enable ${currency.code}`}
+                  style={styles.switch}
+                />
+              )}
+              <Pressable
+                onPress={() => onDeleteCurrency(currency)}
+                disabled={!canDelete}
+                style={({ pressed }) => [
+                  styles.deleteButton,
+                  !canDelete && styles.deleteButtonDisabled,
+                  pressed && canDelete && { opacity: 0.7 },
+                ]}
+                accessibilityLabel={`Delete ${currency.code}`}
+              >
+                <Trash2
+                  size={18}
+                  color={canDelete ? theme.colors.danger : theme.colors.textMuted}
+                />
+              </Pressable>
+            </View>
           </AppCard>
         </View>
       );
     },
-    [canDelete, onDeleteCurrency, isSearching, t]
+    [canDelete, onDeleteCurrency, onToggleCurrency, isSearching, t]
   );
 
   return (
@@ -264,6 +285,20 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xs,
     borderRadius: theme.radii.sm,
     marginRight: theme.spacing.md,
+  },
+  cardDisabled: {
+    opacity: 0.65,
+  },
+  codeTextDisabled: {
+    color: theme.colors.textSecondary,
+  },
+  rightCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
+  switch: {
+    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
   },
   deleteButton: {
     padding: theme.spacing.sm,

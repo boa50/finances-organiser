@@ -56,27 +56,31 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
 
     const initModal = async () => {
       setErrorMessage(null);
-      const cats = await categoryService.getCategories('expense');
+      const cats = await categoryService.getEnabledCategories('expense');
       setAvailableCategories(cats);
-      const pms = await paymentMethodService.getPaymentMethods();
+      const pms = await paymentMethodService.getEnabledPaymentMethods();
       setAvailablePaymentMethods(pms);
-      const bks = await bankService.getBanks();
+      const bks = await bankService.getEnabledBanks();
       setAvailableBanks(bks);
-      const currs = await currencyService.getCurrencies();
+      const currs = await currencyService.getEnabledCurrencies();
       setAvailableCurrencies(currs);
 
       if (subscription) {
         setTitle(subscription.title);
         setAmount(String(subscription.amount));
-        setCurrencyId(subscription.currencyId || 'BRL');
+        const currExists = currs.some((c) => c.code === subscription.currencyId);
+        setCurrencyId(currExists ? (subscription.currencyId || 'BRL') : (currs.length > 0 ? currs[0].code : 'BRL'));
 
-        const initialCatId = subscription.categoryId || '';
+        const catExists = cats.some((c) => c.id === subscription.categoryId);
+        const initialCatId = catExists ? (subscription.categoryId || '') : (cats.length > 0 ? cats[0].id : '');
         setCategoryId(initialCatId);
 
-        const initialPmId = subscription.paymentMethodId || '';
+        const pmExists = pms.some((p) => p.id === subscription.paymentMethodId);
+        const initialPmId = pmExists ? (subscription.paymentMethodId || '') : (pms.length > 0 ? pms[0].id : '');
         setPaymentMethodId(initialPmId);
 
-        const initialBankId = subscription.bankId || '';
+        const bankExists = bks.some((b) => b.id === subscription.bankId);
+        const initialBankId = bankExists ? (subscription.bankId || '') : '';
         setBankId(initialBankId);
 
         setStore(subscription.store || '');
@@ -226,7 +230,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           <Switch
             value={active}
             onValueChange={setActive}
-            trackColor={{ false: theme.colors.borderSubtle, true: theme.colors.success }}
+            trackColor={{ false: theme.colors.borderSubtle, true: theme.colors.accent }}
             thumbColor={theme.colors.white}
           />
         </View>

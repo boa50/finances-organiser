@@ -27,6 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         name: String(row.name),
         flag: String(row.flag),
         displayOrder: Number(row.display_order ?? 0),
+        enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
       }));
       return res.status(200).json(currencies);
     }
@@ -61,16 +62,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const order = Number(countRes.rows[0]?.cnt || 0);
 
       await client.execute({
-        sql: `INSERT INTO currencies (id, symbol, name, flag, display_order) VALUES (?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO currencies (id, symbol, name, flag, display_order, enabled) VALUES (?, ?, ?, ?, ?, 1)`,
         args: [info.code, info.symbol, info.name, info.flag, order],
       });
 
-      return res.status(201).json({ ...info, displayOrder: order });
+      return res.status(201).json({ ...info, displayOrder: order, enabled: true });
     }
 
-    // PUT /api/currencies - Reorder currencies
+    // PUT /api/currencies - Reorder currencies or toggle enabled
     if (req.method === 'PUT') {
-      const { action, orderedCodes, orderedIds } = req.body || {};
+      const { action, orderedCodes, orderedIds, code: reqCode, id: reqId, enabled } = req.body || {};
       const list = orderedCodes || orderedIds;
 
       if (action === 'reorder' || Array.isArray(list)) {
@@ -85,6 +86,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
         }
         return res.status(200).json({ success: true, count: list.length });
+      }
+
+      const targetCode = (reqCode || reqId ? String(reqCode || reqId).trim().toUpperCase() : '');
+      if (targetCode && enabled !== undefined) {
+        const isEnabledVal = enabled ? 1 : 0;
+        if (isEnabledVal === 0) {
+          const countRes = await client.execute('SELECT COUNT(*) as cnt FROM currencies WHERE enabled = 1');
+          const enabledCount = Number(countRes.rows[0]?.cnt || 0);
+          if (enabledCount <= 1) {
+            return res.status(400).json({ error: 'Cannot disable the only enabled currency. At least one currency must remain enabled.' });
+          }
+        }
+
+        await client.execute({
+          sql: 'UPDATE currencies SET enabled = ? WHERE UPPER(id) = ?',
+          args: [isEnabledVal, targetCode],
+        });
+
+        const curRes = await client.execute({
+          sql: 'SELECT * FROM currencies WHERE UPPER(id) = ?',
+          args: [targetCode],
+        });
+        const row: any = curRes.rows[0];
+        if (row) {
+          return res.status(200).json({
+            code: String(row.id),
+            symbol: String(row.symbol),
+            name: String(row.name),
+            flag: String(row.flag),
+            displayOrder: Number(row.display_order ?? 0),
+            enabled: isEnabledVal === 1,
+          });
+        }
+        return res.status(200).json({ code: targetCode, enabled: isEnabledVal === 1 });
       }
 
       return res.status(400).json({ error: 'Invalid action for currency update' });

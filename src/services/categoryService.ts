@@ -106,6 +106,7 @@ class CategoryService {
             color: String(row.color),
             type: row.type as TransactionType,
             displayOrder: Number(row.display_order ?? 0),
+            enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
           }));
           this.categories = dbCategories;
           this.saveToCache();
@@ -126,6 +127,16 @@ class CategoryService {
       return this.categories.filter((c) => c.type === type);
     }
     return [...this.categories];
+  }
+
+  public async getEnabledCategories(type?: TransactionType): Promise<CategoryItem[]> {
+    const all = await this.getCategories(type);
+    return all.filter((c) => c.enabled !== false);
+  }
+
+  public getEnabledCategoriesSync(type?: TransactionType): CategoryItem[] {
+    const all = this.getCategoriesSync(type);
+    return all.filter((c) => c.enabled !== false);
   }
 
   public async reorderCategories(orderedIds: string[], type?: TransactionType): Promise<CategoryItem[]> {
@@ -195,6 +206,8 @@ class CategoryService {
       ? Math.max(...sameTypeCategories.map((c) => c.displayOrder ?? 0)) + 1
       : 0;
 
+    const isEnabled = cat.enabled !== undefined ? Boolean(cat.enabled) : true;
+
     const newCategory: CategoryItem = {
       id: generateId('cat'),
       name: cat.name.trim(),
@@ -202,6 +215,7 @@ class CategoryService {
       color: cat.color,
       type: cat.type,
       displayOrder: nextOrder,
+      enabled: isEnabled,
     };
 
     this.categories = [...this.categories, newCategory];
@@ -212,7 +226,7 @@ class CategoryService {
         const res = await fetch('/api/categories', {
           method: 'POST',
           headers: tursoService.getApiHeaders(),
-          body: JSON.stringify(cat),
+          body: JSON.stringify({ ...cat, enabled: isEnabled }),
         });
         if (isJsonResponse(res)) {
           const created: CategoryItem = await res.json();
@@ -227,18 +241,41 @@ class CategoryService {
     if (client) {
       try {
         await client.execute({
-          sql: `INSERT INTO categories (id, name, icon, color, type)
-                VALUES (?, ?, ?, ?, ?)`,
+          sql: `INSERT INTO categories (id, name, icon, color, type, display_order, enabled)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
           args: [
             newCategory.id,
             newCategory.name,
             newCategory.icon,
             newCategory.color,
             newCategory.type,
+            newCategory.displayOrder ?? 0,
+            newCategory.enabled ? 1 : 0,
           ],
         });
-      } catch (err) {
-        console.error('Failed to sync added category to Turso DB:', err);
+      } catch (err: any) {
+        if (err?.message?.includes('no such column: enabled')) {
+          try {
+            await client.execute('ALTER TABLE categories ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
+            await client.execute({
+              sql: `INSERT INTO categories (id, name, icon, color, type, display_order, enabled)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              args: [
+                newCategory.id,
+                newCategory.name,
+                newCategory.icon,
+                newCategory.color,
+                newCategory.type,
+                newCategory.displayOrder ?? 0,
+                newCategory.enabled ? 1 : 0,
+              ],
+            });
+          } catch (retryErr) {
+            console.error('Failed to sync added category to Turso DB after migration:', retryErr);
+          }
+        } else {
+          console.error('Failed to sync added category to Turso DB:', err);
+        }
       }
     }
 
@@ -271,6 +308,7 @@ class CategoryService {
       icon: updated.icon || current.icon,
       color: updated.color || current.color,
       type: newType,
+      enabled: updated.enabled !== undefined ? Boolean(updated.enabled) : (current.enabled !== false),
     };
 
     this.categories[index] = nextCategory;
@@ -281,7 +319,7 @@ class CategoryService {
         const res = await fetch('/api/categories', {
           method: 'PUT',
           headers: tursoService.getApiHeaders(),
-          body: JSON.stringify({ id, ...updated }),
+          body: JSON.stringify({ id, ...updated, enabled: nextCategory.enabled }),
         });
         if (isJsonResponse(res)) {
           const updatedCat: CategoryItem = await res.json();
@@ -296,21 +334,52 @@ class CategoryService {
     if (client) {
       try {
         await client.execute({
-          sql: `UPDATE categories SET name = ?, icon = ?, color = ?, type = ? WHERE id = ?`,
+          sql: `UPDATE categories SET name = ?, icon = ?, color = ?, type = ?, enabled = ? WHERE id = ?`,
           args: [
             nextCategory.name,
             nextCategory.icon,
             nextCategory.color,
             nextCategory.type,
+            nextCategory.enabled ? 1 : 0,
             nextCategory.id,
           ],
         });
-      } catch (err) {
-        console.error('Failed to sync category update to Turso DB:', err);
+      } catch (err: any) {
+        if (err?.message?.includes('no such column: enabled')) {
+          try {
+            await client.execute('ALTER TABLE categories ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
+            await client.execute({
+              sql: `UPDATE categories SET name = ?, icon = ?, color = ?, type = ?, enabled = ? WHERE id = ?`,
+              args: [
+                nextCategory.name,
+                nextCategory.icon,
+                nextCategory.color,
+                nextCategory.type,
+                nextCategory.enabled ? 1 : 0,
+                nextCategory.id,
+              ],
+            });
+          } catch (retryErr) {
+            console.error('Failed to sync category update to Turso DB after migration:', retryErr);
+          }
+        } else {
+          console.error('Failed to sync category update to Turso DB:', err);
+        }
       }
     }
 
     return nextCategory;
+  }
+
+  public async toggleCategoryEnabled(id: string, nextState?: boolean): Promise<CategoryItem> {
+    const index = this.categories.findIndex((c) => c.id === id);
+    if (index === -1) {
+      throw new Error('Category not found');
+    }
+
+    const current = this.categories[index];
+    const newEnabled = nextState !== undefined ? nextState : !(current.enabled !== false);
+    return this.updateCategory(id, { enabled: newEnabled });
   }
 
   public async deleteCategory(id: string): Promise<boolean> {

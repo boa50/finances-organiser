@@ -295,6 +295,8 @@
     "removeCurrencyMsg": "Tem certeza que deseja remover {{code}} ({{name}}) das moedas disponíveis?",
     "cannotRemoveCurrencyTitle": "Não é Possível Remover a Moeda",
     "removeCurrencyError": "Falha ao remover moeda.",
+    "cannotDisableCurrencyTitle": "Não é Possível Desativar a Moeda",
+    "cannotDisableCurrencyMsg": "Pelo menos uma moeda deve permanecer ativada.",
     "addAvailableCurrency": "Adicionar Moeda Disponível",
     "addAvailableCurrencyTitle": "Adicionar Moeda Disponível",
     "allCurrenciesEnabled": "Todas as moedas suportadas já estão ativadas!",

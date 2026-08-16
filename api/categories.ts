@@ -29,13 +29,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         color: String(row.color),
         type: row.type,
         displayOrder: Number(row.display_order ?? 0),
+        enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
       }));
       return res.status(200).json(categories);
     }
 
     // POST /api/categories - Add a new category or reset defaults
     if (req.method === 'POST') {
-      const { action, name, icon, color, type } = req.body || {};
+      const { action, name, icon, color, type, enabled } = req.body || {};
 
       if (action === 'reset' || req.query.action === 'reset') {
         await client.execute('DELETE FROM categories');
@@ -52,11 +53,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         args: [type],
       });
       const displayOrder = Number(countRes.rows[0]?.next_order ?? 0);
+      const isEnabled = enabled !== undefined ? (enabled ? 1 : 0) : 1;
 
       await client.execute({
-        sql: `INSERT INTO categories (id, name, icon, color, type, display_order)
-              VALUES (?, ?, ?, ?, ?, ?)`,
-        args: [id, name.trim(), icon, color, type, displayOrder],
+        sql: `INSERT INTO categories (id, name, icon, color, type, display_order, enabled)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: [id, name.trim(), icon, color, type, displayOrder, isEnabled],
       });
 
       const newCat = {
@@ -66,13 +68,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         color,
         type,
         displayOrder,
+        enabled: isEnabled === 1,
       };
       return res.status(201).json(newCat);
     }
 
     // PUT /api/categories - Update a category or reorder categories
     if (req.method === 'PUT') {
-      const { action, orderedIds, id, name, icon, color, type } = req.body || {};
+      const { action, orderedIds, id, name, icon, color, type, enabled } = req.body || {};
 
       if (action === 'reorder' || Array.isArray(orderedIds)) {
         if (!Array.isArray(orderedIds)) {
@@ -87,13 +90,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, count: orderedIds.length });
       }
 
-      if (!id || !name || !icon || !color || !type) {
+      if (!id) {
+        return res.status(400).json({ error: 'Missing category id for update' });
+      }
+
+      // Check if this is a toggle-only update
+      if (enabled !== undefined && !name && !icon && !color && !type) {
+        const isEnabledVal = enabled ? 1 : 0;
+        await client.execute({
+          sql: 'UPDATE categories SET enabled = ? WHERE id = ?',
+          args: [isEnabledVal, id],
+        });
+        const currentRes = await client.execute({
+          sql: 'SELECT * FROM categories WHERE id = ?',
+          args: [id],
+        });
+        const row: any = currentRes.rows[0];
+        if (row) {
+          return res.status(200).json({
+            id: String(row.id),
+            name: String(row.name),
+            icon: String(row.icon),
+            color: String(row.color),
+            type: row.type,
+            displayOrder: Number(row.display_order ?? 0),
+            enabled: isEnabledVal === 1,
+          });
+        }
+        return res.status(200).json({ id, enabled: isEnabledVal === 1 });
+      }
+
+      if (!name || !icon || !color || !type) {
         return res.status(400).json({ error: 'Missing required fields for category update' });
       }
 
+      const isEnabledVal = enabled !== undefined ? (enabled ? 1 : 0) : 1;
+
       await client.execute({
-        sql: `UPDATE categories SET name = ?, icon = ?, color = ?, type = ? WHERE id = ?`,
-        args: [name.trim(), icon, color, type, id],
+        sql: `UPDATE categories SET name = ?, icon = ?, color = ?, type = ?, enabled = ? WHERE id = ?`,
+        args: [name.trim(), icon, color, type, isEnabledVal, id],
       });
 
       const updatedCat = {
@@ -102,6 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         icon,
         color,
         type,
+        enabled: isEnabledVal === 1,
       };
       return res.status(200).json(updatedCat);
     }

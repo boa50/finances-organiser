@@ -50,6 +50,7 @@ export interface CategoryItem {
   color: string;
   type: TransactionType;
   displayOrder?: number;
+  enabled?: boolean;
 }
 
 export interface PaymentMethodItem {
@@ -57,12 +58,14 @@ export interface PaymentMethodItem {
   name: string;
   allowInstallments?: boolean;
   displayOrder?: number;
+  enabled?: boolean;
 }
 
 export interface BankItem {
   id: string;
   name: string;
   displayOrder?: number;
+  enabled?: boolean;
 }
 
 export interface MonthlyAggregate {
@@ -88,4 +91,5 @@ export interface CurrencyInfo {
   name: string;
   flag: string;
   displayOrder?: number;
+  enabled?: boolean;
 }

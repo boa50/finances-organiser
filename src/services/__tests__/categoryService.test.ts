@@ -119,4 +119,31 @@ describe('categoryService', () => {
     const syncList = categoryService.getCategoriesSync('expense');
     expect(syncList.map((c) => c.id)).toEqual([catC.id, catA.id, catB.id]);
   });
+
+  it('toggles category enabled state and filters enabled categories correctly', async () => {
+    const cat = await categoryService.addCategory({
+      name: 'To Disable',
+      icon: 'utensils',
+      color: '#111111',
+      type: 'expense',
+    });
+
+    expect(cat.enabled).toBe(true);
+
+    const toggled = await categoryService.toggleCategoryEnabled(cat.id, false);
+    expect(toggled.enabled).toBe(false);
+
+    const all = await categoryService.getCategories('expense');
+    expect(all.some((c) => c.id === cat.id && c.enabled === false)).toBe(true);
+
+    const enabledOnly = await categoryService.getEnabledCategories('expense');
+    expect(enabledOnly.some((c) => c.id === cat.id)).toBe(false);
+
+    const enabledSync = categoryService.getEnabledCategoriesSync('expense');
+    expect(enabledSync.some((c) => c.id === cat.id)).toBe(false);
+
+    await categoryService.toggleCategoryEnabled(cat.id, true);
+    const reEnabled = await categoryService.getEnabledCategories('expense');
+    expect(reEnabled.some((c) => c.id === cat.id && c.enabled === true)).toBe(true);
+  });
 });

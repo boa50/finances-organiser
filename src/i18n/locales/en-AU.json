@@ -295,6 +295,8 @@
     "removeCurrencyMsg": "Are you sure you want to remove {{code}} ({{name}}) from available currencies?",
     "cannotRemoveCurrencyTitle": "Cannot Remove Currency",
     "removeCurrencyError": "Failed to remove currency.",
+    "cannotDisableCurrencyTitle": "Cannot Disable Currency",
+    "cannotDisableCurrencyMsg": "At least one currency must remain enabled.",
     "addAvailableCurrency": "Add Available Currency",
     "addAvailableCurrencyTitle": "Add Available Currency",
     "allCurrenciesEnabled": "All supported currencies are already enabled!",

@@ -6,8 +6,8 @@ import { isJsonResponse } from './apiClient';
 const CURRENCIES_STORAGE_KEY = 'finances_custom_currencies';
 
 export const DEFAULT_ENABLED_CURRENCIES: CurrencyInfo[] = [
-  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', flag: '🇧🇷' },
-  { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
+  { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', flag: '🇧🇷', enabled: true },
+  { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸', enabled: true },
 ];
 
 class CurrencyService {
@@ -81,6 +81,7 @@ class CurrencyService {
             name: String(row.name),
             flag: String(row.flag),
             displayOrder: Number(row.display_order ?? 0),
+            enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
           }));
           this.currencies = dbItems;
           this.saveToLocalStorage();
@@ -99,6 +100,16 @@ class CurrencyService {
       return [...DEFAULT_ENABLED_CURRENCIES];
     }
     return [...this.currencies];
+  }
+
+  public async getEnabledCurrencies(): Promise<CurrencyInfo[]> {
+    const all = await this.getCurrencies();
+    return all.filter((c) => c.enabled !== false);
+  }
+
+  public getEnabledCurrenciesSync(): CurrencyInfo[] {
+    const all = this.getCurrenciesSync();
+    return all.filter((c) => c.enabled !== false);
   }
 
   public async reorderCurrencies(orderedCodes: string[]): Promise<CurrencyInfo[]> {
@@ -172,7 +183,7 @@ class CurrencyService {
       throw new Error(`Currency "${info.code}" is already enabled.`);
     }
 
-    const newCurrency: CurrencyInfo = { ...info };
+    const newCurrency: CurrencyInfo = { ...info, enabled: true };
 
     this.currencies = [...this.currencies, newCurrency];
     this.saveToLocalStorage();
@@ -207,15 +218,98 @@ class CurrencyService {
     if (client) {
       try {
         await client.execute({
-          sql: 'INSERT INTO currencies (id, symbol, name, flag, display_order) VALUES (?, ?, ?, ?, ?)',
+          sql: 'INSERT INTO currencies (id, symbol, name, flag, display_order, enabled) VALUES (?, ?, ?, ?, ?, 1)',
           args: [info.code, info.symbol, info.name, info.flag, this.currencies.length - 1],
         });
-      } catch (err) {
-        console.error('Failed to sync added currency to Turso DB:', err);
+      } catch (err: any) {
+        if (err?.message?.includes('no such column: enabled')) {
+          try {
+            await client.execute('ALTER TABLE currencies ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
+            await client.execute({
+              sql: 'INSERT INTO currencies (id, symbol, name, flag, display_order, enabled) VALUES (?, ?, ?, ?, ?, 1)',
+              args: [info.code, info.symbol, info.name, info.flag, this.currencies.length - 1],
+            });
+          } catch (retryErr) {
+            console.error('Failed to sync added currency to Turso DB after migration:', retryErr);
+          }
+        } else {
+          console.error('Failed to sync added currency to Turso DB:', err);
+        }
       }
     }
 
     return newCurrency;
+  }
+
+  public async toggleCurrencyEnabled(code: string, nextState?: boolean): Promise<CurrencyInfo> {
+    let normalizedCode = (code || '').trim().toUpperCase();
+    if (normalizedCode === 'WON') normalizedCode = 'KRW';
+    if (normalizedCode === 'COL') normalizedCode = 'COP';
+
+    const index = this.currencies.findIndex((c) => c.code.toUpperCase() === normalizedCode);
+    if (index === -1) {
+      throw new Error(`Currency "${code}" not found.`);
+    }
+
+    const current = this.currencies[index];
+    const newEnabled = nextState !== undefined ? nextState : !(current.enabled !== false);
+
+    if (!newEnabled) {
+      const enabledCurrencies = this.currencies.filter((c) => c.enabled !== false);
+      if (enabledCurrencies.length <= 1) {
+        throw new Error('At least one currency must remain enabled.');
+      }
+    }
+
+    const updated: CurrencyInfo = {
+      ...current,
+      enabled: newEnabled,
+    };
+
+    this.currencies[index] = updated;
+    this.saveToLocalStorage();
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/currencies', {
+          method: 'PUT',
+          headers: tursoService.getApiHeaders(),
+          body: JSON.stringify({ code: normalizedCode, enabled: newEnabled }),
+        });
+        if (isJsonResponse(res)) {
+          const updatedCur: CurrencyInfo = await res.json();
+          return updatedCur;
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    const client = tursoService.getClient();
+    if (client) {
+      try {
+        await client.execute({
+          sql: 'UPDATE currencies SET enabled = ? WHERE UPPER(id) = ?',
+          args: [newEnabled ? 1 : 0, normalizedCode],
+        });
+      } catch (err: any) {
+        if (err?.message?.includes('no such column: enabled')) {
+          try {
+            await client.execute('ALTER TABLE currencies ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
+            await client.execute({
+              sql: 'UPDATE currencies SET enabled = ? WHERE UPPER(id) = ?',
+              args: [newEnabled ? 1 : 0, normalizedCode],
+            });
+          } catch (retryErr) {
+            console.error('Failed to sync currency enabled state to Turso DB after migration:', retryErr);
+          }
+        } else {
+          console.error('Failed to sync currency enabled state to Turso DB:', err);
+        }
+      }
+    }
+
+    return updated;
   }
 
   public async removeCurrency(code: string): Promise<boolean> {

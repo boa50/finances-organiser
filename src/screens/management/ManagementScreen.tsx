@@ -434,6 +434,49 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     }
   };
 
+  const handleToggleCategory = async (cat: CategoryItem, enabled: boolean) => {
+    try {
+      await categoryService.toggleCategoryEnabled(cat.id, enabled);
+      await loadCategoriesData();
+      onCategoriesUpdated?.();
+    } catch (err: any) {
+      console.error('Failed to toggle category enabled state:', err);
+    }
+  };
+
+  const handleTogglePm = async (pm: PaymentMethodItem, enabled: boolean) => {
+    try {
+      await paymentMethodService.togglePaymentMethodEnabled(pm.id, enabled);
+      await loadPaymentMethodsData();
+    } catch (err: any) {
+      console.error('Failed to toggle payment method enabled state:', err);
+    }
+  };
+
+  const handleToggleBank = async (bank: BankItem, enabled: boolean) => {
+    try {
+      await bankService.toggleBankEnabled(bank.id, enabled);
+      await loadBanksData();
+    } catch (err: any) {
+      console.error('Failed to toggle bank enabled state:', err);
+    }
+  };
+
+  const handleToggleCurrency = async (currency: CurrencyInfo, enabled: boolean) => {
+    try {
+      await currencyService.toggleCurrencyEnabled(currency.code, enabled);
+      await loadCurrenciesData();
+      onCurrenciesUpdated?.();
+    } catch (err: any) {
+      confirmAction({
+        title: t('management.cannotDisableCurrencyTitle', { defaultValue: 'Cannot Disable Currency' }),
+        message: err?.message || t('management.cannotDisableCurrencyMsg', { defaultValue: 'At least one currency must remain enabled.' }),
+        destructive: false,
+        onConfirm: () => {},
+      });
+    }
+  };
+
   if (loading) {
     return <AppLoadingView message={t('management.loadingSettings')} />;
   }
@@ -473,6 +516,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               onOpenAddModal={openAddCatModal}
               onOpenEditModal={openEditCatModal}
               onDeleteCategory={handleDeleteCategory}
+              onToggleCategory={handleToggleCategory}
               onReorderCategories={handleReorderCategories}
             />
           )}
@@ -485,6 +529,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               onOpenAddModal={openAddPmModal}
               onOpenEditModal={openEditPmModal}
               onDeletePm={handleDeletePm}
+              onTogglePm={handleTogglePm}
               onReorderPaymentMethods={handleReorderPaymentMethods}
             />
           )}
@@ -497,6 +542,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               onOpenAddModal={openAddBankModal}
               onOpenEditModal={openEditBankModal}
               onDeleteBank={handleDeleteBank}
+              onToggleBank={handleToggleBank}
               onReorderBanks={handleReorderBanks}
             />
           )}
@@ -508,6 +554,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               setSearchQuery={setSearchQuery}
               onOpenAddModal={openAddCurrencyModal}
               onDeleteCurrency={handleDeleteCurrency}
+              onToggleCurrency={handleToggleCurrency}
               onReorderCurrencies={handleReorderCurrencies}
             />
           )}

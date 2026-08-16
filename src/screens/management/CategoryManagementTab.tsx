@@ -25,6 +25,7 @@ interface CategoryManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (cat: CategoryItem) => void;
   onDeleteCategory: (cat: CategoryItem) => void;
+  onToggleCategory?: (cat: CategoryItem, enabled: boolean) => void;
   onReorderCategories?: (reorderedCategories: CategoryItem[]) => void;
 }
 
@@ -37,6 +38,7 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onDeleteCategory,
+  onToggleCategory,
   onReorderCategories,
 }) => {
   const { t } = useTranslation();
@@ -63,6 +65,8 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
             icon={<CategoryIcon iconName={item.icon} color={item.color} size={20} />}
             onEdit={() => onOpenEditModal(item)}
             onDelete={() => onDeleteCategory(item)}
+            enabled={item.enabled !== false}
+            onToggleEnabled={onToggleCategory ? (val) => onToggleCategory(item, val) : undefined}
             isDraggable={!isSearching}
             dragHandleProps={dragHandleProps}
             isDragging={isDragging}
@@ -70,7 +74,7 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
         </View>
       );
     },
-    [onOpenEditModal, onDeleteCategory, isSearching, t]
+    [onOpenEditModal, onDeleteCategory, onToggleCategory, isSearching, t]
   );
 
   return (
