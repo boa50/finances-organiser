@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Platform,
   ScrollView,
   StyleSheet,
   View,
@@ -53,71 +55,96 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
   const [billingDay, setBillingDay] = useState('1');
   const [active, setActive] = useState(true);
   const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loadCategories = async () => {
-    const cats = await categoryService.getEnabledCategories('expense');
-    setAvailableCategories(cats);
-    return cats;
-  };
-
-  const loadPaymentMethods = async () => {
-    const pms = await paymentMethodService.getEnabledPaymentMethods();
-    setAvailablePaymentMethods(pms);
-    return pms;
-  };
-
-  const loadBanks = async () => {
-    const bks = await bankService.getEnabledBanks();
-    setAvailableBanks(bks);
-    return bks;
-  };
-
-  const loadCurrencies = async () => {
-    const currs = await currencyService.getEnabledCurrencies();
-    setAvailableCurrencies(currs);
-    return currs;
+  const clearFields = () => {
+    setTitle('');
+    setAmount('');
+    setCurrencyId('BRL');
+    setCategoryId('');
+    setPaymentMethodId('');
+    setBankId('');
+    setBillingDay('1');
+    setActive(true);
+    setNotes('');
+    setErrorMessage(null);
+    setAvailableCategories([]);
+    setAvailablePaymentMethods([]);
+    setAvailableBanks([]);
+    setAvailableCurrencies([]);
   };
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setLoading(true);
+      clearFields();
+      return;
+    }
+
+    let isCancelled = false;
 
     const init = async () => {
-      setErrorMessage(null);
-      const cats = await loadCategories();
-      const pms = await loadPaymentMethods();
-      const bks = await loadBanks();
-      const currs = await loadCurrencies();
+      setLoading(true);
+      clearFields();
 
-      if (subscription) {
-        setTitle(subscription.title);
-        setAmount(String(subscription.amount));
-        const currExists = currs.some((c) => c.code === subscription.currencyId);
-        setCurrencyId(currExists ? subscription.currencyId : (currs.length > 0 ? currs[0].code : 'BRL'));
-        const catExists = cats.some((c) => c.id === subscription.categoryId);
-        setCategoryId(catExists ? (subscription.categoryId || '') : (cats.length > 0 ? cats[0].id : ''));
-        const pmExists = pms.some((p) => p.id === subscription.paymentMethodId);
-        setPaymentMethodId(pmExists ? (subscription.paymentMethodId || '') : '');
-        const bankExists = bks.some((b) => b.id === subscription.bankId);
-        setBankId(bankExists ? (subscription.bankId || '') : '');
-        setBillingDay(String(subscription.billingDay));
-        setActive(subscription.active);
-        setNotes(subscription.notes || '');
-      } else {
-        setTitle('');
-        setAmount('');
-        setCurrencyId(currs.length > 0 ? currs[0].code : 'BRL');
-        setCategoryId(cats.length > 0 ? cats[0].id : '');
-        setPaymentMethodId('');
-        setBankId('');
-        setBillingDay('1');
-        setActive(true);
-        setNotes('');
+      try {
+        const [cats, pms, bks, currs] = await Promise.all([
+          categoryService.getEnabledCategories('expense'),
+          paymentMethodService.getEnabledPaymentMethods(),
+          bankService.getEnabledBanks(),
+          currencyService.getEnabledCurrencies(),
+        ]);
+
+        if (isCancelled) return;
+
+        setAvailableCategories(cats);
+        setAvailablePaymentMethods(pms);
+        setAvailableBanks(bks);
+        setAvailableCurrencies(currs);
+
+        if (subscription) {
+          setTitle(subscription.title);
+          setAmount(String(subscription.amount));
+          const currExists = currs.some((c) => c.code === subscription.currencyId);
+          setCurrencyId(currExists ? subscription.currencyId : (currs.length > 0 ? currs[0].code : 'BRL'));
+          const catExists = cats.some((c) => c.id === subscription.categoryId);
+          setCategoryId(catExists ? (subscription.categoryId || '') : (cats.length > 0 ? cats[0].id : ''));
+          const pmExists = pms.some((p) => p.id === subscription.paymentMethodId);
+          setPaymentMethodId(pmExists ? (subscription.paymentMethodId || '') : '');
+          const bankExists = bks.some((b) => b.id === subscription.bankId);
+          setBankId(bankExists ? (subscription.bankId || '') : '');
+          setBillingDay(String(subscription.billingDay));
+          setActive(subscription.active);
+          setNotes(subscription.notes || '');
+        } else {
+          setTitle('');
+          setAmount('');
+          setCurrencyId(currs.length > 0 ? currs[0].code : 'BRL');
+          setCategoryId(cats.length > 0 ? cats[0].id : '');
+          setPaymentMethodId('');
+          setBankId('');
+          setBillingDay('1');
+          setActive(true);
+          setNotes('');
+        }
+      } catch (e: any) {
+        if (!isCancelled) {
+          setErrorMessage(e?.message || t('common.unexpectedError'));
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
     init();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [visible, subscription]);
 
   const handleSave = async () => {
@@ -214,12 +241,23 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       onClose={onClose}
       title={subscription ? t('subscriptionModal.editTitle') : t('subscriptionModal.addTitle')}
     >
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {errorMessage && (
-          <View style={styles.errorContainer}>
-            <FeedbackMessage type="error" message={errorMessage} />
+      <View style={styles.modalBody}>
+        {loading && (
+          <View style={styles.loadingOverlay} pointerEvents="none">
+            <ActivityIndicator size="large" color={theme.colors.accent} />
           </View>
         )}
+
+        <ScrollView
+          style={[styles.container, loading && styles.containerLoading]}
+          contentContainerStyle={styles.content}
+          pointerEvents={loading ? 'none' : 'auto'}
+        >
+          {errorMessage && (
+            <View style={styles.errorContainer}>
+              <FeedbackMessage type="error" message={errorMessage} />
+            </View>
+          )}
 
         {/* Title */}
         <View style={styles.fieldGroup}>
@@ -372,20 +410,38 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
               title={saving ? t('transactionModal.saving') : subscription ? t('management.saveChanges') : t('subscriptionModal.addSubscription')}
               variant="primary"
               onPress={handleSave}
-              disabled={saving}
+              disabled={saving || loading}
               loading={saving}
               fullWidth={false}
             />
           </View>
         </View>
       </ScrollView>
+      </View>
     </AppModal>
   );
 };
 
 const styles = StyleSheet.create({
+  modalBody: {
+    position: 'relative',
+  },
   container: {
     maxHeight: 520,
+  },
+  containerLoading: {
+    opacity: 0.35,
+    ...(Platform.OS === 'web' ? ({ filter: 'blur(3px)' } as any) : {}),
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     gap: theme.spacing.md,

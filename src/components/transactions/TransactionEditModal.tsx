@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -65,105 +67,131 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loadCategories = async (targetType: TransactionType) => {
-    const cats = await categoryService.getEnabledCategories(targetType);
-    setAvailableCategories(cats);
-    return cats;
-  };
-
-  const loadPaymentMethods = async () => {
-    const pms = await paymentMethodService.getEnabledPaymentMethods();
-    setAvailablePaymentMethods(pms);
-    return pms;
-  };
-
-  const loadBanks = async () => {
-    const bks = await bankService.getEnabledBanks();
-    setAvailableBanks(bks);
-    return bks;
-  };
-
-  const loadCurrencies = async () => {
-    const currs = await currencyService.getEnabledCurrencies();
-    setAvailableCurrencies(currs);
-    return currs;
+  const clearFields = (targetType: TransactionType = 'expense') => {
+    setType(targetType);
+    setTitle('');
+    setAmount('');
+    setCurrencyId('BRL');
+    setCategoryId('');
+    setPaymentMethodId('');
+    setBankId('');
+    setStore('');
+    setInstallments(0);
+    setInstallmentInputText('1');
+    setDate(new Date());
+    setNotes('');
+    setErrorMessage(null);
+    setAvailableCategories([]);
+    setAvailablePaymentMethods([]);
+    setAvailableBanks([]);
+    setAvailableCurrencies([]);
   };
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setLoading(true);
+      clearFields(transaction ? transaction.type : 'expense');
+      return;
+    }
+
+    let isCancelled = false;
 
     const initModal = async () => {
-      setErrorMessage(null);
+      setLoading(true);
       const activeType = transaction ? transaction.type : 'expense';
-      setType(activeType);
+      clearFields(activeType);
 
-      const cats = await loadCategories(activeType);
-      const pms = await loadPaymentMethods();
-      const bks = await loadBanks();
-      const currs = await loadCurrencies();
+      try {
+        const [cats, pms, bks, currs] = await Promise.all([
+          categoryService.getEnabledCategories(activeType),
+          paymentMethodService.getEnabledPaymentMethods(),
+          bankService.getEnabledBanks(),
+          currencyService.getEnabledCurrencies(),
+        ]);
 
-      if (transaction) {
-        const currExists = currs.some((c) => c.code === transaction.currencyId);
-        setCurrencyId(currExists ? transaction.currencyId : (currs.length > 0 ? currs[0].code : 'BRL'));
+        if (isCancelled) return;
 
-        const catExists = cats.some((c) => c.id === transaction.categoryId);
-        const initialCatId = catExists ? (transaction.categoryId || '') : (cats.length > 0 ? cats[0].id : '');
-        setCategoryId(initialCatId);
+        setAvailableCategories(cats);
+        setAvailablePaymentMethods(pms);
+        setAvailableBanks(bks);
+        setAvailableCurrencies(currs);
 
-        const pmExists = pms.some((p) => p.id === transaction.paymentMethodId);
-        const initialPmId = pmExists ? (transaction.paymentMethodId || '') : (pms.length > 0 ? pms[0].id : '');
-        setPaymentMethodId(initialPmId);
+        if (transaction) {
+          const currExists = currs.some((c) => c.code === transaction.currencyId);
+          setCurrencyId(currExists ? transaction.currencyId : (currs.length > 0 ? currs[0].code : 'BRL'));
 
-        const bankExists = bks.some((b) => b.id === transaction.bankId);
-        const initialBankId = bankExists ? (transaction.bankId || '') : '';
-        setBankId(initialBankId);
+          const catExists = cats.some((c) => c.id === transaction.categoryId);
+          const initialCatId = catExists ? (transaction.categoryId || '') : (cats.length > 0 ? cats[0].id : '');
+          setCategoryId(initialCatId);
 
-        setStore(transaction.store || '');
-        setNotes(transaction.notes || '');
+          const pmExists = pms.some((p) => p.id === transaction.paymentMethodId);
+          const initialPmId = pmExists ? (transaction.paymentMethodId || '') : (pms.length > 0 ? pms[0].id : '');
+          setPaymentMethodId(initialPmId);
 
-        if (transaction.installments && transaction.installments > 1) {
-          const totalAmount = transaction.amount * transaction.installments;
-          setAmount(String(totalAmount));
+          const bankExists = bks.some((b) => b.id === transaction.bankId);
+          const initialBankId = bankExists ? (transaction.bankId || '') : '';
+          setBankId(initialBankId);
 
-          const originalTitle = transaction.title.replace(/\s*\(\d+\/\d+\)$/, '');
-          setTitle(originalTitle);
+          setStore(transaction.store || '');
+          setNotes(transaction.notes || '');
 
-          const thisDate = dateFromTransaction(transaction.date);
-          const baseDate = new Date(thisDate);
-          baseDate.setMonth(baseDate.getMonth() - ((transaction.installmentNumber || 1) - 1));
-          setDate(baseDate);
+          if (transaction.installments && transaction.installments > 1) {
+            const totalAmount = transaction.amount * transaction.installments;
+            setAmount(String(totalAmount));
 
-          setInstallments(transaction.installments);
-          setInstallmentInputText(String(transaction.installments));
+            const originalTitle = transaction.title.replace(/\s*\(\d+\/\d+\)$/, '');
+            setTitle(originalTitle);
+
+            const thisDate = dateFromTransaction(transaction.date);
+            const baseDate = new Date(thisDate);
+            baseDate.setMonth(baseDate.getMonth() - ((transaction.installmentNumber || 1) - 1));
+            setDate(baseDate);
+
+            setInstallments(transaction.installments);
+            setInstallmentInputText(String(transaction.installments));
+          } else {
+            setTitle(transaction.title);
+            setAmount(String(transaction.amount));
+            setDate(dateFromTransaction(transaction.date));
+            setInstallments(transaction.installments || 0);
+            setInstallmentInputText(String(transaction.installments || 1));
+          }
         } else {
-          setTitle(transaction.title);
-          setAmount(String(transaction.amount));
-          setDate(dateFromTransaction(transaction.date));
-          setInstallments(transaction.installments || 0);
-          setInstallmentInputText(String(transaction.installments || 1));
-        }
-      } else {
-        setTitle('');
-        setAmount('');
-        setCurrencyId(currs.length > 0 ? currs[0].code : 'BRL');
-        setCategoryId(cats.length > 0 ? cats[0].id : '');
-        const defaultPmId = pms.length > 0 ? pms[0].id : '';
-        setPaymentMethodId(defaultPmId);
-        setBankId('');
-        setStore('');
-        setDate(new Date());
-        setNotes('');
+          setTitle('');
+          setAmount('');
+          setCurrencyId(currs.length > 0 ? currs[0].code : 'BRL');
+          setCategoryId(cats.length > 0 ? cats[0].id : '');
+          const defaultPmId = pms.length > 0 ? pms[0].id : '';
+          setPaymentMethodId(defaultPmId);
+          setBankId('');
+          setStore('');
+          setDate(new Date());
+          setNotes('');
 
-        const defaultPm = pms.find((p) => p.id === defaultPmId) || pms[0];
-        const initInst = defaultPm?.allowInstallments ? 1 : 0;
-        setInstallments(initInst);
-        setInstallmentInputText(String(initInst || 1));
+          const defaultPm = pms.find((p) => p.id === defaultPmId) || pms[0];
+          const initInst = defaultPm?.allowInstallments ? 1 : 0;
+          setInstallments(initInst);
+          setInstallmentInputText(String(initInst || 1));
+        }
+      } catch (e: any) {
+        if (!isCancelled) {
+          setErrorMessage(e?.message || t('common.unexpectedError'));
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
       }
     };
 
     initModal();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [visible, transaction]);
 
   const currentPmItem = availablePaymentMethods.find((pm) => pm.id === paymentMethodId);
@@ -184,7 +212,8 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
   const changeType = async (nextType: TransactionType) => {
     setType(nextType);
-    const cats = await loadCategories(nextType);
+    const cats = await categoryService.getEnabledCategories(nextType);
+    setAvailableCategories(cats);
     if (!cats.some((item) => item.id === categoryId)) {
       setCategoryId(cats[0]?.id || '');
     }
@@ -299,12 +328,23 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       onClose={onClose}
       title={transaction ? t('transactionModal.editTransaction') : t('transactionModal.addTransaction')}
     >
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        {errorMessage && (
-          <View style={styles.errorContainer}>
-            <FeedbackMessage type="error" message={errorMessage} />
+      <View style={styles.modalBody}>
+        {loading && (
+          <View style={styles.loadingOverlay} pointerEvents="none">
+            <ActivityIndicator size="large" color={theme.colors.accent} />
           </View>
         )}
+
+        <ScrollView
+          style={[styles.container, loading && styles.containerLoading]}
+          contentContainerStyle={styles.content}
+          pointerEvents={loading ? 'none' : 'auto'}
+        >
+          {errorMessage && (
+            <View style={styles.errorContainer}>
+              <FeedbackMessage type="error" message={errorMessage} />
+            </View>
+          )}
 
         {/* Type selector */}
         <AppSegmentedControl<TransactionType>
@@ -532,13 +572,14 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
               title={saving ? t('transactionModal.saving') : transaction ? t('management.saveChanges') : t('transactionModal.addTransaction')}
               variant="primary"
               onPress={handleSave}
-              disabled={saving}
+              disabled={saving || loading}
               loading={saving}
               fullWidth={false}
             />
           </View>
         </View>
       </ScrollView>
+      </View>
     </AppModal>
   );
 };
@@ -551,8 +592,25 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, 
 );
 
 const styles = StyleSheet.create({
+  modalBody: {
+    position: 'relative',
+  },
   container: {
     maxHeight: 520,
+  },
+  containerLoading: {
+    opacity: 0.35,
+    ...(Platform.OS === 'web' ? ({ filter: 'blur(3px)' } as any) : {}),
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     gap: theme.spacing.md,
