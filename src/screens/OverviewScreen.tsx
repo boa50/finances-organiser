@@ -1,13 +1,14 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
 import { Transaction, TursoConfig } from '../types';
-import { DEFAULT_CURRENCY, formatMoney } from '../utils/currencies';
+import { DEFAULT_CURRENCY } from '../utils/currencies';
 import { calculateFinancialSummary, GroupedRecentItem, groupRecentTransactions } from '../utils/financials';
-import { TransactionEditModal } from '../components/TransactionEditModal';
-import { TransactionItemCard } from '../components/TransactionItemCard';
-import { AppBadge, AppCard, AppEmptyState, AppSectionHeader } from '../components/ui';
+import { TransactionEditModal } from '../components/transactions/TransactionEditModal';
+import { TransactionItemCard } from '../components/transactions/TransactionItemCard';
+import { NetBalanceHeroCard } from '../components/overview/NetBalanceHeroCard';
+import { AppBadge, AppEmptyState, AppSectionHeader, AppText } from '../components/ui';
 import theme from '../theme';
 
 interface OverviewScreenProps {
@@ -69,8 +70,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
           {/* Header Banner & Turso Cloud Badge */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.welcomeTitle}>{t('overview.title')}</Text>
-              <Text style={styles.welcomeSubtitle}>{t('overview.subtitle')}</Text>
+              <AppText style={styles.welcomeTitle}>{t('overview.title')}</AppText>
+              <AppText style={styles.welcomeSubtitle}>{t('overview.subtitle')}</AppText>
             </View>
 
             <AppBadge
@@ -81,32 +82,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
           </View>
 
           {/* Main Net Balance Hero Card */}
-          <AppCard variant="elevated" padding="6xl">
-            <Text style={styles.heroLabel}>
-              {t('overview.netBalance60Days', { currency: DEFAULT_CURRENCY })}
-            </Text>
-            <Text style={styles.heroValue}>
-              {formatMoney(last60DaysNetBalance, DEFAULT_CURRENCY)}
-            </Text>
-
-            <View style={styles.heroMetaRow}>
-              <View style={styles.metaBox}>
-                <Text style={styles.metaLabel}>{t('overview.income', { month: monthName })}</Text>
-                <Text style={[styles.metaValue, { color: theme.colors.success }]}>
-                  +{formatMoney(currentMonthIncome, DEFAULT_CURRENCY)}
-                </Text>
-              </View>
-
-              <View style={styles.metaDivider} />
-
-              <View style={styles.metaBox}>
-                <Text style={styles.metaLabel}>{t('overview.expense', { month: monthName })}</Text>
-                <Text style={[styles.metaValue, { color: theme.colors.danger }]}>
-                  -{formatMoney(currentMonthExpense, DEFAULT_CURRENCY)}
-                </Text>
-              </View>
-            </View>
-          </AppCard>
+          <NetBalanceHeroCard
+            netBalance={last60DaysNetBalance}
+            income={currentMonthIncome}
+            expense={currentMonthExpense}
+            currency={DEFAULT_CURRENCY}
+            monthName={monthName}
+          />
 
           {/* Recent Activity Section Header */}
           <AppSectionHeader
@@ -180,44 +162,6 @@ const styles = StyleSheet.create({
   welcomeSubtitle: {
     color: theme.colors.textSecondary,
     fontSize: theme.fontSize.base,
-    marginTop: theme.spacing.xxs,
-  },
-  heroLabel: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  heroValue: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.fontSize['4xl'],
-    fontWeight: theme.fontWeight.black,
-    marginVertical: theme.spacing.md,
-  },
-  heroMetaRow: {
-    flexDirection: 'row',
-    marginTop: theme.spacing['2xl'],
-    paddingTop: theme.spacing['2xl'],
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  metaBox: {
-    flex: 1,
-  },
-  metaDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: theme.colors.borderLight,
-    marginHorizontal: theme.spacing['2xl'],
-  },
-  metaLabel: {
-    color: theme.colors.textTertiary,
-    fontSize: theme.fontSize.sm,
-  },
-  metaValue: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: theme.fontWeight.bold,
     marginTop: theme.spacing.xxs,
   },
 });

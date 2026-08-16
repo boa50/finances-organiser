@@ -3,17 +3,17 @@ import { View, StyleSheet } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
-import { formatMoney } from '../utils/currencies';
-import { AppText } from './ui';
-import theme from '../theme';
+import { formatMoney } from '../../utils/currencies';
+import { AppText } from '../ui';
+import theme from '../../theme';
 
-interface D3DonutChartProps {
+export interface IncomeExpenseDonutChartProps {
   totalIncome: number;
   totalExpense: number;
   targetCurrency: string;
 }
 
-export const D3DonutChart: React.FC<D3DonutChartProps> = ({
+export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = ({
   totalIncome,
   totalExpense,
   targetCurrency,
@@ -133,6 +133,9 @@ export const D3DonutChart: React.FC<D3DonutChartProps> = ({
     </View>
   );
 };
+
+export const D3DonutChart = IncomeExpenseDonutChart;
+export type D3DonutChartProps = IncomeExpenseDonutChartProps;
 
 const styles = StyleSheet.create({
   card: {

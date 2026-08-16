@@ -3,6 +3,7 @@ import { tursoService } from './tursoService';
 import { subscriptionService } from './subscriptionService';
 import { generateId } from '../utils/idGenerator';
 import { isJsonResponse } from './apiClient';
+import { getLocalStorageItem, setLocalStorageItem } from './localStorageHelper';
 
 const BANKS_STORAGE_KEY = 'finances_custom_banks';
 
@@ -17,36 +18,12 @@ class BankService {
   }
 
   private loadFromLocalStorage(): BankItem[] {
-    if (typeof window === 'undefined') {
-      this.banks = [];
-      return this.banks;
-    }
-
-    try {
-      const stored = localStorage.getItem(BANKS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          this.banks = parsed;
-          return this.banks;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse stored banks:', e);
-    }
-
-    this.banks = [];
-    this.saveToLocalStorage();
+    this.banks = getLocalStorageItem<BankItem[]>(BANKS_STORAGE_KEY, []);
     return this.banks;
   }
 
   private saveToLocalStorage(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(BANKS_STORAGE_KEY, JSON.stringify(this.banks));
-    } catch (e) {
-      console.warn('Failed to save banks to localStorage:', e);
-    }
+    setLocalStorageItem(BANKS_STORAGE_KEY, this.banks);
   }
 
   public async getBanks(): Promise<BankItem[]> {

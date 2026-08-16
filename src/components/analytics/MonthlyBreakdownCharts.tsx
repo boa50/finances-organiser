@@ -1,21 +1,21 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { CategoryAggregate, Transaction } from '../types';
-import { convertCurrency } from '../utils/currencies';
-import { categoryService } from '../services/categoryService';
-import { AppSectionHeader } from './ui';
-import { D3DonutChart } from './D3DonutChart';
-import { D3CategoryBarChart } from './D3CategoryBarChart';
-import theme from '../theme';
+import { CategoryAggregate, Transaction } from '../../types';
+import { convertCurrency } from '../../utils/currencies';
+import { categoryService } from '../../services/categoryService';
+import { AppSectionHeader } from '../ui';
+import { IncomeExpenseDonutChart } from '../charts/IncomeExpenseDonutChart';
+import { CategorySpendingBarChart } from '../charts/CategorySpendingBarChart';
+import theme from '../../theme';
 
-interface D3CurrentMonthChartsProps {
+export interface MonthlyBreakdownChartsProps {
   transactions: Transaction[];
   targetCurrency: string;
   selectedMonthDate?: Date;
 }
 
-export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
+export const MonthlyBreakdownCharts: React.FC<MonthlyBreakdownChartsProps> = ({
   transactions,
   targetCurrency,
   selectedMonthDate = new Date(),
@@ -70,13 +70,13 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
         style={styles.sectionHeader}
       />
 
-      <D3DonutChart
+      <IncomeExpenseDonutChart
         totalIncome={totalIncome}
         totalExpense={totalExpense}
         targetCurrency={targetCurrency}
       />
 
-      <D3CategoryBarChart
+      <CategorySpendingBarChart
         categoryAggregates={categoryAggregates}
         monthName={monthName}
         targetCurrency={targetCurrency}
@@ -84,6 +84,9 @@ export const D3CurrentMonthCharts: React.FC<D3CurrentMonthChartsProps> = ({
     </View>
   );
 };
+
+export const D3CurrentMonthCharts = MonthlyBreakdownCharts;
+export type D3CurrentMonthChartsProps = MonthlyBreakdownChartsProps;
 
 const styles = StyleSheet.create({
   container: {
@@ -94,4 +97,3 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
   },
 });
-

@@ -154,7 +154,10 @@ finances-organiser/
     │   ├── categoryService.ts       # Category service — serverless API calls + offline fallback
     │   ├── paymentMethodService.ts  # Payment method service — serverless API calls + offline fallback
     │   ├── bankService.ts           # Bank service — serverless API calls + offline fallback
-    │   └── currencyService.ts       # Currency service — serverless API calls + offline fallback
+    │   ├── currencyService.ts       # Currency service — serverless API calls + offline fallback
+    │   ├── subscriptionService.ts   # Subscription service — serverless API calls + offline fallback
+    │   ├── localStorageHelper.ts    # Centralized localStorage helper functions
+    │   └── index.ts                 # Services barrel export
     │
     ├── utils/
     │   ├── __tests__/               # Utility test suites
@@ -168,13 +171,14 @@ finances-organiser/
     │   ├── AnalyticsScreen.tsx      # D3 charts (current month breakdown & historical evolution)
     │   ├── TransactionsScreen.tsx   # Searchable/filterable transaction history
     │   ├── SubscriptionsScreen.tsx  # Monthly recurring subscription manager
-    │   ├── ManagementScreen.tsx     # Tabbed management hub (Categories, Payment Methods, Banks, Currencies)
-    │   └── management/              # Sub-tabs and modals for entity management
-    │       ├── CategoryManagementTab.tsx
-    │       ├── PaymentMethodManagementTab.tsx
-    │       ├── BankManagementTab.tsx
-    │       ├── CurrencyManagementTab.tsx
-    │       └── CurrencyAddModal.tsx
+    │   ├── management/              # Management screen and sub-tabs for entity management
+    │   │   ├── ManagementScreen.tsx # Tabbed management hub
+    │   │   ├── CategoryManagementTab.tsx
+    │   │   ├── PaymentMethodManagementTab.tsx
+    │   │   ├── BankManagementTab.tsx
+    │   │   ├── CurrencyManagementTab.tsx
+    │   │   └── CurrencyAddModal.tsx
+    │   └── index.ts                 # Screens barrel export
     │
     └── components/                  # Reusable UI primitives and domain components
         ├── ui/                      # Reusable UI primitive component library
@@ -187,16 +191,39 @@ finances-organiser/
         │   ├── AppSectionHeader.tsx # Standardized section title, subtitle & action header
         │   ├── AppSegmentedControl.tsx # Segmented tab filter control
         │   ├── AppEmptyState.tsx    # Reusable empty data state view
-        │   ├── AppSwitch.tsx         # Reusable animated toggle switch primitive
+        │   ├── AppSwitch.tsx        # Reusable animated toggle switch primitive
+        │   ├── AppChipSelector.tsx  # Reusable horizontal chip selector primitive
+        │   ├── AppDatePicker.tsx    # Cross-platform date picker barrel
+        │   ├── AppDatePicker.native.tsx # iOS/Android date picker
+        │   ├── AppDatePicker.web.tsx # HTML5 date picker with theme styles
         │   ├── FeedbackMessage.tsx  # Banner/toast message component
         │   └── index.ts             # UI primitive barrel export
+        ├── charts/                  # Low-level chart visualization primitives
+        │   ├── CategorySpendingBarChart.tsx # Category spending horizontal breakdown bars
+        │   ├── IncomeExpenseDonutChart.tsx  # Income vs expense donut chart (D3 + SVG)
+        │   ├── EvolutionTrendChart.tsx      # Monthly trend lines/areas (D3 + SVG)
+        │   └── index.ts
+        ├── analytics/               # Analytics screen composite widgets
+        │   ├── MonthlyBreakdownCharts.tsx   # Current month breakdown combo card
+        │   ├── MonthDetailSummaryCard.tsx   # Detailed monthly stats card
+        │   └── index.ts
+        ├── overview/                # Overview dashboard components
+        │   ├── NetBalanceHeroCard.tsx       # 60-day net balance hero banner card
+        │   └── index.ts
+        ├── transactions/            # Transaction management components
+        │   ├── TransactionItemCard.tsx      # Transaction list item with action buttons
+        │   ├── TransactionEditModal.tsx     # Add/edit transaction modal form
+        │   └── index.ts
+        ├── subscriptions/           # Subscription management components
+        │   ├── SubscriptionEditModal.tsx    # Add/edit subscription modal form
+        │   └── index.ts
+        ├── management/              # Entity management components
+        │   ├── EntityManagementCard.tsx     # Reorderable entity card with switch toggle
+        │   └── index.ts
+        ├── AppHeader.tsx            # Sticky global header with DB status, sync & logout
+        ├── AppTabBar.tsx            # Bottom navigation tab bar
         ├── CategoryIcon.tsx         # Lucide vector icon mapping for category display
-        ├── D3CurrentMonthCharts.tsx # Donut chart + category bar chart (D3 + SVG)
-        ├── D3EvolutionChart.tsx     # Monthly income/expense trend lines (D3 + SVG)
-        ├── TransactionEditModal.tsx # Add/edit transaction modal form
-        ├── TransactionDatePicker.tsx # Platform-resolved date picker barrel
-        ├── TransactionDatePicker.native.tsx # iOS/Android date picker
-        └── TransactionDatePicker.web.tsx # HTML5 date input for web
+        └── index.ts                 # Top-level components barrel export
 ```
 
 ### Key Architectural Decisions

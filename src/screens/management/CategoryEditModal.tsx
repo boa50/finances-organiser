@@ -14,8 +14,7 @@ import {
   PRESET_CATEGORY_COLORS,
 } from '../../services/categoryService';
 import { CategoryIcon } from '../../components/CategoryIcon';
-import { ChipSelector } from '../../components/ChipSelector';
-import { AppModal, AppText } from '../../components/ui';
+import { AppChipSelector, AppModal, AppText } from '../../components/ui';
 import theme from '../../theme';
 
 interface CategoryEditModalProps {
@@ -96,7 +95,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
 
         <View style={styles.formGroup}>
           <AppText style={styles.formLabel}>{t('management.iconBadge')}</AppText>
-          <ChipSelector
+          <AppChipSelector
             items={AVAILABLE_CATEGORY_ICONS}
             selectedId={iconInput}
             isSelected={(item) => item.iconName === iconInput}

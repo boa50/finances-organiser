@@ -14,7 +14,7 @@ import { categoryService } from '../services/categoryService';
 import { convertCurrency, formatMoney } from '../utils/currencies';
 import { confirmAction } from '../utils/dialogs';
 import { CategoryIcon } from '../components/CategoryIcon';
-import { SubscriptionEditModal } from '../components/SubscriptionEditModal';
+import { SubscriptionEditModal } from '../components/subscriptions';
 import {
   AppBadge,
   AppCard,

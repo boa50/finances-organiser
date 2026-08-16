@@ -2,6 +2,7 @@ import { CurrencyInfo } from '../types';
 import { VALID_CURRENCIES, getCurrencyInfo } from '../utils/currencies';
 import { tursoService } from './tursoService';
 import { isJsonResponse } from './apiClient';
+import { getLocalStorageItem, setLocalStorageItem } from './localStorageHelper';
 
 const CURRENCIES_STORAGE_KEY = 'finances_custom_currencies';
 
@@ -18,36 +19,12 @@ class CurrencyService {
   }
 
   private loadFromLocalStorage(): CurrencyInfo[] {
-    if (typeof window === 'undefined') {
-      this.currencies = [...DEFAULT_ENABLED_CURRENCIES];
-      return this.currencies;
-    }
-
-    try {
-      const stored = localStorage.getItem(CURRENCIES_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          this.currencies = parsed;
-          return this.currencies;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse stored currencies:', e);
-    }
-
-    this.currencies = [...DEFAULT_ENABLED_CURRENCIES];
-    this.saveToLocalStorage();
+    this.currencies = getLocalStorageItem<CurrencyInfo[]>(CURRENCIES_STORAGE_KEY, [...DEFAULT_ENABLED_CURRENCIES]);
     return this.currencies;
   }
 
   private saveToLocalStorage(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(CURRENCIES_STORAGE_KEY, JSON.stringify(this.currencies));
-    } catch (e) {
-      console.warn('Failed to save currencies to localStorage:', e);
-    }
+    setLocalStorageItem(CURRENCIES_STORAGE_KEY, this.currencies);
   }
 
   public async getCurrencies(): Promise<CurrencyInfo[]> {

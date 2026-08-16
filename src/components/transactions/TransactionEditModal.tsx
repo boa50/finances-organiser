@@ -7,19 +7,26 @@ import {
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { CategoryItem, PaymentMethodItem, BankItem, CurrencyInfo, Transaction, TransactionType } from '../types';
-import { currencyService } from '../services/currencyService';
-import { categoryService } from '../services/categoryService';
-import { paymentMethodService } from '../services/paymentMethodService';
-import { bankService } from '../services/bankService';
-import { tursoService } from '../services/tursoService';
-import { CategoryIcon } from './CategoryIcon';
-import { ChipSelector } from './ChipSelector';
-import { AppButton, AppModal, AppSegmentedControl, AppText, AppTextInput, FeedbackMessage } from './ui';
+import { CategoryItem, PaymentMethodItem, BankItem, CurrencyInfo, Transaction, TransactionType } from '../../types';
+import { currencyService } from '../../services/currencyService';
+import { categoryService } from '../../services/categoryService';
+import { paymentMethodService } from '../../services/paymentMethodService';
+import { bankService } from '../../services/bankService';
+import { tursoService } from '../../services/tursoService';
+import { CategoryIcon } from '../CategoryIcon';
+import {
+  AppButton,
+  AppChipSelector,
+  AppDatePicker,
+  AppModal,
+  AppSegmentedControl,
+  AppText,
+  AppTextInput,
+  FeedbackMessage,
+} from '../ui';
 import { CreditCard, Building2, Calendar } from 'lucide-react-native';
-import theme from '../theme';
-import { TransactionDatePicker } from './TransactionDatePicker';
-import { normalizeTransactionDate } from '../utils/financials';
+import theme from '../../theme';
+import { normalizeTransactionDate } from '../../utils/financials';
 
 export interface TransactionEditModalProps {
   visible: boolean;
@@ -342,7 +349,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         {/* Currency */}
         {availableCurrencies.length > 0 && (
           <Field label={t('transactionModal.currencyField')}>
-            <ChipSelector
+            <AppChipSelector
               items={availableCurrencies}
               selectedId={currencyId}
               onSelect={(item) => setCurrencyId(item.code)}
@@ -355,7 +362,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         {/* Category */}
         {availableCategories.length > 0 && (
           <Field label={t('transactionModal.categoryField')}>
-            <ChipSelector
+            <AppChipSelector
               items={availableCategories}
               selectedId={categoryId}
               onSelect={(item) => setCategoryId(item.id)}
@@ -378,7 +385,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           <>
             {availablePaymentMethods.length > 0 && (
               <Field label={t('transactionModal.paymentMethodField')}>
-                <ChipSelector
+                <AppChipSelector
                   items={availablePaymentMethods}
                   selectedId={paymentMethodId}
                   onSelect={(item) => selectPaymentMethod(item)}
@@ -448,7 +455,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 
             {availableBanks.length > 0 && (
               <Field label={t('transactionModal.bankField')}>
-                <ChipSelector
+                <AppChipSelector
                   items={availableBanks}
                   selectedId={bankId}
                   onSelect={(item) => setBankId(item.id === bankId ? '' : item.id)}
@@ -492,7 +499,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             </View>
           </Pressable>
 
-          <TransactionDatePicker
+          <AppDatePicker
             visible={datePickerVisible}
             value={date}
             onChange={(d) => setDate(d)}

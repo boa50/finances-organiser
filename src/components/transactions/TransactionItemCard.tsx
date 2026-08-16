@@ -1,14 +1,14 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Transaction } from '../types';
-import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from '../utils/currencies';
-import { categoryService } from '../services/categoryService';
-import { paymentMethodService } from '../services/paymentMethodService';
-import { bankService } from '../services/bankService';
-import { AppCard, AppIconBadge, AppBadge, AppText } from './ui';
+import { Transaction } from '../../types';
+import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from '../../utils/currencies';
+import { categoryService } from '../../services/categoryService';
+import { paymentMethodService } from '../../services/paymentMethodService';
+import { bankService } from '../../services/bankService';
+import { AppCard, AppIconBadge, AppBadge, AppText } from '../ui';
 import { TrendingUp, TrendingDown, Pencil, Trash2, Copy } from 'lucide-react-native';
-import theme from '../theme';
+import theme from '../../theme';
 
 export interface TransactionItemCardProps {
   transaction: Transaction;
@@ -303,4 +303,3 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 });
-

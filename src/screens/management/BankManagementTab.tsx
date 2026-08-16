@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BankItem } from '../../types';
-import { EntityManagementCard } from '../../components/EntityManagementCard';
+import { EntityManagementCard } from '../../components/management';
 import {
   AppCard,
   AppDraggableList,

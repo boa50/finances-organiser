@@ -1,9 +1,9 @@
 import React, { useRef } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { AppText } from './ui/AppText';
-import theme from '../theme';
+import { AppText } from './AppText';
+import theme from '../../theme';
 
-export interface ChipSelectorProps<T> {
+export interface AppChipSelectorProps<T> {
   items: T[];
   selectedId: string | number;
   onSelect: (item: T) => void;
@@ -14,7 +14,7 @@ export interface ChipSelectorProps<T> {
   isSelected?: (item: T) => boolean;
 }
 
-export function ChipSelector<T>({
+export function AppChipSelector<T>({
   items,
   selectedId,
   onSelect,
@@ -23,7 +23,7 @@ export function ChipSelector<T>({
   renderIcon,
   getItemColor,
   isSelected,
-}: ChipSelectorProps<T>) {
+}: AppChipSelectorProps<T>) {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const handleWheel = (e: any) => {
@@ -98,47 +98,41 @@ export function ChipSelector<T>({
   );
 }
 
+export const ChipSelector = AppChipSelector;
+export type ChipSelectorProps<T> = AppChipSelectorProps<T>;
+
 const styles = StyleSheet.create({
   scrollView: {
-    marginVertical: theme.spacing.xs,
-    ...(Platform.OS === 'web'
-      ? ({
-          maxWidth: '100%',
-          overflowX: 'auto',
-          touchAction: 'pan-x',
-        } as any)
-      : {}),
+    flexGrow: 0,
   },
   chipList: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs,
+    gap: theme.spacing.sm,
     paddingVertical: theme.spacing.xxs,
-    flexGrow: 0,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: 999,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radii['4xl'],
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
-    backgroundColor: 'transparent',
-    gap: 4,
-    flexShrink: 0,
+    gap: theme.spacing.xs,
   },
   chipActiveDefault: {
+    backgroundColor: `${theme.colors.accent}20`,
     borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.accentBg,
   },
   iconWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   chipText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.xs,
+    color: theme.colors.textSecondary,
+    fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.medium,
   },
   chipTextActiveDefault: {

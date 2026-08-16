@@ -1,16 +1,17 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import theme from '../theme';
+import { AppText } from './AppText';
+import theme from '../../theme';
 
-interface TransactionDatePickerProps {
+export interface AppDatePickerProps {
   visible: boolean;
   value: Date;
   onChange: (date: Date) => void;
   onClose: () => void;
 }
 
-export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
+export const AppDatePicker: React.FC<AppDatePickerProps> = ({
   visible,
   value,
   onChange,
@@ -27,7 +28,7 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.title}>{t('common.selectDate')}</Text>
+          <AppText style={styles.title}>{t('common.selectDate')}</AppText>
           {React.createElement('input', {
             type: 'date',
             value: value.toISOString().slice(0, 10),
@@ -38,7 +39,7 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
             style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
             onPress={onClose}
           >
-            <Text style={styles.doneText}>{t('common.done')}</Text>
+            <AppText style={styles.doneText}>{t('common.done')}</AppText>
           </Pressable>
         </View>
       </View>
@@ -46,12 +47,41 @@ export const TransactionDatePicker: React.FC<TransactionDatePickerProps> = ({
   );
 };
 
+export const TransactionDatePicker = AppDatePicker;
+
 const styles = StyleSheet.create({
-  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing['4xl'], backgroundColor: theme.colors.overlay },
-  card: { width: '100%', maxWidth: 360, backgroundColor: theme.colors.surface, borderRadius: theme.radii['3xl'], padding: theme.spacing['4xl'], borderWidth: 1, borderColor: theme.colors.borderLight },
-  title: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: theme.spacing.xl },
-  doneButton: { alignSelf: 'flex-end', marginTop: theme.spacing.xl, paddingHorizontal: theme.spacing.xl, paddingVertical: theme.spacing.md },
-  doneText: { color: theme.colors.accent, fontWeight: '700' },
+  overlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: theme.spacing['4xl'],
+    backgroundColor: theme.colors.overlay,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii['3xl'],
+    padding: theme.spacing['4xl'],
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+  },
+  title: {
+    color: theme.colors.textPrimary,
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.extrabold,
+    marginBottom: theme.spacing.xl,
+  },
+  doneButton: {
+    alignSelf: 'flex-end',
+    marginTop: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+  },
+  doneText: {
+    color: theme.colors.accent,
+    fontWeight: theme.fontWeight.bold,
+  },
 });
 
 const browserDateInputStyle = {
@@ -62,5 +92,6 @@ const browserDateInputStyle = {
   border: `1px solid ${theme.colors.borderLight}`,
   borderRadius: theme.radii.base,
   padding: theme.spacing.lg,
-  fontSize: 15,
+  fontSize: theme.fontSize.sm,
+  fontFamily: theme.fontFamily.sans,
 };

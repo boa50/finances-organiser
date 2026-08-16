@@ -8,15 +8,15 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
-import { OverviewScreen } from './src/screens/OverviewScreen';
-import { AnalyticsScreen } from './src/screens/AnalyticsScreen';
-import { TransactionsScreen } from './src/screens/TransactionsScreen';
-import { SubscriptionsScreen } from './src/screens/SubscriptionsScreen';
-import { ManagementScreen } from './src/screens/ManagementScreen';
-import { TransactionEditModal } from './src/components/TransactionEditModal';
-import { LoginScreen } from './src/screens/LoginScreen';
-import { AppHeader } from './src/components/AppHeader';
-import { AppTabBar, TabName } from './src/components/AppTabBar';
+import {
+  OverviewScreen,
+  AnalyticsScreen,
+  TransactionsScreen,
+  SubscriptionsScreen,
+  ManagementScreen,
+  LoginScreen,
+} from './src/screens';
+import { AppHeader, AppTabBar, TabName, TransactionEditModal } from './src/components';
 import { useAuth } from './src/hooks/useAuth';
 import { useAppData } from './src/hooks/useAppData';
 import { Plus } from 'lucide-react-native';

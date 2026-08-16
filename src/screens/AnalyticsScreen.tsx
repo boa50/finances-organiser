@@ -2,13 +2,12 @@ import React from 'react';
 import {
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
-import { D3CurrentMonthCharts } from '../components/D3CurrentMonthCharts';
-import { D3EvolutionChart } from '../components/D3EvolutionChart';
+import { MonthlyBreakdownCharts } from '../components/analytics';
+import { EvolutionTrendChart } from '../components/charts';
 import { DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
 import { AppCard, AppText } from '../components/ui';
 import theme from '../theme';
@@ -48,37 +47,37 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
       {/* KPI Cards Row */}
       <View style={styles.kpiRow}>
         <AppCard style={styles.kpiCard} padding="xl">
-          <Text style={styles.kpiLabel}>{t('analytics.lifetimeIncomes')}</Text>
-          <Text style={[styles.kpiValue, { color: theme.colors.success }]}>
+          <AppText style={styles.kpiLabel}>{t('analytics.lifetimeIncomes')}</AppText>
+          <AppText style={[styles.kpiValue, { color: theme.colors.success }]}>
             +{formatMoney(totalIncomeConverted, DEFAULT_CURRENCY)}
-          </Text>
+          </AppText>
         </AppCard>
 
         <AppCard style={styles.kpiCard} padding="xl">
-          <Text style={styles.kpiLabel}>{t('analytics.lifetimeExpenses')}</Text>
-          <Text style={[styles.kpiValue, { color: theme.colors.danger }]}>
+          <AppText style={styles.kpiLabel}>{t('analytics.lifetimeExpenses')}</AppText>
+          <AppText style={[styles.kpiValue, { color: theme.colors.danger }]}>
             -{formatMoney(totalExpenseConverted, DEFAULT_CURRENCY)}
-          </Text>
+          </AppText>
         </AppCard>
 
         <AppCard style={styles.kpiCard} padding="xl">
-          <Text style={styles.kpiLabel}>{t('analytics.netAccumulated')}</Text>
-          <Text
+          <AppText style={styles.kpiLabel}>{t('analytics.netAccumulated')}</AppText>
+          <AppText
             style={[
               styles.kpiValue,
               { color: netOverall >= 0 ? theme.colors.accent : theme.colors.danger },
             ]}
           >
             {formatMoney(netOverall, DEFAULT_CURRENCY)}
-          </Text>
+          </AppText>
         </AppCard>
       </View>
 
-      {/* Graph 1: D3 Current Month Incomes & Expenses Breakdown */}
-      <D3CurrentMonthCharts transactions={transactions} targetCurrency={DEFAULT_CURRENCY} />
+      {/* Graph 1: Current Month Incomes & Expenses Breakdown */}
+      <MonthlyBreakdownCharts transactions={transactions} targetCurrency={DEFAULT_CURRENCY} />
 
-      {/* Graph 2: D3 Evolution by Month */}
-      <D3EvolutionChart transactions={transactions} targetCurrency={DEFAULT_CURRENCY} />
+      {/* Graph 2: Evolution by Month */}
+      <EvolutionTrendChart transactions={transactions} targetCurrency={DEFAULT_CURRENCY} />
     </ScrollView>
   );
 };
@@ -130,4 +129,3 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.extrabold,
   },
 });
-

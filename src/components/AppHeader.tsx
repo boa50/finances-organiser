@@ -6,7 +6,7 @@ import { AppBadge, AppText } from './ui';
 import { toggleAppLanguage } from '../i18n';
 import theme from '../theme';
 
-interface AppHeaderProps {
+export interface AppHeaderProps {
   isConnected: boolean;
   hasTransactions: boolean;
   onClearAll: () => void;

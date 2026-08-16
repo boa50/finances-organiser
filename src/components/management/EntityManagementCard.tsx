@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { AppCard, AppText, AppSwitch } from './ui';
+import { AppCard, AppText, AppSwitch } from '../ui';
 import { GripVertical, Pencil, Trash2 } from 'lucide-react-native';
-import theme from '../theme';
+import theme from '../../theme';
 
 export interface EntityManagementCardProps {
   icon?: React.ReactNode;

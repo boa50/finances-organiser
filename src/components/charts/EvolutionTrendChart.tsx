@@ -2,16 +2,16 @@ import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Path, Circle, Line, Text as SvgText, G, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
-import { Transaction, MonthlyAggregate } from '../types';
-import { aggregateEvolutionData } from '../utils/financials';
-import { useEvolutionChartD3 } from '../hooks/useEvolutionChartD3';
-import { SelectedMonthDetailCard } from './SelectedMonthDetailCard';
-import { AppSegmentedControl, AppText } from './ui';
-import theme from '../theme';
+import { Transaction, MonthlyAggregate } from '../../types';
+import { aggregateEvolutionData } from '../../utils/financials';
+import { useEvolutionChartD3 } from '../../hooks/useEvolutionChartD3';
+import { MonthDetailSummaryCard } from '../analytics/MonthDetailSummaryCard';
+import { AppSegmentedControl, AppText } from '../ui';
+import theme from '../../theme';
 
 export type EvolutionPeriod = '5y' | '1y' | '6m';
 
-interface D3EvolutionChartProps {
+export interface EvolutionTrendChartProps {
   transactions: Transaction[];
   targetCurrency: string;
 }
@@ -29,7 +29,7 @@ function formatYAxisTick(tick: number): string {
   return tick % 1 === 0 ? tick.toFixed(0) : tick.toFixed(1);
 }
 
-export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
+export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
   transactions,
   targetCurrency,
 }) => {
@@ -252,11 +252,14 @@ export const D3EvolutionChart: React.FC<D3EvolutionChartProps> = ({
       </View>
 
       {activeMonth && (
-        <SelectedMonthDetailCard activeMonth={activeMonth} targetCurrency={targetCurrency} />
+        <MonthDetailSummaryCard activeMonth={activeMonth} targetCurrency={targetCurrency} />
       )}
     </View>
   );
 };
+
+export const D3EvolutionChart = EvolutionTrendChart;
+export type D3EvolutionChartProps = EvolutionTrendChartProps;
 
 const styles = StyleSheet.create({
   card: {

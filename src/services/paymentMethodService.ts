@@ -3,6 +3,7 @@ import { tursoService } from './tursoService';
 import { subscriptionService } from './subscriptionService';
 import { generateId } from '../utils/idGenerator';
 import { isJsonResponse } from './apiClient';
+import { getLocalStorageItem, setLocalStorageItem } from './localStorageHelper';
 
 const PAYMENT_METHODS_STORAGE_KEY = 'finances_custom_payment_methods';
 
@@ -17,36 +18,12 @@ class PaymentMethodService {
   }
 
   private loadFromLocalStorage(): PaymentMethodItem[] {
-    if (typeof window === 'undefined') {
-      this.paymentMethods = [];
-      return this.paymentMethods;
-    }
-
-    try {
-      const stored = localStorage.getItem(PAYMENT_METHODS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          this.paymentMethods = parsed;
-          return this.paymentMethods;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse stored payment methods:', e);
-    }
-
-    this.paymentMethods = [];
-    this.saveToLocalStorage();
+    this.paymentMethods = getLocalStorageItem<PaymentMethodItem[]>(PAYMENT_METHODS_STORAGE_KEY, []);
     return this.paymentMethods;
   }
 
   private saveToLocalStorage(): void {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(PAYMENT_METHODS_STORAGE_KEY, JSON.stringify(this.paymentMethods));
-    } catch (e) {
-      console.warn('Failed to save payment methods to localStorage:', e);
-    }
+    setLocalStorageItem(PAYMENT_METHODS_STORAGE_KEY, this.paymentMethods);
   }
 
   public async getPaymentMethods(): Promise<PaymentMethodItem[]> {

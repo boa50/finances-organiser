@@ -3,6 +3,7 @@ import { tursoService } from './tursoService';
 import { subscriptionService } from './subscriptionService';
 import { generateId } from '../utils/idGenerator';
 import { isJsonResponse } from './apiClient';
+import { getLocalStorageItem, setLocalStorageItem } from './localStorageHelper';
 
 const CATEGORIES_STORAGE_KEY = 'finances_custom_categories';
 
@@ -48,29 +49,11 @@ class CategoryService {
   }
 
   private loadCategories() {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const saved = localStorage.getItem(CATEGORIES_STORAGE_KEY);
-        if (saved) {
-          this.categories = JSON.parse(saved);
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to load categories from localStorage', e);
-    }
-    this.categories = [];
-    this.saveToCache();
+    this.categories = getLocalStorageItem<CategoryItem[]>(CATEGORIES_STORAGE_KEY, []);
   }
 
   private saveToCache() {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(this.categories));
-      }
-    } catch (e) {
-      console.warn('Failed to save categories to localStorage', e);
-    }
+    setLocalStorageItem(CATEGORIES_STORAGE_KEY, this.categories);
   }
 
   public async getCategories(type?: TransactionType): Promise<CategoryItem[]> {

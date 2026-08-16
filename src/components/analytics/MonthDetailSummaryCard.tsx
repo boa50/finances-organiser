@@ -1,17 +1,17 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { MonthlyAggregate } from '../types';
-import { formatMoney } from '../utils/currencies';
-import { AppText } from './ui';
-import theme from '../theme';
+import { MonthlyAggregate } from '../../types';
+import { formatMoney } from '../../utils/currencies';
+import { AppText } from '../ui';
+import theme from '../../theme';
 
-interface SelectedMonthDetailCardProps {
+export interface MonthDetailSummaryCardProps {
   activeMonth: MonthlyAggregate;
   targetCurrency: string;
 }
 
-export const SelectedMonthDetailCard: React.FC<SelectedMonthDetailCardProps> = ({
+export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
   activeMonth,
   targetCurrency,
 }) => {
@@ -56,6 +56,9 @@ export const SelectedMonthDetailCard: React.FC<SelectedMonthDetailCardProps> = (
     </View>
   );
 };
+
+export const SelectedMonthDetailCard = MonthDetailSummaryCard;
+export type SelectedMonthDetailCardProps = MonthDetailSummaryCardProps;
 
 const styles = StyleSheet.create({
   monthDetailCard: {

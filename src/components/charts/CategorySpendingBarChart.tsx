@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { CategoryAggregate } from '../types';
-import { formatMoney } from '../utils/currencies';
-import { AppText } from './ui';
-import theme from '../theme';
+import { CategoryAggregate } from '../../types';
+import { formatMoney } from '../../utils/currencies';
+import { AppText } from '../ui';
+import theme from '../../theme';
 
-interface D3CategoryBarChartProps {
+export interface CategorySpendingBarChartProps {
   categoryAggregates: CategoryAggregate[];
   monthName: string;
   targetCurrency: string;
 }
 
-export const D3CategoryBarChart: React.FC<D3CategoryBarChartProps> = ({
+export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> = ({
   categoryAggregates,
   monthName,
   targetCurrency,
@@ -56,6 +56,9 @@ export const D3CategoryBarChart: React.FC<D3CategoryBarChartProps> = ({
     </View>
   );
 };
+
+export const D3CategoryBarChart = CategorySpendingBarChart;
+export type D3CategoryBarChartProps = CategorySpendingBarChartProps;
 
 const styles = StyleSheet.create({
   card: {

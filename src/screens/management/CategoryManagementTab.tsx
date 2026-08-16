@@ -3,7 +3,7 @@ import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryItem, TransactionType } from '../../types';
 import { CategoryIcon } from '../../components/CategoryIcon';
-import { EntityManagementCard } from '../../components/EntityManagementCard';
+import { EntityManagementCard } from '../../components/management';
 import {
   AppCard,
   AppDraggableList,

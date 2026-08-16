@@ -7,7 +7,7 @@ import theme from '../theme';
 
 export type TabName = 'overview' | 'analytics' | 'transactions' | 'subscriptions' | 'categories';
 
-interface AppTabBarProps {
+export interface AppTabBarProps {
   activeTab: TabName;
   onTabChange: (tab: TabName) => void;
 }
