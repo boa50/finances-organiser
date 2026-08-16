@@ -52,7 +52,6 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
   const [availableBanks, setAvailableBanks] = useState<BankItem[]>([]);
   const [billingDay, setBillingDay] = useState('1');
   const [active, setActive] = useState(true);
-  const [store, setStore] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -104,7 +103,6 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         setBankId(bankExists ? (subscription.bankId || '') : '');
         setBillingDay(String(subscription.billingDay));
         setActive(subscription.active);
-        setStore(subscription.store || '');
         setNotes(subscription.notes || '');
       } else {
         setTitle('');
@@ -115,7 +113,6 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         setBankId('');
         setBillingDay('1');
         setActive(true);
-        setStore('');
         setNotes('');
       }
     };
@@ -154,7 +151,6 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           bankId: bankId || undefined,
           billingDay: parsedDay,
           active,
-          store: store.trim() || undefined,
           notes: notes.trim() || undefined,
         });
 
@@ -173,7 +169,6 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           bankId: bankId || undefined,
           billingDay: parsedDay,
           active,
-          store: store.trim() || undefined,
           notes: notes.trim() || undefined,
         });
 
@@ -350,16 +345,6 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
             />
           </View>
         )}
-
-        {/* Store / Merchant */}
-        <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>{t('transactionModal.storeField')}</AppText>
-          <AppTextInput
-            value={store}
-            onChangeText={setStore}
-            placeholder={t('transactionModal.storePlaceholder')}
-          />
-        </View>
 
         {/* Notes */}
         <View style={styles.fieldGroup}>
