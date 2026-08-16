@@ -1,11 +1,18 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryItem, TransactionType } from '../../types';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
-import { AppCard, AppEmptyState, AppSegmentedControl, AppTextInput, AppText } from '../../components/ui';
+import {
+  AppCard,
+  AppDraggableList,
+  AppEmptyState,
+  AppSegmentedControl,
+  AppTextInput,
+  AppText,
+  RenderDraggableItemInfo,
+} from '../../components/ui';
 import { Plus, Search } from 'lucide-react-native';
 import theme from '../../theme';
 
@@ -18,6 +25,7 @@ interface CategoryManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (cat: CategoryItem) => void;
   onDeleteCategory: (cat: CategoryItem) => void;
+  onReorderCategories?: (reorderedCategories: CategoryItem[]) => void;
 }
 
 export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
@@ -29,8 +37,10 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onDeleteCategory,
+  onReorderCategories,
 }) => {
   const { t } = useTranslation();
+  const isSearching = searchQuery.trim().length > 0;
 
   const filteredCategories = useMemo(() => {
     return categories.filter(
@@ -42,20 +52,26 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
 
   const typeLabel = activeCategoryType === 'income' ? t('common.income') : t('common.expense');
 
-  const renderItem = useCallback(({ item }: { item: CategoryItem }) => {
-    return (
-      <View style={styles.cardWrapper}>
-        <EntityManagementCard
-          name={item.name}
-          subtitle={item.type === 'income' ? t('common.income') : t('common.expense')}
-          color={item.color}
-          icon={<CategoryIcon iconName={item.icon} color={item.color} size={20} />}
-          onEdit={() => onOpenEditModal(item)}
-          onDelete={() => onDeleteCategory(item)}
-        />
-      </View>
-    );
-  }, [onOpenEditModal, onDeleteCategory, t]);
+  const renderItem = useCallback(
+    ({ item, isDragging, dragHandleProps }: RenderDraggableItemInfo<CategoryItem>) => {
+      return (
+        <View style={styles.cardWrapper}>
+          <EntityManagementCard
+            name={item.name}
+            subtitle={item.type === 'income' ? t('common.income') : t('common.expense')}
+            color={item.color}
+            icon={<CategoryIcon iconName={item.icon} color={item.color} size={20} />}
+            onEdit={() => onOpenEditModal(item)}
+            onDelete={() => onDeleteCategory(item)}
+            isDraggable={!isSearching}
+            dragHandleProps={dragHandleProps}
+            isDragging={isDragging}
+          />
+        </View>
+      );
+    },
+    [onOpenEditModal, onDeleteCategory, isSearching, t]
+  );
 
   return (
     <View style={styles.tabContainer}>
@@ -105,21 +121,26 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
         </AppCard>
       </View>
 
-      <View style={styles.listWrapper}>
-        <FlashList<CategoryItem>
+      <ScrollView
+        style={styles.listWrapper}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={true}
+      >
+        <AppDraggableList<CategoryItem>
           data={filteredCategories}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={true}
+          renderItem={renderItem}
+          onReorder={(newItems) => onReorderCategories?.(newItems)}
+          disabled={isSearching}
+          disabledMessage={t('management.reorderDisabledSearching')}
           ListEmptyComponent={
             <AppEmptyState
               title={t('management.noCategoriesFound', { type: typeLabel })}
               description={t('management.noCategoriesDesc')}
             />
           }
-          renderItem={renderItem}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 };

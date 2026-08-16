@@ -213,26 +213,34 @@ class TursoDatabaseService {
           name TEXT NOT NULL,
           icon TEXT NOT NULL,
           color TEXT NOT NULL,
-          type TEXT CHECK (type IN ('income', 'expense'))
+          type TEXT CHECK (type IN ('income', 'expense')),
+          display_order INTEGER NOT NULL DEFAULT 0
         );
       `);
+
+      try { await this.client.execute('ALTER TABLE categories ADD COLUMN display_order INTEGER DEFAULT 0'); } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS payment_methods (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL UNIQUE,
-          allow_installments INTEGER DEFAULT 0
+          allow_installments INTEGER DEFAULT 0,
+          display_order INTEGER NOT NULL DEFAULT 0
         );
       `);
 
       try { await this.client.execute('ALTER TABLE payment_methods ADD COLUMN allow_installments INTEGER DEFAULT 0'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE payment_methods ADD COLUMN display_order INTEGER DEFAULT 0'); } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS banks (
           id TEXT PRIMARY KEY,
-          name TEXT NOT NULL UNIQUE
+          name TEXT NOT NULL UNIQUE,
+          display_order INTEGER NOT NULL DEFAULT 0
         );
       `);
+
+      try { await this.client.execute('ALTER TABLE banks ADD COLUMN display_order INTEGER DEFAULT 0'); } catch (e) {}
 
       this.config.isConnected = true;
       this.config.lastSyncedAt = new Date().toISOString();

@@ -206,6 +206,7 @@
   "management": {
     "title": "Management Center",
     "subtitle": "Configure expense & income categories, payment methods, bank options, and enabled currencies",
+    "reorderDisabledSearching": "Reordering is disabled while searching. Clear search to drag and reorder.",
     "categoriesTab": "Categories",
     "pmTab": "Payment Methods",
     "banksTab": "Banks",

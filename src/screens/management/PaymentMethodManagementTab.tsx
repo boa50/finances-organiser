@@ -1,10 +1,16 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { PaymentMethodItem } from '../../types';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
-import { AppCard, AppEmptyState, AppTextInput, AppText } from '../../components/ui';
+import {
+  AppCard,
+  AppDraggableList,
+  AppEmptyState,
+  AppTextInput,
+  AppText,
+  RenderDraggableItemInfo,
+} from '../../components/ui';
 import { CreditCard, Plus, Search } from 'lucide-react-native';
 import theme from '../../theme';
 
@@ -15,6 +21,7 @@ interface PaymentMethodManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (pm: PaymentMethodItem) => void;
   onDeletePm: (pm: PaymentMethodItem) => void;
+  onReorderPaymentMethods?: (reordered: PaymentMethodItem[]) => void;
 }
 
 export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProps> = ({
@@ -24,8 +31,10 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
   onOpenAddModal,
   onOpenEditModal,
   onDeletePm,
+  onReorderPaymentMethods,
 }) => {
   const { t } = useTranslation();
+  const isSearching = searchQuery.trim().length > 0;
 
   const filteredPms = useMemo(() => {
     return paymentMethods.filter((pm) =>
@@ -33,23 +42,29 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
     );
   }, [paymentMethods, searchQuery]);
 
-  const renderItem = useCallback(({ item }: { item: PaymentMethodItem }) => {
-    return (
-      <View style={styles.cardWrapper}>
-        <EntityManagementCard
-          name={item.name}
-          subtitle={
-            item.allowInstallments
-              ? t('management.installmentsEnabled')
-              : t('management.singlePaymentOnly')
-          }
-          icon={<CreditCard size={20} color={theme.colors.accent} />}
-          onEdit={() => onOpenEditModal(item)}
-          onDelete={() => onDeletePm(item)}
-        />
-      </View>
-    );
-  }, [onOpenEditModal, onDeletePm, t]);
+  const renderItem = useCallback(
+    ({ item, isDragging, dragHandleProps }: RenderDraggableItemInfo<PaymentMethodItem>) => {
+      return (
+        <View style={styles.cardWrapper}>
+          <EntityManagementCard
+            name={item.name}
+            subtitle={
+              item.allowInstallments
+                ? t('management.installmentsEnabled')
+                : t('management.singlePaymentOnly')
+            }
+            icon={<CreditCard size={20} color={theme.colors.accent} />}
+            onEdit={() => onOpenEditModal(item)}
+            onDelete={() => onDeletePm(item)}
+            isDraggable={!isSearching}
+            dragHandleProps={dragHandleProps}
+            isDragging={isDragging}
+          />
+        </View>
+      );
+    },
+    [onOpenEditModal, onDeletePm, isSearching, t]
+  );
 
   return (
     <View style={styles.tabContainer}>
@@ -74,21 +89,26 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
         </AppCard>
       </View>
 
-      <View style={styles.listWrapper}>
-        <FlashList<PaymentMethodItem>
+      <ScrollView
+        style={styles.listWrapper}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={true}
+      >
+        <AppDraggableList<PaymentMethodItem>
           data={filteredPms}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={true}
+          renderItem={renderItem}
+          onReorder={(newItems) => onReorderPaymentMethods?.(newItems)}
+          disabled={isSearching}
+          disabledMessage={t('management.reorderDisabledSearching')}
           ListEmptyComponent={
             <AppEmptyState
               title={t('management.noPaymentMethodsFound')}
               description={t('management.noPaymentMethodsDesc')}
             />
           }
-          renderItem={renderItem}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 };

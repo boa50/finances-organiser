@@ -70,11 +70,12 @@ class BankService {
     const client = tursoService.getClient();
     if (client) {
       try {
-        const res = await client.execute('SELECT * FROM banks ORDER BY name ASC');
+        const res = await client.execute('SELECT * FROM banks ORDER BY display_order ASC, name ASC');
         if (res.rows) {
           const dbItems: BankItem[] = res.rows.map((row: any) => ({
             id: String(row.id),
             name: String(row.name),
+            displayOrder: Number(row.display_order ?? 0),
           }));
           this.banks = dbItems;
           this.saveToLocalStorage();
@@ -92,6 +93,60 @@ class BankService {
     return [...this.banks];
   }
 
+  public async reorderBanks(orderedIds: string[]): Promise<BankItem[]> {
+    const idToOrder = new Map<string, number>();
+    orderedIds.forEach((id, index) => {
+      idToOrder.set(id, index);
+    });
+
+    this.banks = this.banks.map((b) => {
+      if (idToOrder.has(b.id)) {
+        return { ...b, displayOrder: idToOrder.get(b.id)! };
+      }
+      return b;
+    });
+
+    this.banks.sort((a, b) => {
+      const orderA = a.displayOrder ?? 0;
+      const orderB = b.displayOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+
+    this.saveToLocalStorage();
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/banks', {
+          method: 'PUT',
+          headers: tursoService.getApiHeaders(),
+          body: JSON.stringify({ action: 'reorder', orderedIds }),
+        });
+        if (isJsonResponse(res)) {
+          return this.getBanks();
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    const client = tursoService.getClient();
+    if (client) {
+      try {
+        for (let index = 0; index < orderedIds.length; index++) {
+          await client.execute({
+            sql: 'UPDATE banks SET display_order = ? WHERE id = ?',
+            args: [index, orderedIds[index]],
+          });
+        }
+      } catch (err) {
+        console.error('Failed to sync bank reorder to Turso DB:', err);
+      }
+    }
+
+    return this.getBanks();
+  }
+
   public async addBank(name: string): Promise<BankItem> {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -103,9 +158,14 @@ class BankService {
       throw new Error(`A bank named "${trimmed}" already exists.`);
     }
 
+    const nextOrder = this.banks.length > 0
+      ? Math.max(...this.banks.map((b) => b.displayOrder ?? 0)) + 1
+      : 0;
+
     const newBank: BankItem = {
       id: generateId('bank'),
       name: trimmed,
+      displayOrder: nextOrder,
     };
 
     this.banks = [...this.banks, newBank];
@@ -131,8 +191,8 @@ class BankService {
     if (client) {
       try {
         await client.execute({
-          sql: 'INSERT INTO banks (id, name) VALUES (?, ?)',
-          args: [newBank.id, newBank.name],
+          sql: 'INSERT INTO banks (id, name, display_order) VALUES (?, ?, ?)',
+          args: [newBank.id, newBank.name, nextOrder],
         });
       } catch (err) {
         console.error('Failed to sync added bank to Turso DB:', err);

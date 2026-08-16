@@ -51,4 +51,16 @@ describe('bankService', () => {
 
     expect(resetList.length).toBe(0);
   });
+
+  it('reorders banks correctly and maintains the custom sort order', async () => {
+    const b1 = await bankService.addBank('Bank One');
+    const b2 = await bankService.addBank('Bank Two');
+    const b3 = await bankService.addBank('Bank Three');
+
+    const reordered = await bankService.reorderBanks([b2.id, b3.id, b1.id]);
+    expect(reordered.map((b) => b.id)).toEqual([b2.id, b3.id, b1.id]);
+
+    const syncList = bankService.getBanksSync();
+    expect(syncList.map((b) => b.id)).toEqual([b2.id, b3.id, b1.id]);
+  });
 });

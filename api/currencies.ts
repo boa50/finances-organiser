@@ -26,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         symbol: String(row.symbol),
         name: String(row.name),
         flag: String(row.flag),
+        displayOrder: Number(row.display_order ?? 0),
       }));
       return res.status(200).json(currencies);
     }
@@ -64,7 +65,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         args: [info.code, info.symbol, info.name, info.flag, order],
       });
 
-      return res.status(201).json(info);
+      return res.status(201).json({ ...info, displayOrder: order });
+    }
+
+    // PUT /api/currencies - Reorder currencies
+    if (req.method === 'PUT') {
+      const { action, orderedCodes, orderedIds } = req.body || {};
+      const list = orderedCodes || orderedIds;
+
+      if (action === 'reorder' || Array.isArray(list)) {
+        if (!Array.isArray(list)) {
+          return res.status(400).json({ error: 'orderedCodes or orderedIds array is required for reordering' });
+        }
+        for (let index = 0; index < list.length; index++) {
+          const code = String(list[index]).trim().toUpperCase();
+          await client.execute({
+            sql: 'UPDATE currencies SET display_order = ? WHERE UPPER(id) = ?',
+            args: [index, code],
+          });
+        }
+        return res.status(200).json({ success: true, count: list.length });
+      }
+
+      return res.status(400).json({ error: 'Invalid action for currency update' });
     }
 
     // DELETE /api/currencies - Remove an available currency

@@ -381,6 +381,59 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     });
   };
 
+  const handleReorderCategories = async (reordered: CategoryItem[]) => {
+    setCategories((prev) => {
+      const otherType = prev.filter((c) => c.type !== activeCategoryType);
+      return [...otherType, ...reordered];
+    });
+    try {
+      const ids = reordered.map((c) => c.id);
+      await categoryService.reorderCategories(ids, activeCategoryType);
+      setCategories(categoryService.getCategoriesSync());
+      onCategoriesUpdated?.();
+    } catch (err) {
+      console.error('Failed to reorder categories:', err);
+      await loadCategoriesData();
+    }
+  };
+
+  const handleReorderPaymentMethods = async (reordered: PaymentMethodItem[]) => {
+    setPaymentMethods(reordered);
+    try {
+      const ids = reordered.map((pm) => pm.id);
+      await paymentMethodService.reorderPaymentMethods(ids);
+      setPaymentMethods(paymentMethodService.getPaymentMethodsSync());
+    } catch (err) {
+      console.error('Failed to reorder payment methods:', err);
+      await loadPaymentMethodsData();
+    }
+  };
+
+  const handleReorderBanks = async (reordered: BankItem[]) => {
+    setBanks(reordered);
+    try {
+      const ids = reordered.map((b) => b.id);
+      await bankService.reorderBanks(ids);
+      setBanks(bankService.getBanksSync());
+    } catch (err) {
+      console.error('Failed to reorder banks:', err);
+      await loadBanksData();
+    }
+  };
+
+  const handleReorderCurrencies = async (reordered: CurrencyInfo[]) => {
+    setCurrencies(reordered);
+    try {
+      const codes = reordered.map((c) => c.code);
+      await currencyService.reorderCurrencies(codes);
+      setCurrencies(currencyService.getCurrenciesSync());
+      onCurrenciesUpdated?.();
+    } catch (err) {
+      console.error('Failed to reorder currencies:', err);
+      await loadCurrenciesData();
+    }
+  };
+
   if (loading) {
     return <AppLoadingView message={t('management.loadingSettings')} />;
   }
@@ -420,6 +473,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               onOpenAddModal={openAddCatModal}
               onOpenEditModal={openEditCatModal}
               onDeleteCategory={handleDeleteCategory}
+              onReorderCategories={handleReorderCategories}
             />
           )}
 
@@ -431,6 +485,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               onOpenAddModal={openAddPmModal}
               onOpenEditModal={openEditPmModal}
               onDeletePm={handleDeletePm}
+              onReorderPaymentMethods={handleReorderPaymentMethods}
             />
           )}
 
@@ -442,6 +497,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               onOpenAddModal={openAddBankModal}
               onOpenEditModal={openEditBankModal}
               onDeleteBank={handleDeleteBank}
+              onReorderBanks={handleReorderBanks}
             />
           )}
 
@@ -452,6 +508,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
               setSearchQuery={setSearchQuery}
               onOpenAddModal={openAddCurrencyModal}
               onDeleteCurrency={handleDeleteCurrency}
+              onReorderCurrencies={handleReorderCurrencies}
             />
           )}
         </View>

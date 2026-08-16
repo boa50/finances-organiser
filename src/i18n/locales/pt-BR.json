@@ -206,6 +206,7 @@
   "management": {
     "title": "Centro de Gerenciamento",
     "subtitle": "Configure categorias de receitas e despesas, formas de pagamento, bancos e moedas ativas",
+    "reorderDisabledSearching": "A reordenação está desativada durante a busca. Limpe a busca para arrastar e reordenar.",
     "categoriesTab": "Categorias",
     "pmTab": "Formas de Pagamento",
     "banksTab": "Bancos",

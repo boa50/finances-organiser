@@ -97,7 +97,7 @@ class CategoryService {
     const client = tursoService.getClient();
     if (client) {
       try {
-        const res = await client.execute('SELECT * FROM categories ORDER BY name ASC');
+        const res = await client.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC');
         if (res.rows) {
           const dbCategories: CategoryItem[] = res.rows.map((row: any) => ({
             id: String(row.id),
@@ -105,6 +105,7 @@ class CategoryService {
             icon: String(row.icon),
             color: String(row.color),
             type: row.type as TransactionType,
+            displayOrder: Number(row.display_order ?? 0),
           }));
           this.categories = dbCategories;
           this.saveToCache();
@@ -127,6 +128,60 @@ class CategoryService {
     return [...this.categories];
   }
 
+  public async reorderCategories(orderedIds: string[], type?: TransactionType): Promise<CategoryItem[]> {
+    const idToOrder = new Map<string, number>();
+    orderedIds.forEach((id, index) => {
+      idToOrder.set(id, index);
+    });
+
+    this.categories = this.categories.map((c) => {
+      if (idToOrder.has(c.id)) {
+        return { ...c, displayOrder: idToOrder.get(c.id)! };
+      }
+      return c;
+    });
+
+    this.categories.sort((a, b) => {
+      const orderA = a.displayOrder ?? 0;
+      const orderB = b.displayOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+
+    this.saveToCache();
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/categories', {
+          method: 'PUT',
+          headers: tursoService.getApiHeaders(),
+          body: JSON.stringify({ action: 'reorder', orderedIds, type }),
+        });
+        if (isJsonResponse(res)) {
+          return this.getCategories(type);
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    const client = tursoService.getClient();
+    if (client) {
+      try {
+        for (let index = 0; index < orderedIds.length; index++) {
+          await client.execute({
+            sql: 'UPDATE categories SET display_order = ? WHERE id = ?',
+            args: [index, orderedIds[index]],
+          });
+        }
+      } catch (err) {
+        console.error('Failed to sync category reorder to Turso DB:', err);
+      }
+    }
+
+    return this.getCategories(type);
+  }
+
   public async addCategory(cat: Omit<CategoryItem, 'id'>): Promise<CategoryItem> {
     const existing = this.categories.find(
       (c) => c.name.trim().toLowerCase() === cat.name.trim().toLowerCase() && c.type === cat.type
@@ -135,12 +190,18 @@ class CategoryService {
       throw new Error(`A ${cat.type} category named "${cat.name.trim()}" already exists.`);
     }
 
+    const sameTypeCategories = this.categories.filter((c) => c.type === cat.type);
+    const nextOrder = sameTypeCategories.length > 0
+      ? Math.max(...sameTypeCategories.map((c) => c.displayOrder ?? 0)) + 1
+      : 0;
+
     const newCategory: CategoryItem = {
       id: generateId('cat'),
       name: cat.name.trim(),
       icon: cat.icon,
       color: cat.color,
       type: cat.type,
+      displayOrder: nextOrder,
     };
 
     this.categories = [...this.categories, newCategory];

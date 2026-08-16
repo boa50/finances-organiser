@@ -70,12 +70,13 @@ class PaymentMethodService {
     const client = tursoService.getClient();
     if (client) {
       try {
-        const res = await client.execute('SELECT * FROM payment_methods ORDER BY name ASC');
+        const res = await client.execute('SELECT * FROM payment_methods ORDER BY display_order ASC, name ASC');
         if (res.rows) {
           const dbItems: PaymentMethodItem[] = res.rows.map((row: any) => ({
             id: String(row.id),
             name: String(row.name),
             allowInstallments: Boolean(row.allow_installments),
+            displayOrder: Number(row.display_order ?? 0),
           }));
           this.paymentMethods = dbItems;
           this.saveToLocalStorage();
@@ -93,6 +94,60 @@ class PaymentMethodService {
     return [...this.paymentMethods];
   }
 
+  public async reorderPaymentMethods(orderedIds: string[]): Promise<PaymentMethodItem[]> {
+    const idToOrder = new Map<string, number>();
+    orderedIds.forEach((id, index) => {
+      idToOrder.set(id, index);
+    });
+
+    this.paymentMethods = this.paymentMethods.map((pm) => {
+      if (idToOrder.has(pm.id)) {
+        return { ...pm, displayOrder: idToOrder.get(pm.id)! };
+      }
+      return pm;
+    });
+
+    this.paymentMethods.sort((a, b) => {
+      const orderA = a.displayOrder ?? 0;
+      const orderB = b.displayOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    });
+
+    this.saveToLocalStorage();
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/payment-methods', {
+          method: 'PUT',
+          headers: tursoService.getApiHeaders(),
+          body: JSON.stringify({ action: 'reorder', orderedIds }),
+        });
+        if (isJsonResponse(res)) {
+          return this.getPaymentMethods();
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    const client = tursoService.getClient();
+    if (client) {
+      try {
+        for (let index = 0; index < orderedIds.length; index++) {
+          await client.execute({
+            sql: 'UPDATE payment_methods SET display_order = ? WHERE id = ?',
+            args: [index, orderedIds[index]],
+          });
+        }
+      } catch (err) {
+        console.error('Failed to sync payment method reorder to Turso DB:', err);
+      }
+    }
+
+    return this.getPaymentMethods();
+  }
+
   public async addPaymentMethod(name: string, allowInstallments: boolean = false): Promise<PaymentMethodItem> {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -104,10 +159,15 @@ class PaymentMethodService {
       throw new Error(`A payment method named "${trimmed}" already exists.`);
     }
 
+    const nextOrder = this.paymentMethods.length > 0
+      ? Math.max(...this.paymentMethods.map((pm) => pm.displayOrder ?? 0)) + 1
+      : 0;
+
     const newMethod: PaymentMethodItem = {
       id: generateId('pm'),
       name: trimmed,
       allowInstallments: Boolean(allowInstallments),
+      displayOrder: nextOrder,
     };
 
     this.paymentMethods = [...this.paymentMethods, newMethod];
@@ -133,8 +193,8 @@ class PaymentMethodService {
     if (client) {
       try {
         await client.execute({
-          sql: 'INSERT INTO payment_methods (id, name, allow_installments) VALUES (?, ?, ?)',
-          args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0],
+          sql: 'INSERT INTO payment_methods (id, name, allow_installments, display_order) VALUES (?, ?, ?, ?)',
+          args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0, nextOrder],
         });
       } catch (err) {
         console.error('Failed to sync added payment method to Turso DB:', err);

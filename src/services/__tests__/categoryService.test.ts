@@ -92,4 +92,31 @@ describe('categoryService', () => {
       })
     ).rejects.toThrow();
   });
+
+  it('reorders categories correctly and maintains the custom sort order', async () => {
+    const catA = await categoryService.addCategory({
+      name: 'Alpha',
+      icon: 'utensils',
+      color: '#111111',
+      type: 'expense',
+    });
+    const catB = await categoryService.addCategory({
+      name: 'Beta',
+      icon: 'home',
+      color: '#222222',
+      type: 'expense',
+    });
+    const catC = await categoryService.addCategory({
+      name: 'Gamma',
+      icon: 'car',
+      color: '#333333',
+      type: 'expense',
+    });
+
+    const reordered = await categoryService.reorderCategories([catC.id, catA.id, catB.id], 'expense');
+    expect(reordered.map((c) => c.id)).toEqual([catC.id, catA.id, catB.id]);
+
+    const syncList = categoryService.getCategoriesSync('expense');
+    expect(syncList.map((c) => c.id)).toEqual([catC.id, catA.id, catB.id]);
+  });
 });

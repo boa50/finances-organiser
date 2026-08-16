@@ -1,10 +1,16 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { View, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BankItem } from '../../types';
 import { EntityManagementCard } from '../../components/EntityManagementCard';
-import { AppCard, AppEmptyState, AppTextInput, AppText } from '../../components/ui';
+import {
+  AppCard,
+  AppDraggableList,
+  AppEmptyState,
+  AppTextInput,
+  AppText,
+  RenderDraggableItemInfo,
+} from '../../components/ui';
 import { Building2, Plus, Search } from 'lucide-react-native';
 import theme from '../../theme';
 
@@ -15,6 +21,7 @@ interface BankManagementTabProps {
   onOpenAddModal: () => void;
   onOpenEditModal: (bank: BankItem) => void;
   onDeleteBank: (bank: BankItem) => void;
+  onReorderBanks?: (reordered: BankItem[]) => void;
 }
 
 export const BankManagementTab: React.FC<BankManagementTabProps> = ({
@@ -24,8 +31,10 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
   onOpenAddModal,
   onOpenEditModal,
   onDeleteBank,
+  onReorderBanks,
 }) => {
   const { t } = useTranslation();
+  const isSearching = searchQuery.trim().length > 0;
 
   const filteredBanks = useMemo(() => {
     return banks.filter((b) =>
@@ -33,19 +42,25 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
     );
   }, [banks, searchQuery]);
 
-  const renderItem = useCallback(({ item }: { item: BankItem }) => {
-    return (
-      <View style={styles.cardWrapper}>
-        <EntityManagementCard
-          name={item.name}
-          subtitle={t('management.bankSubtitle')}
-          icon={<Building2 size={20} color={theme.colors.accent} />}
-          onEdit={() => onOpenEditModal(item)}
-          onDelete={() => onDeleteBank(item)}
-        />
-      </View>
-    );
-  }, [onOpenEditModal, onDeleteBank, t]);
+  const renderItem = useCallback(
+    ({ item, isDragging, dragHandleProps }: RenderDraggableItemInfo<BankItem>) => {
+      return (
+        <View style={styles.cardWrapper}>
+          <EntityManagementCard
+            name={item.name}
+            subtitle={t('management.bankSubtitle')}
+            icon={<Building2 size={20} color={theme.colors.accent} />}
+            onEdit={() => onOpenEditModal(item)}
+            onDelete={() => onDeleteBank(item)}
+            isDraggable={!isSearching}
+            dragHandleProps={dragHandleProps}
+            isDragging={isDragging}
+          />
+        </View>
+      );
+    },
+    [onOpenEditModal, onDeleteBank, isSearching, t]
+  );
 
   return (
     <View style={styles.tabContainer}>
@@ -70,21 +85,26 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
         </AppCard>
       </View>
 
-      <View style={styles.listWrapper}>
-        <FlashList<BankItem>
+      <ScrollView
+        style={styles.listWrapper}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={true}
+      >
+        <AppDraggableList<BankItem>
           data={filteredBanks}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={true}
+          renderItem={renderItem}
+          onReorder={(newItems) => onReorderBanks?.(newItems)}
+          disabled={isSearching}
+          disabledMessage={t('management.reorderDisabledSearching')}
           ListEmptyComponent={
             <AppEmptyState
               title={t('management.noBanksFound')}
               description={t('management.noBanksDesc')}
             />
           }
-          renderItem={renderItem}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 };

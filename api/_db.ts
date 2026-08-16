@@ -164,15 +164,23 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       name TEXT NOT NULL,
       icon TEXT NOT NULL,
       color TEXT NOT NULL,
-      type TEXT CHECK (type IN ('income', 'expense'))
+      type TEXT CHECK (type IN ('income', 'expense')),
+      display_order INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  try {
+    await client.execute('ALTER TABLE categories ADD COLUMN display_order INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS payment_methods (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
-      allow_installments INTEGER DEFAULT 0
+      allow_installments INTEGER DEFAULT 0,
+      display_order INTEGER NOT NULL DEFAULT 0
     );
   `);
 
@@ -182,12 +190,25 @@ export async function ensureTablesExist(client: Client): Promise<void> {
     // Column already exists
   }
 
+  try {
+    await client.execute('ALTER TABLE payment_methods ADD COLUMN display_order INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
+
   await client.execute(`
     CREATE TABLE IF NOT EXISTS banks (
       id TEXT PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE
+      name TEXT NOT NULL UNIQUE,
+      display_order INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  try {
+    await client.execute('ALTER TABLE banks ADD COLUMN display_order INTEGER DEFAULT 0');
+  } catch (e) {
+    // Column already exists
+  }
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS currencies (

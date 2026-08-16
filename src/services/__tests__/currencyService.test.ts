@@ -53,4 +53,27 @@ describe('currencyService', () => {
       'At least one currency must remain enabled.'
     );
   });
+
+  it('reorders currencies correctly and maintains the custom sort order', async () => {
+    // Ensure we have BRL and USD and EUR
+    try {
+      await currencyService.addCurrency('EUR');
+    } catch (e) {}
+    try {
+      await currencyService.addCurrency('BRL');
+    } catch (e) {}
+    try {
+      await currencyService.addCurrency('USD');
+    } catch (e) {}
+
+    const reordered = await currencyService.reorderCurrencies(['USD', 'EUR', 'BRL']);
+    const codes = reordered.map((c) => c.code);
+    expect(codes.indexOf('USD')).toBeLessThan(codes.indexOf('EUR'));
+    expect(codes.indexOf('EUR')).toBeLessThan(codes.indexOf('BRL'));
+
+    const syncList = currencyService.getCurrenciesSync();
+    const syncCodes = syncList.map((c) => c.code);
+    expect(syncCodes.indexOf('USD')).toBeLessThan(syncCodes.indexOf('EUR'));
+    expect(syncCodes.indexOf('EUR')).toBeLessThan(syncCodes.indexOf('BRL'));
+  });
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { AppCard, AppBadge, AppText } from './ui';
-import { Pencil, Trash2 } from 'lucide-react-native';
+import { AppCard, AppText } from './ui';
+import { GripVertical, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../theme';
 
 export interface EntityManagementCardProps {
@@ -11,6 +11,9 @@ export interface EntityManagementCardProps {
   color?: string;
   onEdit: () => void;
   onDelete: () => void;
+  isDraggable?: boolean;
+  dragHandleProps?: any;
+  isDragging?: boolean;
 }
 
 export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
@@ -20,12 +23,38 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
   color,
   onEdit,
   onDelete,
+  isDraggable = false,
+  dragHandleProps,
+  isDragging = false,
 }) => {
   const badgeBg = color ? `${color}25` : `${theme.colors.accent}25`;
 
   return (
-    <AppCard style={styles.card} padding="lg">
+    <AppCard
+      style={[
+        styles.card,
+        isDragging && styles.cardDragging,
+      ]}
+      padding="lg"
+    >
       <View style={styles.leftCol}>
+        {(isDraggable || dragHandleProps) && (
+          <View
+            {...dragHandleProps}
+            style={[
+              styles.dragHandle,
+              dragHandleProps?.style,
+              isDragging && styles.dragHandleActive,
+            ]}
+            accessibilityLabel={`Reorder ${name}`}
+            accessibilityRole="button"
+          >
+            <GripVertical
+              size={18}
+              color={isDragging ? theme.colors.accent : theme.colors.textMuted}
+            />
+          </View>
+        )}
         {icon && <View style={[styles.iconBadge, { backgroundColor: badgeBg }]}>{icon}</View>}
         <View style={styles.infoCol}>
           <View style={styles.titleRow}>
@@ -61,12 +90,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  cardDragging: {
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.surfaceHighlight,
   },
   leftCol: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
     flex: 1,
+  },
+  dragHandle: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.xxs,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: theme.radii.sm,
+  },
+  dragHandleActive: {
+    backgroundColor: `${theme.colors.accent}15`,
   },
   iconBadge: {
     width: 40,

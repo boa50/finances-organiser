@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // GET /api/banks - Fetch banks
     if (req.method === 'GET') {
-      const result = await client.execute('SELECT * FROM banks ORDER BY name ASC');
+      const result = await client.execute('SELECT * FROM banks ORDER BY display_order ASC, name ASC');
       if (!result.rows || result.rows.length === 0) {
         return res.status(200).json([]);
       }
@@ -25,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const banks = result.rows.map((row: any) => ({
         id: String(row.id),
         name: String(row.name),
+        displayOrder: Number(row.display_order ?? 0),
       }));
       return res.status(200).json(banks);
     }
@@ -54,21 +55,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const id = generateId('bank');
+      const countRes = await client.execute('SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM banks');
+      const displayOrder = Number(countRes.rows[0]?.next_order ?? 0);
+
       await client.execute({
-        sql: `INSERT INTO banks (id, name) VALUES (?, ?)`,
-        args: [id, trimmedName],
+        sql: `INSERT INTO banks (id, name, display_order) VALUES (?, ?, ?)`,
+        args: [id, trimmedName, displayOrder],
       });
 
       const newBank = {
         id,
         name: trimmedName,
+        displayOrder,
       };
       return res.status(201).json(newBank);
     }
 
-    // PUT /api/banks - Update bank
+    // PUT /api/banks - Update bank or reorder
     if (req.method === 'PUT') {
-      const { id, name } = req.body || {};
+      const { action, orderedIds, id, name } = req.body || {};
+
+      if (action === 'reorder' || Array.isArray(orderedIds)) {
+        if (!Array.isArray(orderedIds)) {
+          return res.status(400).json({ error: 'orderedIds array is required for reordering' });
+        }
+        for (let index = 0; index < orderedIds.length; index++) {
+          await client.execute({
+            sql: 'UPDATE banks SET display_order = ? WHERE id = ?',
+            args: [index, String(orderedIds[index])],
+          });
+        }
+        return res.status(200).json({ success: true, count: orderedIds.length });
+      }
+
       if (!id || !name || !name.trim()) {
         return res.status(400).json({ error: 'Missing required fields for bank update' });
       }

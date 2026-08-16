@@ -80,6 +80,7 @@ class CurrencyService {
             symbol: String(row.symbol),
             name: String(row.name),
             flag: String(row.flag),
+            displayOrder: Number(row.display_order ?? 0),
           }));
           this.currencies = dbItems;
           this.saveToLocalStorage();
@@ -98,6 +99,61 @@ class CurrencyService {
       return [...DEFAULT_ENABLED_CURRENCIES];
     }
     return [...this.currencies];
+  }
+
+  public async reorderCurrencies(orderedCodes: string[]): Promise<CurrencyInfo[]> {
+    const codeToOrder = new Map<string, number>();
+    orderedCodes.forEach((code, index) => {
+      codeToOrder.set(code.toUpperCase(), index);
+    });
+
+    this.currencies = this.currencies.map((c) => {
+      const upper = c.code.toUpperCase();
+      if (codeToOrder.has(upper)) {
+        return { ...c, displayOrder: codeToOrder.get(upper)! };
+      }
+      return c;
+    });
+
+    this.currencies.sort((a, b) => {
+      const orderA = a.displayOrder ?? 0;
+      const orderB = b.displayOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.code.localeCompare(b.code);
+    });
+
+    this.saveToLocalStorage();
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/currencies', {
+          method: 'PUT',
+          headers: tursoService.getApiHeaders(),
+          body: JSON.stringify({ action: 'reorder', orderedCodes }),
+        });
+        if (isJsonResponse(res)) {
+          return this.getCurrencies();
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    const client = tursoService.getClient();
+    if (client) {
+      try {
+        for (let index = 0; index < orderedCodes.length; index++) {
+          await client.execute({
+            sql: 'UPDATE currencies SET display_order = ? WHERE UPPER(id) = ?',
+            args: [index, orderedCodes[index].toUpperCase()],
+          });
+        }
+      } catch (err) {
+        console.error('Failed to sync currency reorder to Turso DB:', err);
+      }
+    }
+
+    return this.getCurrencies();
   }
 
   public async addCurrency(code: string): Promise<CurrencyInfo> {

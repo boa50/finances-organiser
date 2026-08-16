@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // GET /api/categories - Fetch categories
     if (req.method === 'GET') {
-      const result = await client.execute('SELECT * FROM categories ORDER BY name ASC');
+      const result = await client.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC');
       if (!result.rows || result.rows.length === 0) {
         return res.status(200).json([]);
       }
@@ -28,6 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         icon: String(row.icon),
         color: String(row.color),
         type: row.type,
+        displayOrder: Number(row.display_order ?? 0),
       }));
       return res.status(200).json(categories);
     }
@@ -46,10 +47,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const id = generateId('cat');
+      const countRes = await client.execute({
+        sql: 'SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM categories WHERE type = ?',
+        args: [type],
+      });
+      const displayOrder = Number(countRes.rows[0]?.next_order ?? 0);
+
       await client.execute({
-        sql: `INSERT INTO categories (id, name, icon, color, type)
-              VALUES (?, ?, ?, ?, ?)`,
-        args: [id, name.trim(), icon, color, type],
+        sql: `INSERT INTO categories (id, name, icon, color, type, display_order)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [id, name.trim(), icon, color, type, displayOrder],
       });
 
       const newCat = {
@@ -58,13 +65,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         icon,
         color,
         type,
+        displayOrder,
       };
       return res.status(201).json(newCat);
     }
 
-    // PUT /api/categories - Update a category
+    // PUT /api/categories - Update a category or reorder categories
     if (req.method === 'PUT') {
-      const { id, name, icon, color, type } = req.body || {};
+      const { action, orderedIds, id, name, icon, color, type } = req.body || {};
+
+      if (action === 'reorder' || Array.isArray(orderedIds)) {
+        if (!Array.isArray(orderedIds)) {
+          return res.status(400).json({ error: 'orderedIds array is required for reordering' });
+        }
+        for (let index = 0; index < orderedIds.length; index++) {
+          await client.execute({
+            sql: 'UPDATE categories SET display_order = ? WHERE id = ?',
+            args: [index, String(orderedIds[index])],
+          });
+        }
+        return res.status(200).json({ success: true, count: orderedIds.length });
+      }
+
       if (!id || !name || !icon || !color || !type) {
         return res.status(400).json({ error: 'Missing required fields for category update' });
       }

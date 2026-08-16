@@ -1,11 +1,17 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CurrencyInfo } from '../../types';
-import { AppCard, AppText, AppEmptyState, AppTextInput } from '../../components/ui';
+import {
+  AppCard,
+  AppDraggableList,
+  AppText,
+  AppEmptyState,
+  AppTextInput,
+  RenderDraggableItemInfo,
+} from '../../components/ui';
 import theme from '../../theme';
-import { Plus, Search, Trash2 } from 'lucide-react-native';
+import { GripVertical, Plus, Search, Trash2 } from 'lucide-react-native';
 
 interface CurrencyManagementTabProps {
   currencies: CurrencyInfo[];
@@ -13,6 +19,7 @@ interface CurrencyManagementTabProps {
   setSearchQuery: (q: string) => void;
   onOpenAddModal: () => void;
   onDeleteCurrency: (currency: CurrencyInfo) => void;
+  onReorderCurrencies?: (reordered: CurrencyInfo[]) => void;
 }
 
 export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
@@ -21,8 +28,10 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
   setSearchQuery,
   onOpenAddModal,
   onDeleteCurrency,
+  onReorderCurrencies,
 }) => {
   const { t } = useTranslation();
+  const isSearching = searchQuery.trim().length > 0;
 
   const filteredCurrencies = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -38,40 +47,65 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
 
   const canDelete = currencies.length > 1;
 
-  const renderItem = useCallback(({ item: currency }: { item: CurrencyInfo }) => {
-    const localizedName = t(`currencies.${currency.code}`, { defaultValue: currency.name });
+  const renderItem = useCallback(
+    ({ item: currency, isDragging, dragHandleProps }: RenderDraggableItemInfo<CurrencyInfo>) => {
+      const localizedName = t(`currencies.${currency.code}`, { defaultValue: currency.name });
 
-    return (
-      <View style={styles.cardWrapper}>
-        <AppCard variant="outlined" style={styles.card}>
-          <View style={styles.cardInfo}>
-            <AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>
-            <View style={styles.textContainer}>
-              <AppText style={styles.codeText}>{currency.code}</AppText>
-              <AppText style={styles.nameText}>{localizedName}</AppText>
-            </View>
-            <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
-          </View>
-
-          <Pressable
-            onPress={() => onDeleteCurrency(currency)}
-            disabled={!canDelete}
-            style={({ pressed }) => [
-              styles.deleteButton,
-              !canDelete && styles.deleteButtonDisabled,
-              pressed && canDelete && { opacity: 0.7 },
-            ]}
-            accessibilityLabel={`Delete ${currency.code}`}
+      return (
+        <View style={styles.cardWrapper}>
+          <AppCard
+            variant="outlined"
+            style={[styles.card, isDragging && styles.cardDragging]}
           >
-            <Trash2
-              size={18}
-              color={canDelete ? theme.colors.danger : theme.colors.textMuted}
-            />
-          </Pressable>
-        </AppCard>
-      </View>
-    );
-  }, [canDelete, onDeleteCurrency]);
+            <View style={styles.leftCol}>
+              {!isSearching && (
+                <View
+                  {...dragHandleProps}
+                  style={[
+                    styles.dragHandle,
+                    dragHandleProps?.style,
+                    isDragging && styles.dragHandleActive,
+                  ]}
+                  accessibilityLabel={`Reorder ${currency.code}`}
+                  accessibilityRole="button"
+                >
+                  <GripVertical
+                    size={18}
+                    color={isDragging ? theme.colors.accent : theme.colors.textMuted}
+                  />
+                </View>
+              )}
+              <View style={styles.cardInfo}>
+                <AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>
+                <View style={styles.textContainer}>
+                  <AppText style={styles.codeText}>{currency.code}</AppText>
+                  <AppText style={styles.nameText}>{localizedName}</AppText>
+                </View>
+                <AppText style={styles.symbolBadge}>{currency.symbol}</AppText>
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => onDeleteCurrency(currency)}
+              disabled={!canDelete}
+              style={({ pressed }) => [
+                styles.deleteButton,
+                !canDelete && styles.deleteButtonDisabled,
+                pressed && canDelete && { opacity: 0.7 },
+              ]}
+              accessibilityLabel={`Delete ${currency.code}`}
+            >
+              <Trash2
+                size={18}
+                color={canDelete ? theme.colors.danger : theme.colors.textMuted}
+              />
+            </Pressable>
+          </AppCard>
+        </View>
+      );
+    },
+    [canDelete, onDeleteCurrency, isSearching, t]
+  );
 
   return (
     <View style={styles.tabContainer}>
@@ -96,12 +130,18 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
         </AppCard>
       </View>
 
-      <View style={styles.listWrapper}>
-        <FlashList<CurrencyInfo>
+      <ScrollView
+        style={styles.listWrapper}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={true}
+      >
+        <AppDraggableList<CurrencyInfo>
           data={filteredCurrencies}
           keyExtractor={(item) => item.code}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={true}
+          renderItem={renderItem}
+          onReorder={(newItems) => onReorderCurrencies?.(newItems)}
+          disabled={isSearching}
+          disabledMessage={t('management.reorderDisabledSearching')}
           ListEmptyComponent={
             <AppEmptyState
               title={t('management.noCurrenciesFound')}
@@ -112,9 +152,8 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
               onActionPress={searchQuery ? undefined : onOpenAddModal}
             />
           }
-          renderItem={renderItem}
         />
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -172,6 +211,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  cardDragging: {
+    borderColor: theme.colors.accent,
+    backgroundColor: theme.colors.surfaceHighlight,
+  },
+  leftCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    flex: 1,
+  },
+  dragHandle: {
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.xxs,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: theme.radii.sm,
+  },
+  dragHandleActive: {
+    backgroundColor: `${theme.colors.accent}15`,
   },
   cardInfo: {
     flexDirection: 'row',

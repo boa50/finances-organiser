@@ -53,4 +53,16 @@ describe('paymentMethodService', () => {
 
     expect(resetList.length).toBe(0);
   });
+
+  it('reorders payment methods correctly and maintains the custom sort order', async () => {
+    const pm1 = await paymentMethodService.addPaymentMethod('Cash', false);
+    const pm2 = await paymentMethodService.addPaymentMethod('Credit Card', true);
+    const pm3 = await paymentMethodService.addPaymentMethod('Debit Card', false);
+
+    const reordered = await paymentMethodService.reorderPaymentMethods([pm3.id, pm1.id, pm2.id]);
+    expect(reordered.map((p) => p.id)).toEqual([pm3.id, pm1.id, pm2.id]);
+
+    const syncList = paymentMethodService.getPaymentMethodsSync();
+    expect(syncList.map((p) => p.id)).toEqual([pm3.id, pm1.id, pm2.id]);
+  });
 });

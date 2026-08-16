@@ -49,17 +49,20 @@ export interface CategoryItem {
   icon: string;
   color: string;
   type: TransactionType;
+  displayOrder?: number;
 }
 
 export interface PaymentMethodItem {
   id: string;
   name: string;
   allowInstallments?: boolean;
+  displayOrder?: number;
 }
 
 export interface BankItem {
   id: string;
   name: string;
+  displayOrder?: number;
 }
 
 export interface MonthlyAggregate {
@@ -84,4 +87,5 @@ export interface CurrencyInfo {
   symbol: string;
   name: string;
   flag: string;
+  displayOrder?: number;
 }

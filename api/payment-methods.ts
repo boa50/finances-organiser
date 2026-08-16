@@ -17,7 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // GET /api/payment-methods - Fetch payment methods
     if (req.method === 'GET') {
-      const result = await client.execute('SELECT * FROM payment_methods ORDER BY name ASC');
+      const result = await client.execute('SELECT * FROM payment_methods ORDER BY display_order ASC, name ASC');
       if (!result.rows || result.rows.length === 0) {
         return res.status(200).json([]);
       }
@@ -26,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         id: String(row.id),
         name: String(row.name),
         allowInstallments: Boolean(row.allow_installments),
+        displayOrder: Number(row.display_order ?? 0),
       }));
       return res.status(200).json(paymentMethods);
     }
@@ -57,22 +58,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const id = generateId('pm');
       const allowInstVal = Boolean(allowInstallments);
 
+      const countRes = await client.execute('SELECT COALESCE(MAX(display_order), -1) + 1 AS next_order FROM payment_methods');
+      const displayOrder = Number(countRes.rows[0]?.next_order ?? 0);
+
       await client.execute({
-        sql: `INSERT INTO payment_methods (id, name, allow_installments) VALUES (?, ?, ?)`,
-        args: [id, trimmedName, allowInstVal ? 1 : 0],
+        sql: `INSERT INTO payment_methods (id, name, allow_installments, display_order) VALUES (?, ?, ?, ?)`,
+        args: [id, trimmedName, allowInstVal ? 1 : 0, displayOrder],
       });
 
       const newPm = {
         id,
         name: trimmedName,
         allowInstallments: allowInstVal,
+        displayOrder,
       };
       return res.status(201).json(newPm);
     }
 
-    // PUT /api/payment-methods - Update payment method
+    // PUT /api/payment-methods - Update payment method or reorder
     if (req.method === 'PUT') {
-      const { id, name, allowInstallments } = req.body || {};
+      const { action, orderedIds, id, name, allowInstallments } = req.body || {};
+
+      if (action === 'reorder' || Array.isArray(orderedIds)) {
+        if (!Array.isArray(orderedIds)) {
+          return res.status(400).json({ error: 'orderedIds array is required for reordering' });
+        }
+        for (let index = 0; index < orderedIds.length; index++) {
+          await client.execute({
+            sql: 'UPDATE payment_methods SET display_order = ? WHERE id = ?',
+            args: [index, String(orderedIds[index])],
+          });
+        }
+        return res.status(200).json({ success: true, count: orderedIds.length });
+      }
+
       if (!id || !name || !name.trim()) {
         return res.status(400).json({ error: 'Missing required fields for payment method update' });
       }

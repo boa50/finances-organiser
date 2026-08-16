@@ -1852,3 +1852,86 @@ All 79 automated tests across 13 test suites were verified passing via `npm test
 
 **Automation:** `src/i18n/__tests__/i18n.test.ts` — `should correctly translate sample keys in both languages`
 
+---
+
+## 12. Customizable Item Reordering & Sort Persistence
+
+### TC-087 — Reorder categories with drag-and-drop sort order persistence
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Categories
+
+**Platform:** Web, Android, iOS
+
+**Given** Multiple income or expense categories exist in the database.
+
+**When** The user drags and reorders categories via `categoryService.reorderCategories()` or the UI drag handle.
+
+**Then** The new `displayOrder` sequence is saved to localStorage, Turso DB, and API, and subsequent fetches return categories in the custom order.
+
+**Automation:** `src/services/__tests__/categoryService.test.ts` — `reorders categories correctly and maintains the custom sort order`
+
+---
+
+### TC-088 — Reorder payment methods with drag-and-drop sort order persistence
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Payment Methods
+
+**Platform:** Web, Android, iOS
+
+**Given** Multiple payment methods exist in the database.
+
+**When** The user drags and reorders payment methods via `paymentMethodService.reorderPaymentMethods()` or the UI drag handle.
+
+**Then** The new `displayOrder` sequence is saved to localStorage, Turso DB, and API, and subsequent fetches return payment methods in the custom order.
+
+**Automation:** `src/services/__tests__/paymentMethodService.test.ts` — `reorders payment methods correctly and maintains the custom sort order`
+
+---
+
+### TC-089 — Reorder banks with drag-and-drop sort order persistence
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Banks
+
+**Platform:** Web, Android, iOS
+
+**Given** Multiple banks exist in the database.
+
+**When** The user drags and reorders banks via `bankService.reorderBanks()` or the UI drag handle.
+
+**Then** The new `displayOrder` sequence is saved to localStorage, Turso DB, and API, and subsequent fetches return banks in the custom order.
+
+**Automation:** `src/services/__tests__/bankService.test.ts` — `reorders banks correctly and maintains the custom sort order`
+
+---
+
+### TC-090 — Reorder enabled currencies with drag-and-drop sort order persistence
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Management / Currencies
+
+**Platform:** Web, Android, iOS
+
+**Given** Multiple currencies are enabled in the database.
+
+**When** The user drags and reorders currencies via `currencyService.reorderCurrencies()` or the UI drag handle.
+
+**Then** The new `displayOrder` sequence is saved to localStorage, Turso DB, and API, and subsequent fetches return currencies in the custom order across modals and currency selectors.
+
+**Automation:** `src/services/__tests__/currencyService.test.ts` — `reorders currencies correctly and maintains the custom sort order`
+
+
