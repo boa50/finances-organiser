@@ -2,7 +2,7 @@ import React from 'react';
 import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { PaymentMethodItem } from '../../types';
-import { AppModal, AppText } from '../../components/ui';
+import { AppModal, AppText, AppSwitch } from '../../components/ui';
 import { CreditCard } from 'lucide-react-native';
 import theme from '../../theme';
 
@@ -59,13 +59,14 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
             style={({ pressed }) => [
               styles.toggleRow,
               pmAllowInstallments && styles.toggleRowActive,
-              pressed && { opacity: 0.7 },
+              pressed && { opacity: 0.85 },
             ]}
             onPress={() => setPmAllowInstallments(!pmAllowInstallments)}
           >
-            <View style={[styles.toggleTrack, pmAllowInstallments && styles.toggleTrackActive]}>
-              <View style={[styles.toggleThumb, pmAllowInstallments && styles.toggleThumbActive]} />
-            </View>
+            <AppSwitch
+              value={pmAllowInstallments}
+              onValueChange={setPmAllowInstallments}
+            />
             <AppText style={styles.toggleLabel}>
               {pmAllowInstallments
                 ? t('management.allowInstallmentsEnabled')
@@ -150,26 +151,6 @@ const styles = StyleSheet.create({
   toggleRowActive: {
     borderColor: theme.colors.accent,
     backgroundColor: 'rgba(56, 189, 248, 0.08)',
-  },
-  toggleTrack: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.borderLight,
-    padding: 2,
-    justifyContent: 'center',
-  },
-  toggleTrackActive: {
-    backgroundColor: theme.colors.accent,
-  },
-  toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: theme.colors.white,
-  },
-  toggleThumbActive: {
-    alignSelf: 'flex-end',
   },
   toggleLabel: {
     flex: 1,

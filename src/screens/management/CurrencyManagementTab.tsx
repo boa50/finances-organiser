@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, StyleSheet, Pressable, ScrollView, Switch } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CurrencyInfo } from '../../types';
 import {
@@ -8,6 +8,7 @@ import {
   AppText,
   AppEmptyState,
   AppTextInput,
+  AppSwitch,
   RenderDraggableItemInfo,
 } from '../../components/ui';
 import theme from '../../theme';
@@ -96,11 +97,9 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
 
             <View style={styles.rightCol}>
               {onToggleCurrency && (
-                <Switch
+                <AppSwitch
                   value={isEnabled}
                   onValueChange={(val) => onToggleCurrency(currency, val)}
-                  trackColor={{ false: theme.colors.borderLight, true: theme.colors.accent }}
-                  thumbColor={theme.colors.white}
                   accessibilityLabel={isEnabled ? `Disable ${currency.code}` : `Enable ${currency.code}`}
                   style={styles.switch}
                 />

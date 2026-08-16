@@ -4,7 +4,6 @@ import {
   Pressable,
   RefreshControl,
   StyleSheet,
-  Switch,
   View,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
@@ -22,6 +21,7 @@ import {
   AppEmptyState,
   AppSectionHeader,
   AppSegmentedControl,
+  AppSwitch,
   AppText,
   AppTextInput,
 } from '../components/ui';
@@ -207,11 +207,9 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                   label={item.active ? t('common.active') : t('common.inactive')}
                   variant={item.active ? 'success' : 'neutral'}
                 />
-                <Switch
+                <AppSwitch
                   value={item.active}
                   onValueChange={() => handleToggleActive(item)}
-                  trackColor={{ false: theme.colors.borderSubtle, true: theme.colors.accent }}
-                  thumbColor={theme.colors.white}
                   style={styles.switch}
                 />
               </View>

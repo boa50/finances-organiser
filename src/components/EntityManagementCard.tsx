@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Pressable, StyleSheet, Switch } from 'react-native';
-import { AppCard, AppText } from './ui';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { AppCard, AppText, AppSwitch } from './ui';
 import { GripVertical, Pencil, Trash2 } from 'lucide-react-native';
 import theme from '../theme';
 
@@ -72,11 +72,9 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
 
       <View style={styles.rightCol}>
         {onToggleEnabled && (
-          <Switch
+          <AppSwitch
             value={isItemEnabled}
             onValueChange={onToggleEnabled}
-            trackColor={{ false: theme.colors.borderLight, true: theme.colors.accent }}
-            thumbColor={theme.colors.white}
             accessibilityLabel={isItemEnabled ? `Disable ${name}` : `Enable ${name}`}
             style={styles.switch}
           />

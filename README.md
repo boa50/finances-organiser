@@ -187,6 +187,7 @@ finances-organiser/
         │   ├── AppSectionHeader.tsx # Standardized section title, subtitle & action header
         │   ├── AppSegmentedControl.tsx # Segmented tab filter control
         │   ├── AppEmptyState.tsx    # Reusable empty data state view
+        │   ├── AppSwitch.tsx         # Reusable animated toggle switch primitive
         │   ├── FeedbackMessage.tsx  # Banner/toast message component
         │   └── index.ts             # UI primitive barrel export
         ├── CategoryIcon.tsx         # Lucide vector icon mapping for category display

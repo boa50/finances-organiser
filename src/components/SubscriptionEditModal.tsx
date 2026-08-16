@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
-  Switch,
   View,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +15,7 @@ import { handleSubscriptionBillingDayUpdate } from '../services/subscriptionAuto
 import { tursoService } from '../services/tursoService';
 import { CategoryIcon } from './CategoryIcon';
 import { ChipSelector } from './ChipSelector';
-import { AppButton, AppModal, AppText, AppTextInput, FeedbackMessage } from './ui';
+import { AppButton, AppModal, AppSwitch, AppText, AppTextInput, FeedbackMessage } from './ui';
 import { Building2 } from 'lucide-react-native';
 import theme from '../theme';
 
@@ -227,11 +226,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
               {active ? t('subscriptionModal.activeDesc') : t('subscriptionModal.inactiveDesc')}
             </AppText>
           </View>
-          <Switch
+          <AppSwitch
             value={active}
             onValueChange={setActive}
-            trackColor={{ false: theme.colors.borderSubtle, true: theme.colors.accent }}
-            thumbColor={theme.colors.white}
           />
         </View>
 

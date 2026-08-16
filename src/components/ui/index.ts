@@ -19,3 +19,4 @@ export {
   type AppDraggableListProps,
   type RenderDraggableItemInfo,
 } from './AppDraggableList';
+export { AppSwitch, type AppSwitchProps } from './AppSwitch';
