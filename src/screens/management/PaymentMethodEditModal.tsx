@@ -63,10 +63,12 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
             ]}
             onPress={() => setPmAllowInstallments(!pmAllowInstallments)}
           >
-            <AppSwitch
-              value={pmAllowInstallments}
-              onValueChange={setPmAllowInstallments}
-            />
+            <View pointerEvents="none">
+              <AppSwitch
+                value={pmAllowInstallments}
+                onValueChange={setPmAllowInstallments}
+              />
+            </View>
             <AppText style={styles.toggleLabel}>
               {pmAllowInstallments
                 ? t('management.allowInstallmentsEnabled')

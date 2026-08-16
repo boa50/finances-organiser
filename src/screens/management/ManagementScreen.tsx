@@ -435,39 +435,72 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   };
 
   const handleToggleCategory = async (cat: CategoryItem, enabled: boolean) => {
+    // Optimistic UI update
+    setCategories((prev) =>
+      prev.map((c) => (c.id === cat.id ? { ...c, enabled } : c))
+    );
     try {
       await categoryService.toggleCategoryEnabled(cat.id, enabled);
-      await loadCategoriesData();
+      setCategories(categoryService.getCategoriesSync());
       onCategoriesUpdated?.();
     } catch (err: any) {
       console.error('Failed to toggle category enabled state:', err);
+      await loadCategoriesData();
     }
   };
 
   const handleTogglePm = async (pm: PaymentMethodItem, enabled: boolean) => {
+    // Optimistic UI update
+    setPaymentMethods((prev) =>
+      prev.map((item) => (item.id === pm.id ? { ...item, enabled } : item))
+    );
     try {
       await paymentMethodService.togglePaymentMethodEnabled(pm.id, enabled);
-      await loadPaymentMethodsData();
+      setPaymentMethods(paymentMethodService.getPaymentMethodsSync());
     } catch (err: any) {
       console.error('Failed to toggle payment method enabled state:', err);
+      await loadPaymentMethodsData();
     }
   };
 
   const handleToggleBank = async (bank: BankItem, enabled: boolean) => {
+    // Optimistic UI update
+    setBanks((prev) =>
+      prev.map((item) => (item.id === bank.id ? { ...item, enabled } : item))
+    );
     try {
       await bankService.toggleBankEnabled(bank.id, enabled);
-      await loadBanksData();
+      setBanks(bankService.getBanksSync());
     } catch (err: any) {
       console.error('Failed to toggle bank enabled state:', err);
+      await loadBanksData();
     }
   };
 
   const handleToggleCurrency = async (currency: CurrencyInfo, enabled: boolean) => {
+    if (!enabled) {
+      const enabledCurrencies = currencies.filter((c) => c.enabled !== false);
+      if (enabledCurrencies.length <= 1) {
+        confirmAction({
+          title: t('management.cannotDisableCurrencyTitle', { defaultValue: 'Cannot Disable Currency' }),
+          message: t('management.cannotDisableCurrencyMsg', { defaultValue: 'At least one currency must remain enabled.' }),
+          destructive: false,
+          onConfirm: () => {},
+        });
+        return;
+      }
+    }
+
+    // Optimistic UI update
+    setCurrencies((prev) =>
+      prev.map((item) => (item.code === currency.code ? { ...item, enabled } : item))
+    );
     try {
       await currencyService.toggleCurrencyEnabled(currency.code, enabled);
-      await loadCurrenciesData();
+      setCurrencies(currencyService.getCurrenciesSync());
       onCurrenciesUpdated?.();
     } catch (err: any) {
+      await loadCurrenciesData();
       confirmAction({
         title: t('management.cannotDisableCurrencyTitle', { defaultValue: 'Cannot Disable Currency' }),
         message: err?.message || t('management.cannotDisableCurrencyMsg', { defaultValue: 'At least one currency must remain enabled.' }),

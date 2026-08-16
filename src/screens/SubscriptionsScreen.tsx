@@ -210,7 +210,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                 <AppSwitch
                   value={item.active}
                   onValueChange={() => handleToggleActive(item)}
-                  style={styles.switch}
+                  size="sm"
                 />
               </View>
 
@@ -493,9 +493,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  switch: {
-    transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }],
   },
   iconBtn: {
     padding: theme.spacing.xs,

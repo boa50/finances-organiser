@@ -74,6 +74,7 @@ export const AppSwitch: React.FC<AppSwitchProps> = ({
     <Pressable
       onPress={handlePress}
       disabled={disabled}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       accessible={true}
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled }}

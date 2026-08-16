@@ -75,8 +75,8 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
           <AppSwitch
             value={isItemEnabled}
             onValueChange={onToggleEnabled}
+            size="sm"
             accessibilityLabel={isItemEnabled ? `Disable ${name}` : `Enable ${name}`}
-            style={styles.switch}
           />
         )}
         <View style={styles.actionRow}>
@@ -165,9 +165,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
-  },
-  switch: {
-    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
   },
   actionRow: {
     flexDirection: 'row',

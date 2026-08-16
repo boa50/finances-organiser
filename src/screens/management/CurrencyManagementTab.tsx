@@ -100,8 +100,8 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
                 <AppSwitch
                   value={isEnabled}
                   onValueChange={(val) => onToggleCurrency(currency, val)}
+                  size="sm"
                   accessibilityLabel={isEnabled ? `Disable ${currency.code}` : `Enable ${currency.code}`}
-                  style={styles.switch}
                 />
               )}
               <Pressable
@@ -295,9 +295,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
-  },
-  switch: {
-    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
   },
   deleteButton: {
     padding: theme.spacing.sm,
