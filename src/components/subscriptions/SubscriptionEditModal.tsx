@@ -23,7 +23,7 @@ import {
   AppTextInput,
   FeedbackMessage,
 } from '../ui';
-import { Building2 } from 'lucide-react-native';
+import { Building2, CreditCard } from 'lucide-react-native';
 import theme from '../../theme';
 
 export interface SubscriptionEditModalProps {
@@ -321,6 +321,12 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
               onSelect={(pm) => setPaymentMethodId(pm.id === paymentMethodId ? '' : pm.id)}
               keyExtractor={(pm) => pm.id}
               labelExtractor={(pm) => pm.name}
+              renderIcon={(_item, active) => (
+                <CreditCard
+                  size={14}
+                  color={active ? theme.colors.accent : theme.colors.textSecondary}
+                />
+              )}
             />
           </View>
         )}
