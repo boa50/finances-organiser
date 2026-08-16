@@ -12,6 +12,7 @@
     "@types/d3": "^7.4.3",
     "d3": "^7.9.0",
     "expo": "~57.0.9",
+    "expo-splash-screen": "~57.0.6",
     "expo-status-bar": "~57.0.1",
     "i18next": "^26.3.6",
     "lucide-react-native": "^1.28.0",

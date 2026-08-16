@@ -26,7 +26,6 @@
     "month": "mês"
   },
   "auth": {
-    "title": "FinanceCloud",
     "subtitle": "Digite sua senha para continuar",
     "passwordPlaceholder": "Senha",
     "unlock": "Entrar",
@@ -34,6 +33,7 @@
     "invalidPasswordError": "Senha inválida. Tente novamente."
   },
   "header": {
+    "title": "Minhas Finanças",
     "tursoConnected": "Turso Conectado",
     "tursoOffline": "Turso Offline",
     "clearAll": "Limpar Tudo",

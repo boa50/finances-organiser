@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Lock, LogIn, Zap } from 'lucide-react-native';
+import { Lock, LogIn, Wallet } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { authService } from '../services/authService';
 import { AppButton, AppTextInput, FeedbackMessage } from '../components/ui';
@@ -60,9 +60,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
           {/* Header section with brand */}
           <View style={styles.header}>
             <View style={styles.brandBadge}>
-              <Zap size={28} color={theme.colors.accent} strokeWidth={2.5} />
+              <Wallet size={28} color={theme.colors.accent} strokeWidth={2.5} />
             </View>
-            <Text style={styles.title}>FinanceCloud</Text>
+            <Text style={styles.title}>{t('header.title')}</Text>
             <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
           </View>
 

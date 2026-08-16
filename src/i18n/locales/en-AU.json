@@ -26,7 +26,6 @@
     "month": "month"
   },
   "auth": {
-    "title": "FinanceCloud",
     "subtitle": "Enter your password to continue",
     "passwordPlaceholder": "Password",
     "unlock": "Unlock",
@@ -34,6 +33,7 @@
     "invalidPasswordError": "Invalid password. Please try again."
   },
   "header": {
+    "title": "My Finances",
     "tursoConnected": "Turso Connected",
     "tursoOffline": "Turso Offline",
     "clearAll": "Clear All",

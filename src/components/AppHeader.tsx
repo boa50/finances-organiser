@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { Globe, LogOut, Trash2, Zap } from 'lucide-react-native';
+import { Globe, LogOut, Trash2, Wallet } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { AppBadge, AppText } from './ui';
 import { toggleAppLanguage } from '../i18n';
@@ -25,8 +25,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <View style={styles.topBar}>
       <View style={styles.brandContainer}>
-        <Zap size={20} color={theme.colors.accent} strokeWidth={2} />
-        <AppText style={styles.brandTitle}>FinanceCloud</AppText>
+        <Wallet size={20} color={theme.colors.accent} strokeWidth={2} />
+        <AppText style={styles.brandTitle}>{t('header.title')}</AppText>
       </View>
 
       <View style={styles.topActions}>
