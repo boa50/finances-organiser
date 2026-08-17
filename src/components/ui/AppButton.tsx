@@ -11,26 +11,69 @@ import theme from '../../theme';
 export interface AppButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'success';
+  size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   disabled?: boolean;
   icon?: React.ReactNode;
   fullWidth?: boolean;
+  style?: any;
+  textStyle?: any;
 }
 
 export const AppButton: React.FC<AppButtonProps> = ({
   title,
   onPress,
   variant = 'primary',
+  size = 'md',
   loading = false,
   disabled = false,
   icon,
   fullWidth = true,
+  style,
+  textStyle,
 }) => {
   const isInteractive = !disabled && !loading;
 
   const getVariantStyles = () => {
     switch (variant) {
+      case 'secondary':
+        return {
+          button: {
+            backgroundColor: theme.colors.surfaceElevated,
+            borderColor: theme.colors.borderLight,
+            borderWidth: 1,
+          },
+          text: {
+            color: theme.colors.textPrimary,
+          },
+          spinnerColor: theme.colors.textPrimary,
+        };
+      case 'outline':
+        return {
+          button: {
+            backgroundColor: 'transparent',
+            borderColor: theme.colors.borderLight,
+            borderWidth: 1,
+          },
+          text: {
+            color: theme.colors.textLight,
+          },
+          spinnerColor: theme.colors.textLight,
+        };
+      case 'success':
+        return {
+          button: {
+            backgroundColor: theme.colors.success,
+            borderColor: 'transparent',
+            borderWidth: 0,
+            boxShadow: '0px 4px 14px rgba(16, 185, 129, 0.3)',
+          },
+          text: {
+            color: theme.colors.white,
+          },
+          spinnerColor: theme.colors.white,
+        };
       case 'danger':
         return {
           button: {
@@ -62,6 +105,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
             backgroundColor: theme.colors.accent,
             borderColor: 'transparent',
             borderWidth: 0,
+            boxShadow: '0px 4px 14px rgba(56, 189, 248, 0.3)',
           },
           text: {
             color: theme.colors.white,
@@ -71,16 +115,58 @@ export const AppButton: React.FC<AppButtonProps> = ({
     }
   };
 
+  const getSizeStyles = () => {
+    switch (size) {
+      case 'sm':
+        return {
+          button: {
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.sm,
+            borderRadius: theme.radii.base,
+          },
+          text: {
+            fontSize: theme.fontSize.sm,
+          },
+        };
+      case 'lg':
+        return {
+          button: {
+            paddingHorizontal: theme.spacing['4xl'],
+            paddingVertical: theme.spacing['2xl'],
+            borderRadius: theme.radii.button,
+          },
+          text: {
+            fontSize: theme.fontSize.xl,
+          },
+        };
+      case 'md':
+      default:
+        return {
+          button: {
+            paddingHorizontal: theme.spacing['2xl'],
+            paddingVertical: theme.spacing.xl,
+            borderRadius: theme.radii.button,
+          },
+          text: {
+            fontSize: theme.fontSize.lg,
+          },
+        };
+    }
+  };
+
   const variantStyles = getVariantStyles();
+  const sizeStyles = getSizeStyles();
 
   return (
     <Pressable
       style={({ pressed }) => [
         styles.button,
+        sizeStyles.button,
         variantStyles.button,
         fullWidth && styles.fullWidth,
         !isInteractive && styles.disabled,
-        pressed && isInteractive && { opacity: 0.85 },
+        pressed && isInteractive && { opacity: 0.85, transform: [{ scale: 0.98 }] },
+        style,
       ]}
       onPress={onPress}
       disabled={!isInteractive}
@@ -90,7 +176,9 @@ export const AppButton: React.FC<AppButtonProps> = ({
       ) : (
         <View style={styles.contentContainer}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <Text style={[styles.text, variantStyles.text]}>{title}</Text>
+          <Text style={[styles.text, sizeStyles.text, variantStyles.text, textStyle]}>
+            {title}
+          </Text>
         </View>
       )}
     </Pressable>
@@ -99,9 +187,6 @@ export const AppButton: React.FC<AppButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: theme.radii.lg,
-    paddingHorizontal: theme.spacing['2xl'],
-    paddingVertical: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -122,7 +207,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   text: {
-    fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.bold,
+    fontFamily: theme.fontFamily.sans,
   },
 });

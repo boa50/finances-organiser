@@ -10,6 +10,7 @@ import { MonthlyBreakdownCharts } from '../components/analytics';
 import { EvolutionTrendChart } from '../components/charts';
 import { DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
 import { AppCard, AppText } from '../components/ui';
+import { ArrowDownLeft, ArrowUpRight, Scale } from 'lucide-react-native';
 import theme from '../theme';
 
 interface AnalyticsScreenProps {
@@ -46,27 +47,43 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
 
       {/* KPI Cards Row */}
       <View style={styles.kpiRow}>
-        <AppCard style={styles.kpiCard} padding="xl">
-          <AppText style={styles.kpiLabel}>{t('analytics.lifetimeIncomes')}</AppText>
-          <AppText style={[styles.kpiValue, { color: theme.colors.success }]}>
+        <AppCard style={styles.kpiCard} variant="glass" padding="xl">
+          <View style={styles.kpiHeaderRow}>
+            <View style={[styles.kpiIconBadge, { backgroundColor: theme.colors.successBg }]}>
+              <ArrowUpRight size={14} color={theme.colors.success} strokeWidth={2.5} />
+            </View>
+            <AppText style={styles.kpiLabel}>{t('analytics.lifetimeIncomes')}</AppText>
+          </View>
+          <AppText style={[styles.kpiValue, { color: theme.colors.success }]} tabularNums>
             +{formatMoney(totalIncomeConverted, DEFAULT_CURRENCY)}
           </AppText>
         </AppCard>
 
-        <AppCard style={styles.kpiCard} padding="xl">
-          <AppText style={styles.kpiLabel}>{t('analytics.lifetimeExpenses')}</AppText>
-          <AppText style={[styles.kpiValue, { color: theme.colors.danger }]}>
+        <AppCard style={styles.kpiCard} variant="glass" padding="xl">
+          <View style={styles.kpiHeaderRow}>
+            <View style={[styles.kpiIconBadge, { backgroundColor: theme.colors.dangerBg }]}>
+              <ArrowDownLeft size={14} color={theme.colors.danger} strokeWidth={2.5} />
+            </View>
+            <AppText style={styles.kpiLabel}>{t('analytics.lifetimeExpenses')}</AppText>
+          </View>
+          <AppText style={[styles.kpiValue, { color: theme.colors.danger }]} tabularNums>
             -{formatMoney(totalExpenseConverted, DEFAULT_CURRENCY)}
           </AppText>
         </AppCard>
 
-        <AppCard style={styles.kpiCard} padding="xl">
-          <AppText style={styles.kpiLabel}>{t('analytics.netAccumulated')}</AppText>
+        <AppCard style={styles.kpiCard} variant="glass" padding="xl">
+          <View style={styles.kpiHeaderRow}>
+            <View style={[styles.kpiIconBadge, { backgroundColor: theme.colors.accentBg }]}>
+              <Scale size={14} color={theme.colors.accent} strokeWidth={2.5} />
+            </View>
+            <AppText style={styles.kpiLabel}>{t('analytics.netAccumulated')}</AppText>
+          </View>
           <AppText
             style={[
               styles.kpiValue,
               { color: netOverall >= 0 ? theme.colors.accent : theme.colors.danger },
             ]}
+            tabularNums
           >
             {formatMoney(netOverall, DEFAULT_CURRENCY)}
           </AppText>
@@ -89,13 +106,14 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: theme.spacing['4xl'],
+    paddingBottom: 110,
     gap: theme.spacing.lg,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
   },
   header: {
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.xxs,
   },
   pageTitle: {
     color: theme.colors.textPrimary,
@@ -110,22 +128,37 @@ const styles = StyleSheet.create({
   },
   kpiRow: {
     flexDirection: 'row',
-    gap: theme.spacing.base,
+    gap: theme.spacing.md,
     marginVertical: theme.spacing.xs,
+    flexWrap: 'wrap',
   },
   kpiCard: {
     flex: 1,
+    minWidth: 160,
+    gap: theme.spacing.xs,
+  },
+  kpiHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  kpiIconBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   kpiLabel: {
     color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.xs,
+    fontSize: 11,
     fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: theme.spacing.xs,
   },
   kpiValue: {
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.extrabold,
+    letterSpacing: -0.3,
   },
 });

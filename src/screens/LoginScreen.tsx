@@ -5,13 +5,12 @@ import {
   SafeAreaView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { Lock, LogIn, Wallet } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { authService } from '../services/authService';
-import { AppButton, AppTextInput, FeedbackMessage } from '../components/ui';
+import { AppButton, AppText, AppTextInput, FeedbackMessage } from '../components/ui';
 import theme from '../theme';
 
 export interface LoginScreenProps {
@@ -62,8 +61,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
             <View style={styles.brandBadge}>
               <Wallet size={28} color={theme.colors.accent} strokeWidth={2.5} />
             </View>
-            <Text style={styles.title}>{t('header.title')}</Text>
-            <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
+            <AppText style={styles.title}>{t('header.title')}</AppText>
+            <AppText style={styles.subtitle}>{t('auth.subtitle')}</AppText>
           </View>
 
           {/* Form section */}
@@ -116,40 +115,41 @@ const styles = StyleSheet.create({
   cardContainer: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['3xl'],
-    paddingHorizontal: theme.spacing['4xl'],
+    backgroundColor: theme.colors.surfaceElevated,
+    borderRadius: theme.radii.modal,
+    paddingHorizontal: theme.spacing['5xl'],
     paddingVertical: theme.spacing['6xl'],
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.3)',
-    elevation: 10,
+    borderColor: theme.colors.borderLight,
+    boxShadow: '0px 20px 48px rgba(0, 0, 0, 0.55)',
+    elevation: 12,
     gap: theme.spacing['5xl'],
   },
   header: {
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
   brandBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: theme.radii['2xl'],
+    width: 60,
+    height: 60,
+    borderRadius: 20,
     backgroundColor: theme.colors.accentBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: theme.spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+    borderColor: 'rgba(56, 189, 248, 0.35)',
+    boxShadow: '0px 4px 20px rgba(56, 189, 248, 0.25)',
   },
   title: {
     color: theme.colors.textPrimary,
     fontSize: theme.fontSize['3xl'],
     fontWeight: theme.fontWeight.extrabold,
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   subtitle: {
     color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.md,
+    fontSize: theme.fontSize.sm,
     textAlign: 'center',
   },
   form: {

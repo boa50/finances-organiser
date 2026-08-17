@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import theme from '../../theme';
 import { AppButton } from './AppButton';
 import { AppCard } from './AppCard';
+import { AppText } from './AppText';
 
 export interface AppEmptyStateProps {
   title: string;
@@ -22,16 +23,17 @@ export const AppEmptyState: React.FC<AppEmptyStateProps> = ({
   style,
 }) => {
   return (
-    <AppCard style={[styles.card, style]} variant="outlined" padding="6xl">
+    <AppCard style={[styles.card, style]} variant="glass" padding="6xl">
       {icon && <View style={styles.iconContainer}>{icon}</View>}
-      <Text style={styles.title}>{title}</Text>
-      {description ? <Text style={styles.description}>{description}</Text> : null}
+      <AppText style={styles.title}>{title}</AppText>
+      {description ? <AppText style={styles.description}>{description}</AppText> : null}
       {actionTitle && onActionPress ? (
         <View style={styles.actionContainer}>
           <AppButton
             title={actionTitle}
             onPress={onActionPress}
             variant="ghost"
+            size="sm"
             fullWidth={false}
           />
         </View>
@@ -45,23 +47,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: theme.spacing['6xl'],
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
   iconContainer: {
-    marginBottom: theme.spacing.sm,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: theme.colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: theme.spacing.sm,
   },
   title: {
-    color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.md,
-    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.textPrimary,
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.bold,
     textAlign: 'center',
   },
   description: {
-    color: theme.colors.textTertiary,
-    fontSize: theme.fontSize.base,
+    color: theme.colors.textSecondary,
+    fontSize: theme.fontSize.sm,
     textAlign: 'center',
+    maxWidth: 280,
   },
   actionContainer: {
     marginTop: theme.spacing.md,

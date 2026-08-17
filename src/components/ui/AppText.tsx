@@ -13,6 +13,7 @@ export interface AppTextProps extends RNTextProps {
   color?: string;
   weight?: keyof typeof theme.fontWeight;
   align?: 'left' | 'center' | 'right' | 'justify';
+  tabularNums?: boolean;
   style?: StyleProp<TextStyle>;
   children: React.ReactNode;
 }
@@ -22,6 +23,7 @@ export const AppText: React.FC<AppTextProps> = ({
   color,
   weight,
   align,
+  tabularNums = false,
   style,
   children,
   ...rest
@@ -32,6 +34,7 @@ export const AppText: React.FC<AppTextProps> = ({
   if (color) customStyle.color = color;
   if (weight) customStyle.fontWeight = theme.fontWeight[weight];
   if (align) customStyle.textAlign = align;
+  if (tabularNums) customStyle.fontVariant = ['tabular-nums'];
 
   return (
     <RNText style={[styles.base, variantStyle, customStyle, style]} {...rest}>

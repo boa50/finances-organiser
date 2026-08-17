@@ -13,7 +13,8 @@ export interface AppBadgeProps {
   label: string;
   icon?: React.ReactNode;
   statusDot?: boolean;
-  variant?: 'success' | 'danger' | 'warning' | 'accent' | 'neutral';
+  trend?: 'up' | 'down';
+  variant?: 'success' | 'danger' | 'warning' | 'accent' | 'neutral' | 'info';
   size?: 'sm' | 'md';
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -23,6 +24,7 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
   label,
   icon,
   statusDot = false,
+  trend,
   variant = 'accent',
   size = 'md',
   onPress,
@@ -58,6 +60,7 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
           text: theme.colors.textSecondary,
           dot: theme.colors.textSecondary,
         };
+      case 'info':
       case 'accent':
       default:
         return {
@@ -86,6 +89,11 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
   const content = (
     <>
       {statusDot && <View style={[styles.dot, { backgroundColor: colors.dot }]} />}
+      {trend && (
+        <Text style={[styles.trendText, { color: colors.text, fontSize: isSm ? 10 : theme.fontSize.xs }]}>
+          {trend === 'up' ? '↑' : '↓'}
+        </Text>
+      )}
       {icon && <View style={styles.iconBox}>{icon}</View>}
       <Text style={[styles.text, { color: colors.text, fontSize: isSm ? 10 : theme.fontSize.xs }]}>
         {label}
@@ -111,9 +119,9 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: theme.radii.xl,
+    borderRadius: theme.radii.pill,
     borderWidth: 1,
-    gap: 6,
+    gap: 5,
     alignSelf: 'flex-start',
   },
   dot: {
@@ -121,11 +129,15 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
+  trendText: {
+    fontWeight: theme.fontWeight.extrabold,
+  },
   iconBox: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   text: {
     fontWeight: theme.fontWeight.bold,
+    fontFamily: theme.fontFamily.sans,
   },
 });

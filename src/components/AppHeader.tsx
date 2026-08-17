@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { Globe, LogOut, Trash2, Wallet } from 'lucide-react-native';
+import { Globe, LogOut, Wallet } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { AppBadge, AppText } from './ui';
 import { toggleAppLanguage } from '../i18n';
@@ -8,15 +8,13 @@ import theme from '../theme';
 
 export interface AppHeaderProps {
   isConnected: boolean;
-  hasTransactions: boolean;
-  onClearAll: () => void;
+  hasTransactions?: boolean;
+  onClearAll?: () => void;
   onLogout: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   isConnected,
-  hasTransactions,
-  onClearAll,
   onLogout,
 }) => {
   const { t, i18n } = useTranslation();
@@ -25,8 +23,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   return (
     <View style={styles.topBar}>
       <View style={styles.brandContainer}>
-        <Wallet size={20} color={theme.colors.accent} strokeWidth={2} />
-        <AppText style={styles.brandTitle}>{t('header.title')}</AppText>
+        <View style={styles.brandIconWrapper}>
+          <Wallet size={18} color={theme.colors.accent} strokeWidth={2.5} />
+        </View>
+        <View>
+          <AppText style={styles.brandTitle}>{t('header.title')}</AppText>
+        </View>
       </View>
 
       <View style={styles.topActions}>
@@ -34,29 +36,20 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           label={isConnected ? t('header.tursoConnected') : t('header.tursoOffline')}
           variant={isConnected ? 'success' : 'warning'}
           statusDot
+          size="sm"
         />
 
-        {hasTransactions && (
-          <Pressable
-            style={({ pressed }) => [styles.clearBtn, pressed && { opacity: 0.7 }]}
-            onPress={onClearAll}
-          >
-            <Trash2 size={14} color={theme.colors.danger} />
-            <AppText style={styles.clearBtnText}>{t('header.clearAll')}</AppText>
-          </Pressable>
-        )}
-
         <Pressable
-          style={({ pressed }) => [styles.langBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.iconActionBtn, pressed && { opacity: 0.7 }]}
           onPress={() => toggleAppLanguage()}
           accessibilityLabel={t('header.switchLanguage')}
         >
-          <Globe size={14} color={theme.colors.accent} />
+          <Globe size={13} color={theme.colors.accent} />
           <AppText style={styles.langBtnText}>{currentLang}</AppText>
         </Pressable>
 
         <Pressable
-          style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [styles.iconActionBtn, pressed && { opacity: 0.7 }]}
           onPress={onLogout}
           accessibilityLabel={t('header.logout')}
         >
@@ -72,9 +65,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing['2xl'],
-    paddingVertical: theme.spacing.lg,
-    backgroundColor: theme.colors.surface,
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingVertical: theme.spacing.md,
+    backgroundColor: theme.colors.background,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.borderSubtle,
   },
@@ -83,57 +76,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
+  brandIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: theme.radii.base,
+    backgroundColor: theme.colors.accentBg,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   brandTitle: {
     color: theme.colors.textPrimary,
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.extrabold,
-    letterSpacing: -0.5,
+    letterSpacing: -0.4,
   },
   topActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  clearBtn: {
+  iconActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs,
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-    borderColor: theme.colors.danger,
-    borderWidth: 1,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radii.md,
-  },
-  clearBtnText: {
-    color: theme.colors.danger,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
-  },
-  langBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    backgroundColor: theme.colors.surfaceHighlight,
+    gap: 4,
+    backgroundColor: theme.colors.surfaceRecessed,
     borderColor: theme.colors.borderLight,
     borderWidth: 1,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radii.md,
+    paddingVertical: 5,
+    borderRadius: theme.radii.pill,
   },
   langBtnText: {
     color: theme.colors.accent,
-    fontSize: theme.fontSize.xs,
+    fontSize: 10,
     fontWeight: theme.fontWeight.bold,
-  },
-  logoutBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.surfaceHighlight,
-    borderColor: theme.colors.borderLight,
-    borderWidth: 1,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radii.md,
   },
 });

@@ -124,25 +124,36 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
         <Svg width={width} height={height}>
           <Defs>
             <LinearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={theme.colors.success} stopOpacity="0.22" />
+              <Stop offset="0%" stopColor={theme.colors.success} stopOpacity="0.32" />
+              <Stop offset="50%" stopColor={theme.colors.success} stopOpacity="0.12" />
               <Stop offset="100%" stopColor={theme.colors.success} stopOpacity="0.0" />
             </LinearGradient>
             <LinearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={theme.colors.danger} stopOpacity="0.22" />
+              <Stop offset="0%" stopColor={theme.colors.danger} stopOpacity="0.32" />
+              <Stop offset="50%" stopColor={theme.colors.danger} stopOpacity="0.12" />
               <Stop offset="100%" stopColor={theme.colors.danger} stopOpacity="0.0" />
             </LinearGradient>
           </Defs>
 
           <G transform={`translate(${marginLeft}, ${marginTop})`}>
-            {/* Y Axis Labels (Inner horizontal grid lines removed) */}
+            {/* Subtle horizontal grid lines */}
             {yTicks.map((tick, i) => {
               const yPos = yScale(tick);
               return (
                 <G key={`y-axis-tick-${i}`}>
+                  <Line
+                    x1={0}
+                    y1={yPos}
+                    x2={innerWidth}
+                    y2={yPos}
+                    stroke={theme.colors.borderSubtle}
+                    strokeWidth={1}
+                    strokeDasharray="4 4"
+                  />
                   <SvgText
                     x={-10}
                     y={yPos + 4}
-                    fill={theme.colors.textSecondary}
+                    fill={theme.colors.textTertiary}
                     fontSize={theme.fontSize.xs}
                     fontFamily={theme.fontFamily.sans}
                     textAnchor="end"
@@ -157,12 +168,12 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
             <Path d={incomeAreaPath} fill="url(#incomeGradient)" />
             <Path d={expenseAreaPath} fill="url(#expenseGradient)" />
 
-            {/* Income & Expense Lines with Sophisticated Opacity */}
+            {/* Income & Expense Lines with Glowing Stroke */}
             <Path
               d={incomePath}
               fill="none"
               stroke={theme.colors.success}
-              strokeOpacity={0.82}
+              strokeOpacity={0.9}
               strokeWidth={3}
               strokeLinecap="round"
             />
@@ -170,7 +181,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
               d={expensePath}
               fill="none"
               stroke={theme.colors.danger}
-              strokeOpacity={0.82}
+              strokeOpacity={0.9}
               strokeWidth={3}
               strokeLinecap="round"
             />
@@ -196,29 +207,47 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
                       y1={0}
                       x2={cx}
                       y2={innerHeight}
-                      stroke="rgba(255, 255, 255, 0.25)"
+                      stroke="rgba(56, 189, 248, 0.4)"
                       strokeWidth={1.5}
                       strokeDasharray="3 3"
                     />
                   )}
 
+                  {isSelected && (
+                    <Circle
+                      cx={cx}
+                      cy={cyIncome}
+                      r={10}
+                      fill={theme.colors.success}
+                      fillOpacity={0.2}
+                    />
+                  )}
                   <Circle
                     cx={cx}
                     cy={cyIncome}
-                    r={isSelected ? 6 : 4}
+                    r={isSelected ? 5 : 3.5}
                     fill={theme.colors.success}
-                    fillOpacity={0.9}
-                    stroke="#0F172A"
+                    fillOpacity={1}
+                    stroke={theme.colors.surfaceElevated}
                     strokeWidth={2}
                   />
 
+                  {isSelected && (
+                    <Circle
+                      cx={cx}
+                      cy={cyExpense}
+                      r={10}
+                      fill={theme.colors.danger}
+                      fillOpacity={0.2}
+                    />
+                  )}
                   <Circle
                     cx={cx}
                     cy={cyExpense}
-                    r={isSelected ? 6 : 4}
+                    r={isSelected ? 5 : 3.5}
                     fill={theme.colors.danger}
-                    fillOpacity={0.9}
-                    stroke="#0F172A"
+                    fillOpacity={1}
+                    stroke={theme.colors.surfaceElevated}
                     strokeWidth={2}
                   />
 
@@ -263,12 +292,13 @@ export type D3EvolutionChartProps = EvolutionTrendChartProps;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['2xl'],
+    backgroundColor: theme.colors.surfaceGlass,
+    borderRadius: theme.radii.card,
     padding: theme.spacing['4xl'],
-    marginVertical: theme.spacing.md,
+    marginVertical: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.borderLight,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -313,7 +343,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   legendText: {
-    color: theme.colors.textMuted,
+    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },

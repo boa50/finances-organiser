@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { AppCard, AppText, AppSwitch } from '../ui';
-import { GripVertical, Pencil, Trash2 } from 'lucide-react-native';
+import { View, StyleSheet } from 'react-native';
+import { AppCard, AppText, AppSwitch, AppIconButton } from '../ui';
+import { GripVertical } from 'lucide-react-native';
 import theme from '../../theme';
 
 export interface EntityManagementCardProps {
@@ -9,8 +9,10 @@ export interface EntityManagementCardProps {
   name: string;
   subtitle?: string;
   color?: string;
-  onEdit: () => void;
-  onDelete: () => void;
+  badge?: React.ReactNode;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
   isDraggable?: boolean;
   dragHandleProps?: any;
   isDragging?: boolean;
@@ -23,8 +25,10 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
   name,
   subtitle,
   color,
+  badge,
   onEdit,
   onDelete,
+  canDelete = true,
   isDraggable = false,
   dragHandleProps,
   isDragging = false,
@@ -65,6 +69,7 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
         <View style={styles.infoCol}>
           <View style={styles.titleRow}>
             <AppText style={[styles.name, !isItemEnabled && styles.nameDisabled]}>{name}</AppText>
+            {badge}
           </View>
           {subtitle && <AppText style={styles.subtitle}>{subtitle}</AppText>}
         </View>
@@ -79,22 +84,25 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
             accessibilityLabel={isItemEnabled ? `Disable ${name}` : `Enable ${name}`}
           />
         )}
-        <View style={styles.actionRow}>
-          <Pressable
-            style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
-            onPress={onEdit}
-            accessibilityLabel={`Edit ${name}`}
-          >
-            <Pencil size={14} color={theme.colors.accent} />
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.actionBtn, pressed && { opacity: 0.7 }]}
-            onPress={onDelete}
-            accessibilityLabel={`Delete ${name}`}
-          >
-            <Trash2 size={14} color={theme.colors.danger} />
-          </Pressable>
-        </View>
+        {(onEdit || onDelete) && (
+          <View style={styles.actionRow}>
+            {onEdit && (
+              <AppIconButton
+                variant="edit"
+                onPress={onEdit}
+                accessibilityLabel={`Edit ${name}`}
+              />
+            )}
+            {onDelete && (
+              <AppIconButton
+                variant="delete"
+                onPress={onDelete}
+                disabled={!canDelete}
+                accessibilityLabel={`Delete ${name}`}
+              />
+            )}
+          </View>
+        )}
       </View>
     </AppCard>
   );
@@ -170,10 +178,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.xs,
-  },
-  actionBtn: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.radii.sm,
-    backgroundColor: theme.colors.background,
   },
 });

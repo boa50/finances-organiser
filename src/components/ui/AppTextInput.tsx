@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, View, ReturnKeyTypeOptions } from 'react-native';
+import {
+  KeyboardTypeOptions,
+  StyleProp,
+  StyleSheet,
+  TextInput,
+  TextStyle,
+  View,
+  ViewStyle,
+  ReturnKeyTypeOptions,
+} from 'react-native';
 import theme from '../../theme';
 
 export interface AppTextInputProps {
@@ -11,6 +20,11 @@ export interface AppTextInputProps {
   editable?: boolean;
   error?: boolean;
   icon?: React.ReactNode;
+  rightElement?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+  keyboardType?: KeyboardTypeOptions;
+  style?: StyleProp<ViewStyle>;
+  inputStyle?: StyleProp<TextStyle>;
   onSubmitEditing?: () => void;
   returnKeyType?: ReturnKeyTypeOptions;
 }
@@ -24,6 +38,11 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
   editable = true,
   error = false,
   icon,
+  rightElement,
+  size = 'md',
+  keyboardType = 'default',
+  style,
+  inputStyle,
   onSubmitEditing,
   returnKeyType = 'done',
 }) => {
@@ -32,22 +51,54 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
   const getBorderColor = () => {
     if (error) return theme.colors.danger;
     if (isFocused) return theme.colors.accent;
-    return theme.colors.border;
+    return theme.colors.borderLight;
+  };
+
+  const getContainerPadding = () => {
+    switch (size) {
+      case 'sm':
+        return {
+          paddingVertical: theme.spacing.md,
+          paddingHorizontal: theme.spacing.xl,
+        };
+      case 'lg':
+        return {
+          paddingVertical: theme.spacing['2xl'],
+          paddingHorizontal: theme.spacing['3xl'],
+        };
+      case 'md':
+      default:
+        return {
+          paddingVertical: theme.spacing.xl,
+          paddingHorizontal: theme.spacing['2xl'],
+        };
+    }
   };
 
   return (
     <View
       style={[
         styles.container,
+        getContainerPadding(),
         {
           borderColor: getBorderColor(),
           opacity: editable ? 1 : 0.6,
+          backgroundColor: isFocused
+            ? 'rgba(0, 0, 0, 0.4)'
+            : theme.colors.surfaceRecessed,
         },
+        isFocused && styles.containerFocused,
+        style,
       ]}
     >
       {icon && <View style={styles.iconContainer}>{icon}</View>}
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          size === 'sm' && styles.inputSm,
+          size === 'lg' && styles.inputLg,
+          inputStyle,
+        ]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -55,6 +106,7 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
         secureTextEntry={secureTextEntry}
         autoFocus={autoFocus}
         editable={editable}
+        keyboardType={keyboardType}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         onSubmitEditing={onSubmitEditing}
@@ -62,6 +114,7 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
         autoCapitalize="none"
         autoCorrect={false}
       />
+      {rightElement && <View style={styles.rightElementContainer}>{rightElement}</View>}
     </View>
   );
 };
@@ -70,14 +123,20 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderRadius: theme.radii.lg,
-    paddingHorizontal: theme.spacing['2xl'],
-    paddingVertical: theme.spacing.xl,
+    borderRadius: theme.radii.input,
+  },
+  containerFocused: {
+    boxShadow: '0px 0px 8px rgba(56, 189, 248, 0.2)',
+    borderColor: theme.colors.accent,
   },
   iconContainer: {
     marginRight: theme.spacing.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rightElementContainer: {
+    marginLeft: theme.spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -86,6 +145,13 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.medium,
+    fontFamily: theme.fontFamily.sans,
     padding: 0, // Reset default padding for clean cross-platform alignment
+  },
+  inputSm: {
+    fontSize: theme.fontSize.base,
+  },
+  inputLg: {
+    fontSize: theme.fontSize.xl,
   },
 });

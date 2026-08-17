@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
 import { Transaction, TursoConfig } from '../types';
@@ -9,6 +9,7 @@ import { TransactionEditModal } from '../components/transactions/TransactionEdit
 import { TransactionItemCard } from '../components/transactions/TransactionItemCard';
 import { NetBalanceHeroCard } from '../components/overview/NetBalanceHeroCard';
 import { AppBadge, AppEmptyState, AppSectionHeader, AppText } from '../components/ui';
+import { ArrowDownLeft, ArrowUpRight, ChartNoAxesCombined, Plus } from 'lucide-react-native';
 import theme from '../theme';
 
 interface OverviewScreenProps {
@@ -26,6 +27,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [newTransactionModalVisible, setNewTransactionModalVisible] = useState(false);
 
   const { last60DaysNetBalance, currentMonthIncome, currentMonthExpense } = useMemo(() => {
     return calculateFinancialSummary(transactions, DEFAULT_CURRENCY);
@@ -65,7 +67,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   return (
     <>
       <View style={styles.container}>
-        {/* Pinned Top Section: Header, Hero Card & Recent Activity Header */}
+        {/* Pinned Top Section: Header, Hero Card & Quick Actions */}
         <View style={styles.fixedHeader}>
           {/* Header Banner & Turso Cloud Badge */}
           <View style={styles.header}>
@@ -78,6 +80,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
               label={tursoConfig.isConnected ? t('overview.tursoDb') : t('overview.tursoOffline')}
               variant={tursoConfig.isConnected ? 'success' : 'warning'}
               statusDot
+              size="sm"
             />
           </View>
 
@@ -117,6 +120,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
         onClose={() => setEditingTransaction(null)}
         onSaved={onRefresh}
       />
+
+      <TransactionEditModal
+        visible={newTransactionModalVisible}
+        transaction={null}
+        onClose={() => setNewTransactionModalVisible(false)}
+        onSaved={onRefresh}
+      />
     </>
   );
 };
@@ -128,9 +138,9 @@ const styles = StyleSheet.create({
   },
   fixedHeader: {
     paddingHorizontal: theme.spacing['4xl'],
-    paddingTop: theme.spacing['4xl'],
-    paddingBottom: theme.spacing.sm,
-    gap: theme.spacing.lg,
+    paddingTop: theme.spacing['2xl'],
+    paddingBottom: theme.spacing.xs,
+    gap: theme.spacing.md,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
@@ -141,7 +151,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: theme.spacing['4xl'],
-    paddingBottom: 88,
+    paddingBottom: 110,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
@@ -156,12 +166,44 @@ const styles = StyleSheet.create({
   },
   welcomeTitle: {
     color: theme.colors.textPrimary,
-    fontSize: theme.fontSize['3xl'],
+    fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.extrabold,
+    letterSpacing: -0.4,
   },
   welcomeSubtitle: {
     color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.base,
-    marginTop: theme.spacing.xxs,
+    fontSize: theme.fontSize.sm,
+    marginTop: 2,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
+    marginVertical: 2,
+  },
+  quickActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.surfaceElevated,
+    borderColor: theme.colors.borderLight,
+    borderWidth: 1,
+    borderRadius: theme.radii.pill,
+    paddingVertical: 9,
+    paddingHorizontal: theme.spacing.md,
+  },
+  quickActionIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionLabel: {
+    color: theme.colors.textPrimary,
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.bold,
   },
 });

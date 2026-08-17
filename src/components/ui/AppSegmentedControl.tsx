@@ -96,11 +96,11 @@ export function AppSegmentedControl<T extends string = string>({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.lg,
-    padding: theme.spacing.xxs,
+    backgroundColor: theme.colors.surfaceRecessed,
+    borderRadius: theme.radii.pill,
+    padding: 3,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.borderSubtle,
   },
   fullWidth: {
     width: '100%',
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing['2xl'],
-    borderRadius: theme.radii.md,
+    borderRadius: theme.radii.pill,
     gap: theme.spacing.sm,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -119,15 +119,16 @@ const styles = StyleSheet.create({
   tabSm: {
     paddingVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radii.sm,
+    borderRadius: theme.radii.pill,
     gap: theme.spacing.xs,
   },
   flexTab: {
     flex: 1,
   },
   selectedTab: {
-    backgroundColor: theme.colors.accentBg,
+    backgroundColor: theme.colors.accentBgStrong,
     borderColor: theme.colors.accent,
+    boxShadow: '0px 2px 8px rgba(56, 189, 248, 0.25)',
   },
   iconContainer: {
     alignItems: 'center',
@@ -137,6 +138,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
+    fontFamily: theme.fontFamily.sans,
   },
   tabTextSm: {
     fontSize: theme.fontSize.xs,

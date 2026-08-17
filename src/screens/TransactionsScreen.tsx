@@ -235,7 +235,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
           />
 
           {/* Search & Filter Bar */}
-          <AppCard style={styles.filterCard} padding="lg">
+          <AppCard style={styles.filterCard} variant="glass" padding="lg">
             <AppTextInput
               placeholder={t('transactions.searchPlaceholder')}
               value={searchQuery}
@@ -304,9 +304,9 @@ const styles = StyleSheet.create({
   },
   fixedHeader: {
     paddingHorizontal: theme.spacing['4xl'],
-    paddingTop: theme.spacing['4xl'],
-    paddingBottom: theme.spacing.md,
-    gap: theme.spacing.lg,
+    paddingTop: theme.spacing['2xl'],
+    paddingBottom: theme.spacing.xs,
+    gap: theme.spacing.md,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: theme.spacing['4xl'],
-    paddingBottom: 88,
+    paddingBottom: 110,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 6,
-    borderRadius: theme.radii.md,
+    borderRadius: theme.radii.pill,
   },
   clearAllBtnText: {
     color: theme.colors.danger,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.bold,
   },
   filterCard: {
-    gap: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   monthHeader: {
     paddingHorizontal: theme.spacing.xs,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Pressable, StyleSheet, ModalProps } from 'react-native';
+import { Modal, View, Pressable, StyleSheet, ModalProps, StyleProp, ViewStyle, Dimensions } from 'react-native';
 import { AppText } from './AppText';
 import { X } from 'lucide-react-native';
 import theme from '../../theme';
@@ -9,6 +9,8 @@ export interface AppModalProps extends Omit<ModalProps, 'children'> {
   onClose: () => void;
   title?: string;
   subtitle?: string;
+  cardStyle?: StyleProp<ViewStyle>;
+  maxWidth?: number;
   children: React.ReactNode;
 }
 
@@ -17,13 +19,18 @@ export const AppModal: React.FC<AppModalProps> = ({
   onClose,
   title,
   subtitle,
+  cardStyle,
+  maxWidth = 560,
   children,
   ...rest
 }) => {
+  const isSmallScreen = Dimensions.get('window').width < 600;
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} {...rest}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
+      <View style={[styles.overlay, isSmallScreen && styles.overlayMobile]}>
+        <View style={[styles.card, { maxWidth }, isSmallScreen && styles.cardMobile, cardStyle]}>
+          {isSmallScreen && <View style={styles.dragHandle} />}
           {(title || subtitle) && (
             <View style={styles.header}>
               <View style={styles.titleContainer}>
@@ -33,8 +40,9 @@ export const AppModal: React.FC<AppModalProps> = ({
               <Pressable
                 style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
                 onPress={onClose}
+                accessibilityLabel="Close modal"
               >
-                <X color={theme.colors.textMuted} size={20} />
+                <X color={theme.colors.textMuted} size={18} />
               </Pressable>
             </View>
           )}
@@ -50,22 +58,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: theme.spacing['4xl'],
   },
+  overlayMobile: {
+    justifyContent: 'flex-end',
+    padding: 0,
+  },
+  dragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.borderLight,
+    alignSelf: 'center',
+    marginBottom: theme.spacing.lg,
+  },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['4xl'],
-    maxWidth: 560,
+    backgroundColor: theme.colors.surfaceElevated,
+    borderRadius: theme.radii.modal,
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
     width: '100%',
     maxHeight: '90%',
-    alignSelf: 'center',
     padding: theme.spacing['5xl'],
+    boxShadow: '0px 16px 36px rgba(0, 0, 0, 0.45)',
+    elevation: 12,
+  },
+  cardMobile: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    maxHeight: '85%',
+    paddingHorizontal: theme.spacing['4xl'],
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing['6xl'],
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: theme.spacing['2xl'],
+    gap: theme.spacing.md,
   },
   titleContainer: {
     flex: 1,
@@ -81,6 +113,13 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xxs,
   },
   closeButton: {
-    padding: theme.spacing.xs,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surfaceRecessed,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -73,7 +73,7 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
   return (
     <View style={styles.tabContainer}>
       <View style={styles.filterSection}>
-        <AppCard style={styles.filterCard} padding="lg">
+        <AppCard style={styles.filterCard} variant="glass" padding="lg">
           <View style={styles.actionButtonsRow}>
             <Pressable
               style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   filterCard: {
-    gap: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   actionButtonsRow: {
     flexDirection: 'row',
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.accent,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.radii.lg,
+    borderRadius: theme.radii.pill,
   },
   createBtnText: {
     color: theme.colors.white,
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: theme.spacing['4xl'],
-    paddingBottom: 88,
+    paddingBottom: 110,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',

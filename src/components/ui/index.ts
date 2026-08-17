@@ -32,4 +32,9 @@ export {
   type AppDatePickerProps,
   type TransactionDatePickerProps,
 } from './AppDatePicker';
-
+export {
+  AppIconButton,
+  type AppIconButtonProps,
+  type AppIconButtonVariant,
+  type AppIconButtonSize,
+} from './AppIconButton';

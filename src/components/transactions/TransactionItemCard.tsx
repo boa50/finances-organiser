@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Transaction } from '../../types';
 import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from '../../utils/currencies';
 import { categoryService } from '../../services/categoryService';
 import { paymentMethodService } from '../../services/paymentMethodService';
 import { bankService } from '../../services/bankService';
-import { AppCard, AppIconBadge, AppBadge, AppText } from '../ui';
-import { TrendingUp, TrendingDown, Pencil, Trash2, Copy } from 'lucide-react-native';
+import { AppCard, AppIconBadge, AppBadge, AppText, AppIconButton } from '../ui';
+import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import theme from '../../theme';
 
 export interface TransactionItemCardProps {
@@ -47,7 +47,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   const date = new Date(transaction.date);
   const isValidDate = !Number.isNaN(date.getTime());
   const formattedDate = dateString ?? (isValidDate
-    ? date.toLocaleDateString(i18n.language || undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    ? date.toLocaleDateString(i18n.language || undefined, { month: 'short', day: 'numeric' })
     : transaction.date);
 
   const displayAmount = amountToDisplay ?? transaction.amount;
@@ -97,9 +97,9 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       <AppIconBadge
         icon={
           isIncome ? (
-            <TrendingUp size={18} color={theme.colors.success} />
+            <TrendingUp size={18} color={theme.colors.success} strokeWidth={2.5} />
           ) : (
-            <TrendingDown size={18} color={theme.colors.danger} />
+            <TrendingDown size={18} color={theme.colors.danger} strokeWidth={2.5} />
           )
         }
         variant={isIncome ? 'success' : 'danger'}
@@ -107,103 +107,104 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
       />
 
       <View style={styles.txMainInfo}>
-        <AppText style={styles.txTitle}>{displayTitle}</AppText>
-        <View style={styles.txMetaRow}>
-          <AppText style={styles.txCategory}>{catLabel}</AppText>
-          {transaction.store ? (
-            <>
-              <AppText style={styles.dotSeparator}>•</AppText>
-              <AppText style={styles.txStore}>{transaction.store}</AppText>
-            </>
-          ) : null}
-          {pmLabel ? (
-            <>
-              <AppText style={styles.dotSeparator}>•</AppText>
-              <AppText style={styles.txPaymentMethod}>{pmLabel}</AppText>
-            </>
-          ) : null}
-          {bkLabel ? (
-            <>
-              <AppText style={styles.dotSeparator}>•</AppText>
-              <AppText style={styles.txPaymentMethod}>{bkLabel}</AppText>
-            </>
-          ) : null}
-          {instText ? (
-            <>
-              <AppText style={styles.dotSeparator}>•</AppText>
-              <AppText style={styles.txInstallment}>{instText}</AppText>
-            </>
-          ) : null}
-          <AppText style={styles.dotSeparator}>•</AppText>
-          <AppText style={styles.txDate}>{formattedDate}</AppText>
-        </View>
-        {transaction.notes ? <AppText style={styles.txNotes}>{transaction.notes}</AppText> : null}
-      </View>
-
-      <View style={styles.txRightCol}>
-        <View style={styles.amountContainer}>
-          {needsConversion && (
-            <AppText style={styles.originalAmount}>
-              {`(${formatMoney(displayAmount, currencyCode)})`}
-            </AppText>
-          )}
-          <AppText
-            style={[
-              styles.txAmount,
-              { color: isIncome ? theme.colors.success : theme.colors.danger },
-            ]}
-          >
-            {isIncome ? '+' : '-'}
-            {formatMoney(brlAmount, DEFAULT_CURRENCY)}
+        <View style={styles.txTopRow}>
+          <AppText style={styles.txTitle} numberOfLines={1}>
+            {displayTitle}
           </AppText>
-        </View>
-
-        <View style={styles.actionsRow}>
-          {showCurrencyBadge && (
-            <AppBadge
-              label={`${currencyInfo.flag} ${transaction.currencyId}`}
-              variant="neutral"
-              size="sm"
-            />
-          )}
-
-          {transaction.subscriptionId ? (
-            <AppBadge
-              label={t('common.subscription')}
-              variant="accent"
-              size="sm"
-            />
-          ) : (
-            <>
-              {onDuplicate && (
-                <Pressable
-                  onPress={() => onDuplicate(transaction)}
-                  style={({ pressed }) => [styles.duplicateBtn, pressed && { opacity: 0.7 }]}
-                  accessibilityLabel={`Duplicate ${transaction.title}`}
-                >
-                  <Copy size={14} color={theme.colors.accent} />
-                </Pressable>
-              )}
-              <Pressable
-                onPress={() => onEdit(transaction)}
-                style={({ pressed }) => [styles.editBtn, pressed && { opacity: 0.7 }]}
-                accessibilityLabel={`Edit ${transaction.title}`}
-              >
-                <Pencil size={14} color={theme.colors.accent} />
-              </Pressable>
-            </>
-          )}
-
-          {onDelete && (
-            <Pressable
-              onPress={() => onDelete(transaction)}
-              style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]}
-              accessibilityLabel={`Delete ${transaction.title}`}
+          <View style={styles.amountContainer}>
+            {needsConversion && (
+              <AppText style={styles.originalAmount} tabularNums>
+                {`(${formatMoney(displayAmount, currencyCode)})`}
+              </AppText>
+            )}
+            <AppText
+              style={[
+                styles.txAmount,
+                { color: isIncome ? theme.colors.success : theme.colors.danger },
+              ]}
+              tabularNums
             >
-              <Trash2 size={14} color={theme.colors.danger} />
-            </Pressable>
-          )}
+              {isIncome ? '+' : '-'}
+              {formatMoney(brlAmount, DEFAULT_CURRENCY)}
+            </AppText>
+          </View>
         </View>
+
+        <View style={styles.txBottomRow}>
+          <View style={styles.txMetaLeft}>
+            <AppText style={styles.txCategory}>{catLabel}</AppText>
+            {transaction.store ? (
+              <>
+                <AppText style={styles.dotSeparator}>•</AppText>
+                <AppText style={styles.txStore}>{transaction.store}</AppText>
+              </>
+            ) : null}
+            {pmLabel ? (
+              <>
+                <AppText style={styles.dotSeparator}>•</AppText>
+                <AppText style={styles.txPaymentMethod}>{pmLabel}</AppText>
+              </>
+            ) : null}
+            {bkLabel ? (
+              <>
+                <AppText style={styles.dotSeparator}>•</AppText>
+                <AppText style={styles.txPaymentMethod}>{bkLabel}</AppText>
+              </>
+            ) : null}
+            {instText ? (
+              <>
+                <AppText style={styles.dotSeparator}>•</AppText>
+                <AppText style={styles.txInstallment}>{instText}</AppText>
+              </>
+            ) : null}
+            <AppText style={styles.dotSeparator}>•</AppText>
+            <AppText style={styles.txDate}>{formattedDate}</AppText>
+          </View>
+
+          <View style={styles.actionsRow}>
+            {showCurrencyBadge && (
+              <AppBadge
+                label={`${currencyInfo.flag} ${transaction.currencyId}`}
+                variant="neutral"
+                size="sm"
+              />
+            )}
+
+            {transaction.subscriptionId ? (
+              <AppBadge
+                label={t('common.subscription')}
+                variant="accent"
+                size="sm"
+              />
+            ) : (
+              <>
+                {onDuplicate && (
+                  <AppIconButton
+                    variant="duplicate"
+                    onPress={() => onDuplicate(transaction)}
+                    accessibilityLabel={`Duplicate ${transaction.title}`}
+                  />
+                )}
+                <AppIconButton
+                  variant="edit"
+                  onPress={() => onEdit(transaction)}
+                  accessibilityLabel={`Edit ${transaction.title}`}
+                />
+              </>
+            )}
+
+            {onDelete && (
+              <AppIconButton
+                variant="delete"
+                onPress={() => onDelete(transaction)}
+                accessibilityLabel={`Delete ${transaction.title}`}
+              />
+            )}
+
+          </View>
+        </View>
+
+        {transaction.notes ? <AppText style={styles.txNotes}>{transaction.notes}</AppText> : null}
       </View>
     </AppCard>
   );
@@ -214,21 +215,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
   },
   txMainInfo: {
     flex: 1,
+    gap: 3,
+  },
+  txTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.md,
   },
   txTitle: {
     color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
+    flex: 1,
   },
-  txMetaRow: {
+  amountContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: theme.spacing.xs,
+  },
+  originalAmount: {
+    fontSize: theme.fontSize.xs,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.fontWeight.medium,
+  },
+  txAmount: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.extrabold,
+    letterSpacing: -0.2,
+  },
+  txBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    flexWrap: 'wrap',
+  },
+  txMetaLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     gap: theme.spacing.xs,
-    marginTop: theme.spacing.xxs,
+    flex: 1,
   },
   txCategory: {
     color: theme.colors.textSecondary,
@@ -249,7 +282,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.semibold,
   },
   txDate: {
-    color: theme.colors.textMuted,
+    color: theme.colors.textTertiary,
     fontSize: theme.fontSize.xs,
   },
   dotSeparator: {
@@ -257,49 +290,15 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.xs,
   },
   txNotes: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.xs,
+    color: theme.colors.textTertiary,
+    fontSize: 11,
     fontStyle: 'italic',
-    marginTop: theme.spacing.xxs,
-  },
-  txRightCol: {
-    alignItems: 'flex-end',
-    gap: theme.spacing.xs,
-  },
-  amountContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-    gap: theme.spacing.xs,
-  },
-  originalAmount: {
-    fontSize: theme.fontSize.xs,
-    color: theme.colors.textSecondary,
-    fontWeight: theme.fontWeight.medium,
-  },
-  txAmount: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.extrabold,
+    marginTop: 2,
   },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  duplicateBtn: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.radii.sm,
-    backgroundColor: theme.colors.background,
-  },
-  editBtn: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.radii.sm,
-    backgroundColor: theme.colors.background,
-  },
-  deleteBtn: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.radii.sm,
-    backgroundColor: theme.colors.background,
+    gap: 4,
   },
 });
+

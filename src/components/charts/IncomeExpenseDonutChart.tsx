@@ -30,7 +30,7 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
 
   const donutSize = 220;
   const radius = donutSize / 2;
-  const innerRadius = radius * 0.62;
+  const innerRadius = radius * 0.64;
 
   const pieGenerator = d3
     .pie<{ label: string; value: number; color: string }>()
@@ -40,9 +40,9 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
   const arcGenerator = d3
     .arc<any>()
     .innerRadius(innerRadius)
-    .outerRadius(radius - 10)
-    .cornerRadius(6)
-    .padAngle(0.04);
+    .outerRadius(radius - 8)
+    .cornerRadius(8)
+    .padAngle(0.05);
 
   const arcs = pieGenerator(pieData);
 
@@ -68,6 +68,7 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
                 styles.donutCenterValue,
                 { color: netBalance >= 0 ? theme.colors.success : theme.colors.danger },
               ]}
+              tabularNums
             >
               {formatMoney(netBalance, targetCurrency)}
             </AppText>
@@ -75,7 +76,7 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
             <View
               style={[
                 styles.savingsBadge,
-                { backgroundColor: savingsRate >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)' },
+                { backgroundColor: savingsRate >= 0 ? theme.colors.successBg : theme.colors.dangerBg },
               ]}
             >
               <AppText
@@ -83,6 +84,7 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
                   styles.savingsBadgeText,
                   { color: savingsRate >= 0 ? theme.colors.success : theme.colors.danger },
                 ]}
+                tabularNums
               >
                 {savingsRate >= 0
                   ? t('analytics.percentSaved', { percent: savingsRate.toFixed(0) })
@@ -94,36 +96,36 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
 
         <View style={styles.statsColumn}>
           <View style={styles.statBox}>
-            <View style={[styles.statBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+            <View style={[styles.statBadge, { backgroundColor: theme.colors.successBg }]}>
               <View style={[styles.statDot, { backgroundColor: theme.colors.success }]} />
             </View>
             <View style={styles.statInfo}>
               <AppText style={styles.statLabel}>{t('analytics.totalIncome')}</AppText>
-              <AppText style={[styles.statValue, { color: theme.colors.success }]}>
+              <AppText style={[styles.statValue, { color: theme.colors.success }]} tabularNums>
                 +{formatMoney(totalIncome, targetCurrency)}
               </AppText>
             </View>
           </View>
 
           <View style={styles.statBox}>
-            <View style={[styles.statBadge, { backgroundColor: 'rgba(244, 63, 94, 0.15)' }]}>
+            <View style={[styles.statBadge, { backgroundColor: theme.colors.dangerBg }]}>
               <View style={[styles.statDot, { backgroundColor: theme.colors.danger }]} />
             </View>
             <View style={styles.statInfo}>
               <AppText style={styles.statLabel}>{t('analytics.totalExpense')}</AppText>
-              <AppText style={[styles.statValue, { color: theme.colors.danger }]}>
+              <AppText style={[styles.statValue, { color: theme.colors.danger }]} tabularNums>
                 -{formatMoney(totalExpense, targetCurrency)}
               </AppText>
             </View>
           </View>
 
           <View style={styles.statBox}>
-            <View style={[styles.statBadge, { backgroundColor: 'rgba(56, 189, 248, 0.15)' }]}>
+            <View style={[styles.statBadge, { backgroundColor: theme.colors.accentBg }]}>
               <View style={[styles.statDot, { backgroundColor: theme.colors.accent }]} />
             </View>
             <View style={styles.statInfo}>
               <AppText style={styles.statLabel}>{t('analytics.totalCashflow')}</AppText>
-              <AppText style={[styles.statValue, { color: theme.colors.accent }]}>
+              <AppText style={[styles.statValue, { color: theme.colors.accent }]} tabularNums>
                 {formatMoney(totalFlow, targetCurrency)}
               </AppText>
             </View>
@@ -139,12 +141,13 @@ export type D3DonutChartProps = IncomeExpenseDonutChartProps;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['2xl'],
+    backgroundColor: theme.colors.surfaceGlass,
+    borderRadius: theme.radii.card,
     padding: theme.spacing['4xl'],
-    marginVertical: theme.spacing.base,
+    marginVertical: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.borderLight,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
   },
   cardTitle: {
     color: theme.colors.textPrimary,
@@ -186,11 +189,12 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.extrabold,
     marginVertical: theme.spacing.xxs,
+    letterSpacing: -0.4,
   },
   savingsBadge: {
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 3,
-    borderRadius: theme.radii.lg,
+    borderRadius: theme.radii.pill,
     marginTop: theme.spacing.xs,
   },
   savingsBadgeText: {
@@ -200,39 +204,39 @@ const styles = StyleSheet.create({
   statsColumn: {
     flex: 1,
     minWidth: 200,
-    gap: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   statBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceSubtle,
-    padding: theme.spacing.lg,
-    borderRadius: theme.radii.lg,
-    gap: theme.spacing.lg,
+    backgroundColor: theme.colors.surfaceRecessed,
+    padding: theme.spacing.md,
+    borderRadius: theme.radii.base,
+    gap: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
   },
   statBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   statInfo: {
     flex: 1,
   },
   statLabel: {
     color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.xs,
   },
   statValue: {
-    fontSize: theme.fontSize.xl,
+    fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.bold,
     marginTop: 1,
   },

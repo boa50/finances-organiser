@@ -19,13 +19,14 @@ import {
   AppBadge,
   AppCard,
   AppEmptyState,
+  AppIconButton,
   AppSectionHeader,
   AppSegmentedControl,
   AppSwitch,
   AppText,
   AppTextInput,
 } from '../components/ui';
-import { Calendar, CreditCard, Edit2, Trash2 } from 'lucide-react-native';
+import { Calendar, CreditCard } from 'lucide-react-native';
 import theme from '../theme';
 
 interface SubscriptionsScreenProps {
@@ -169,7 +170,14 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                 <CategoryIcon iconName={catInfo.icon} size={22} color={catInfo.color} />
               </View>
               <View style={styles.subTextGroup}>
-                <AppText style={styles.subTitle}>{item.title}</AppText>
+                <View style={styles.subTitleRow}>
+                  <AppText style={styles.subTitle}>{item.title}</AppText>
+                  <AppBadge
+                    label={item.active ? t('common.active') : t('common.inactive')}
+                    variant={item.active ? 'success' : 'neutral'}
+                    size="sm"
+                  />
+                </View>
                 <View style={styles.subMetaRow}>
                   <AppText style={styles.subCategory}>{categoryDisplayName}</AppText>
                   {item.store && (
@@ -201,32 +209,24 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
             </View>
 
             <View style={styles.subCardActions}>
-              {/* Status toggle */}
-              <View style={styles.switchWrapper}>
-                <AppBadge
-                  label={item.active ? t('common.active') : t('common.inactive')}
-                  variant={item.active ? 'success' : 'neutral'}
-                />
-                <AppSwitch
-                  value={item.active}
-                  onValueChange={() => handleToggleActive(item)}
-                  size="sm"
-                />
-              </View>
+              <AppSwitch
+                value={item.active}
+                onValueChange={() => handleToggleActive(item)}
+                size="sm"
+                accessibilityLabel={item.active ? `Disable ${item.title}` : `Enable ${item.title}`}
+              />
 
-              <Pressable
-                style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
+              <AppIconButton
+                variant="edit"
                 onPress={() => handleOpenEditModal(item)}
-              >
-                <Edit2 size={16} color={theme.colors.accent} />
-              </Pressable>
+                accessibilityLabel={t('common.edit') || `Edit ${item.title}`}
+              />
 
-              <Pressable
-                style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.7 }]}
+              <AppIconButton
+                variant="delete"
                 onPress={() => handleDelete(item)}
-              >
-                <Trash2 size={16} color={theme.colors.danger} />
-              </Pressable>
+                accessibilityLabel={t('common.delete') || `Delete ${item.title}`}
+              />
             </View>
           </View>
         </AppCard>
@@ -346,8 +346,8 @@ const styles = StyleSheet.create({
   },
   fixedHeader: {
     paddingHorizontal: theme.spacing['4xl'],
-    paddingTop: theme.spacing['4xl'],
-    paddingBottom: theme.spacing.md,
+    paddingTop: theme.spacing['2xl'],
+    paddingBottom: theme.spacing.xs,
     gap: theme.spacing.md,
     maxWidth: 720,
     alignSelf: 'center',
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: theme.spacing['4xl'],
-    paddingBottom: 88,
+    paddingBottom: 110,
     maxWidth: 720,
     alignSelf: 'center',
     width: '100%',
@@ -422,6 +422,12 @@ const styles = StyleSheet.create({
   },
   subTextGroup: {
     flex: 1,
+  },
+  subTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flexWrap: 'wrap',
   },
   subTitle: {
     color: theme.colors.textPrimary,
@@ -489,14 +495,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  switchWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  iconBtn: {
-    padding: theme.spacing.xs,
-    borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.surfaceSubtle,
-  },
 });
+
+

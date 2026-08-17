@@ -31,11 +31,20 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
           {categoryAggregates.map((cat, index) => (
             <View key={`cat-${index}`} style={styles.catItem}>
               <View style={styles.catHeader}>
-                <AppText style={styles.catName}>{cat.category}</AppText>
-                <AppText style={styles.catAmount}>
-                  {formatMoney(cat.amount, targetCurrency)}{' '}
-                  <AppText style={styles.catPercent}>({cat.percentage.toFixed(1)}%)</AppText>
-                </AppText>
+                <View style={styles.catNameRow}>
+                  <View style={[styles.catColorDot, { backgroundColor: cat.color || theme.colors.accent }]} />
+                  <AppText style={styles.catName}>{cat.category}</AppText>
+                </View>
+                <View style={styles.catAmountRow}>
+                  <AppText style={styles.catAmount} tabularNums>
+                    {formatMoney(cat.amount, targetCurrency)}
+                  </AppText>
+                  <View style={styles.percentPill}>
+                    <AppText style={styles.catPercent} tabularNums>
+                      {cat.percentage.toFixed(1)}%
+                    </AppText>
+                  </View>
+                </View>
               </View>
 
               <View style={styles.barTrack}>
@@ -44,7 +53,7 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
                     styles.barFill,
                     {
                       width: `${Math.min(cat.percentage, 100)}%`,
-                      backgroundColor: cat.color,
+                      backgroundColor: cat.color || theme.colors.accent,
                     },
                   ]}
                 />
@@ -62,12 +71,13 @@ export type D3CategoryBarChartProps = CategorySpendingBarChartProps;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['2xl'],
+    backgroundColor: theme.colors.surfaceGlass,
+    borderRadius: theme.radii.card,
     padding: theme.spacing['4xl'],
-    marginVertical: theme.spacing.base,
+    marginVertical: theme.spacing.xs,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.borderLight,
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
   },
   cardTitle: {
     color: theme.colors.textPrimary,
@@ -82,44 +92,67 @@ const styles = StyleSheet.create({
   },
   emptyCatText: {
     color: theme.colors.textTertiary,
-    fontSize: theme.fontSize.base,
+    fontSize: theme.fontSize.sm,
     fontStyle: 'italic',
     marginVertical: theme.spacing.base,
   },
   categoryList: {
-    gap: theme.spacing.xl,
+    gap: theme.spacing.lg,
   },
   catItem: {
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
   catHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  catNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  catColorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   catName: {
-    color: theme.colors.textLight,
-    fontSize: theme.fontSize.md,
+    color: theme.colors.textPrimary,
+    fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.semibold,
+  },
+  catAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
   },
   catAmount: {
     color: theme.colors.textPrimary,
-    fontSize: theme.fontSize.md,
+    fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.bold,
+  },
+  percentPill: {
+    backgroundColor: theme.colors.surfaceRecessed,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
   },
   catPercent: {
     color: theme.colors.textSecondary,
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.regular,
+    fontSize: 10,
+    fontWeight: theme.fontWeight.bold,
   },
   barTrack: {
-    height: 8,
-    backgroundColor: theme.colors.surfaceHighlight,
-    borderRadius: theme.spacing.xs,
+    height: 6,
+    backgroundColor: theme.colors.surfaceRecessed,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: theme.spacing.xs,
+    borderRadius: 3,
   },
 });

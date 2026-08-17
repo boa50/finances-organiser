@@ -30,6 +30,7 @@ All 83 automated tests across 13 test suites were verified passing via `npm test
 - [`src/utils/__tests__/authUtils.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/authUtils.test.ts) — Password hashing, comparison, and input validation
 - [`src/utils/__tests__/currencies.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/currencies.test.ts) — Currency symbol lookup, formatting, conversion, and constants
 - [`src/utils/__tests__/financials.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/financials.test.ts) — Financial summaries, installment title parsing, monthly/category aggregation, and filtering
+- [`src/components/ui/__tests__/AppIconButton.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/components/ui/__tests__/AppIconButton.test.ts) — Standardized icon action button variants (edit, delete, duplicate, custom), custom sizes/colors, accessibility roles, and disabled states
 
 ---
 
