@@ -57,28 +57,16 @@ Includes `palette`, `colors`, `spacing`, `radii`, `fontSize`, `fontWeight`, `fon
 
 All components and screens **MUST** use tokens from `src/theme.ts` — never hardcode font sizes, font weights, colors, or spacing values directly.
 
-Reusable UI primitives live under:
+The design system follows a **3-Tier Component Architecture**:
+- **Tier 1 — UI Primitives (`src/components/ui/`)**: Domain-agnostic atomic components (`AppText`, `AppTextInput`, `AppButton`, `AppIconButton`, `AppCard`, `AppBadge`, `AppIconBadge`, `AppSectionHeader`, `AppSegmentedControl`, `AppEmptyState`, `AppLoadingView`, `AppModal`, `AppSwitch`, `AppChipSelector`, `AppDatePicker`, `AppDraggableList`, `FeedbackMessage`).
+- **Tier 2 — Domain-Level Components (`src/components/<domain>/`)**: Reusable composite widgets (`management/EntityManagementCard`, `charts/`, `analytics/`, `overview/`, `transactions/`, `subscriptions/`).
+- **Tier 3 — App Chrome & Screens (`src/components/`, `src/screens/`)**: Top-level layout elements (`AppHeader`, `AppTabBar`, `CategoryIcon`) and feature screens.
 
-```text
-src/components/ui/
-```
-
-Available UI primitives (exported via `src/components/ui/index.ts` barrel):
-- `AppText`: Standardized text wrapper enforcing `theme.typography` and `theme.fontFamily.sans`.
-- `AppTextInput`: Styled text input with icon support, clear button, and error state.
-- `AppButton`: Variant button (`primary`, `secondary`, `outline`, `danger`, `ghost`) with loading spinner.
-- `AppCard`: Surface container (`default`, `elevated`, `outlined`, `glass`) with touchable support.
-- `AppBadge`: Status pill tag with variant colors and status dots (`success`, `warning`, `danger`, `info`, `neutral`, `accent`).
-- `AppIconBadge`: Rounded icon container with status-tinted background.
-- `AppSectionHeader`: Header container with title, subtitle, and action button slots.
-- `AppSegmentedControl`: Segmented tab filter control.
-- `AppEmptyState`: Empty data view with icon, title, description, and optional action button.
-- `FeedbackMessage`: Toast / banner notification alert.
-
-When implementing a new screen or component: **always prefer reusing existing UI primitives** over writing custom inline elements.
+For detailed prop contracts, visual tokens, and canonical component recipes, load the **`financecloud-design-system`** skill.
 
 Vector icons:
 - `src/components/CategoryIcon.tsx` maps icon string names to Lucide React Native vector components.
+- Direct Lucide icons are used for UI controls and primitives (e.g. inside `AppIconButton`).
 - **No emojis** should be used anywhere in the app layout or component buttons. The only allowed emojis are country flags representing currency codes (e.g. `🇧🇷`, `🇺🇸`, `🇪🇺`).
 
 ### Installments & transaction groups
@@ -114,8 +102,8 @@ Use Expo/React Native platform conventions.
 
 Existing platform-specific date-picker files:
 
-- `TransactionDatePicker.native.tsx`
-- `TransactionDatePicker.web.tsx`
+- `src/components/ui/AppDatePicker.native.tsx`
+- `src/components/ui/AppDatePicker.web.tsx`
 
 Prefer `.native.tsx` / `.web.tsx` when behavior genuinely differs between native and Web.
 
@@ -139,50 +127,93 @@ src/
 ├── theme.ts
 ├── types/
 │   └── index.ts
+├── hooks/
+│   ├── useAppData.ts
+│   ├── useAuth.ts
+│   └── useEvolutionChartD3.ts
 ├── services/
 │   ├── __tests__/
-│   │   ├── authService.test.ts
-│   │   └── categoryService.test.ts
-│   ├── tursoService.ts
-│   ├── categoryService.ts
+│   ├── apiClient.ts
 │   ├── authService.ts
 │   ├── bankService.ts
-│   └── paymentMethodService.ts
+│   ├── categoryService.ts
+│   ├── currencyService.ts
+│   ├── localStorageHelper.ts
+│   ├── paymentMethodService.ts
+│   ├── subscriptionAutoGenerator.ts
+│   ├── subscriptionService.ts
+│   └── tursoService.ts
 ├── utils/
 │   ├── __tests__/
-│   │   ├── authUtils.test.ts
-│   │   ├── currencies.test.ts
-│   │   └── financials.test.ts
+│   ├── authUtils.ts
 │   ├── currencies.ts
+│   ├── dialogs.ts
 │   ├── financials.ts
-│   └── authUtils.ts
+│   └── idGenerator.ts
 ├── screens/
 │   ├── OverviewScreen.tsx
 │   ├── AnalyticsScreen.tsx
 │   ├── TransactionsScreen.tsx
-│   ├── ManagementScreen.tsx
+│   ├── SubscriptionsScreen.tsx
 │   ├── LoginScreen.tsx
-│   └── CategoryManagementScreen.tsx
+│   └── management/
+│       ├── ManagementScreen.tsx
+│       ├── CategoryManagementTab.tsx
+│       ├── PaymentMethodManagementTab.tsx
+│       ├── BankManagementTab.tsx
+│       ├── CurrencyManagementTab.tsx
+│       ├── CategoryEditModal.tsx
+│       ├── PaymentMethodEditModal.tsx
+│       ├── BankEditModal.tsx
+│       └── CurrencyAddModal.tsx
 └── components/
     ├── ui/
     │   ├── AppText.tsx
     │   ├── AppTextInput.tsx
     │   ├── AppButton.tsx
+    │   ├── AppIconButton.tsx
     │   ├── AppCard.tsx
     │   ├── AppBadge.tsx
     │   ├── AppIconBadge.tsx
     │   ├── AppSectionHeader.tsx
     │   ├── AppSegmentedControl.tsx
     │   ├── AppEmptyState.tsx
+    │   ├── AppLoadingView.tsx
+    │   ├── AppModal.tsx
+    │   ├── AppSwitch.tsx
+    │   ├── AppChipSelector.tsx
+    │   ├── AppDatePicker.tsx
+    │   ├── AppDatePicker.native.tsx
+    │   ├── AppDatePicker.web.tsx
+    │   ├── AppDraggableList.tsx
     │   ├── FeedbackMessage.tsx
     │   └── index.ts
-    ├── CategoryIcon.tsx
-    ├── D3CurrentMonthCharts.tsx
-    ├── D3EvolutionChart.tsx
-    ├── TransactionEditModal.tsx
-    ├── TransactionDatePicker.tsx
-    ├── TransactionDatePicker.native.tsx
-    └── TransactionDatePicker.web.tsx
+    ├── management/
+    │   ├── EntityManagementCard.tsx
+    │   └── index.ts
+    ├── charts/
+    │   ├── IncomeExpenseDonutChart.tsx
+    │   ├── CategorySpendingBarChart.tsx
+    │   ├── EvolutionTrendChart.tsx
+    │   └── index.ts
+    ├── analytics/
+    │   ├── MonthlyBreakdownCharts.tsx
+    │   ├── MonthDetailSummaryCard.tsx
+    │   └── index.ts
+    ├── overview/
+    │   ├── NetBalanceHeroCard.tsx
+    │   └── index.ts
+    ├── transactions/
+    │   ├── TransactionItemCard.tsx
+    │   ├── TransactionEditModal.tsx
+    │   └── index.ts
+    ├── subscriptions/
+    │   ├── SubscriptionEditModal.tsx
+    │   └── index.ts
+    ├── AppHeader.tsx
+    │   ├── AppTabBar.tsx
+    │   ├── CategoryIcon.tsx
+    │   └── index.ts
 
 App.tsx
 index.ts
@@ -290,19 +321,29 @@ Only create a new abstraction when there is a clear reason to do so.
 
 When an existing reusable component exists, use it even if implementing the feature directly would be slightly faster.
 
-For example:
-- Use `AppButton` instead of creating a custom `Pressable` button.
-- Use `AppText` instead of creating custom `Text` styling.
-- Use `AppCard` instead of recreating card containers.
-- Use `AppEmptyState` for empty states.
-- Use `FeedbackMessage` for feedback/error messages.
-- Use `AppTextInput` for text inputs.
-- Use `AppSectionHeader` for section headers.
-- Use `AppSegmentedControl` for segmented filters.
-- Use `AppIconBadge` for icon containers.
+Mandatory component mappings:
+- Use `AppText` instead of creating custom `Text` styling or using raw React Native `<Text>`.
+- Use `AppTextInput` for text inputs, numbers, and search boxes.
+- Use `AppButton` instead of creating custom `Pressable` action buttons.
+- Use `AppIconButton` (with `variant="edit"|"delete"|"duplicate"|"custom"`) instead of custom `<Pressable>` with icon children.
+- Use `AppCard` instead of recreating custom surface/card containers.
+- Use `AppBadge` for status pill tags and counters.
+- Use `AppIconBadge` for rounded icon containers in card items.
+- Use `AppSectionHeader` for section titles with subtitle/action slots.
+- Use `AppSegmentedControl` for segmented tabs and time/filter selectors.
+- Use `AppEmptyState` for empty data views.
+- Use `AppLoadingView` for loading spinners and data-fetching views instead of standalone `<ActivityIndicator>`.
+- Use `AppModal` for modal dialogues and forms instead of raw React Native `<Modal>`.
+- Use `AppSwitch` for toggle switches instead of custom toggles or raw React Native `<Switch>`.
+- Use `AppChipSelector` for option pill selection groups.
+- Use `AppDatePicker` for date selection.
+- Use `AppDraggableList` for reorderable entity lists.
+- Use `FeedbackMessage` for toast alerts and banner notifications.
+- Use `EntityManagementCard` for item rows in management screens (Categories, Payment Methods, Banks, Currencies).
 - Use `CategoryIcon` for category icons.
+- Use `confirmAction` from `src/utils/dialogs.ts` for confirmation dialogs.
 
-Do not create another component that duplicates an existing UI primitive's responsibility.
+Do not create another component that duplicates an existing UI primitive's responsibility. Refer to the `financecloud-design-system` skill for full prop signatures and composition recipes.
 
 ---
 
@@ -812,6 +853,7 @@ Use the relevant skill when the task matches it.
 
 Available FinanceCloud skills include:
 
+- `financecloud-design-system`
 - `financecloud-architecture`
 - `financecloud-react-native`
 - `financecloud-data-layer`

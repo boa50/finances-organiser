@@ -7,42 +7,54 @@ description: Use when planning or implementing features in the FinanceCloud Reac
 
 ## Goal
 
-Keep FinanceCloud's existing architecture coherent while implementing features incrementally and with minimal unnecessary changes.
+Keep FinanceCloud's architecture coherent, modular, and maintainable by adhering to the established 3-tier component architecture, custom hook layer, service-oriented data access, and strict API-database boundaries.
 
-## Project facts
+---
 
-- Cross-platform React Native + Expo application for Web, Android, and iOS.
-- Root component `App.tsx` owns the current tab navigation and much of the shared state.
-- Shared TypeScript types live in `src/types/index.ts`.
-- Client data services live in `src/services/`.
-- Serverless API routes live in `/api/`.
-- Turso/libSQL is the primary cloud persistence layer.
-- `localStorage` is the offline fallback.
-- Vercel hosts the web build and `/api/*` serverless functions.
-- Platform-specific files use `.native.tsx` and `.web.tsx`.
-- Charts use D3 for calculations and `react-native-svg` for rendering.
-- Currency conversion uses BRL as the pivot and cached exchange rates.
+## Architecture Layers
 
-## Workflow
+### 1. Presentation Layer (3-Tier Component Hierarchy)
+- **Tier 1 — Atomic UI Primitives (`src/components/ui/`)**: Pure, domain-agnostic UI primitives (`AppText`, `AppTextInput`, `AppButton`, `AppIconButton`, `AppCard`, `AppBadge`, `AppIconBadge`, `AppSectionHeader`, `AppSegmentedControl`, `AppEmptyState`, `AppLoadingView`, `AppModal`, `AppSwitch`, `AppChipSelector`, `AppDatePicker`, `AppDraggableList`, `FeedbackMessage`).
+- **Tier 2 — Domain Composite Components (`src/components/<domain>/`)**: Feature-specific reusable widgets (`management/EntityManagementCard`, `charts/`, `analytics/`, `overview/`, `transactions/`, `subscriptions/`).
+- **Tier 3 — Screens & Layout Chrome (`src/screens/`, `src/components/AppHeader.tsx`, `AppTabBar.tsx`)**: Feature screens managing lifecycle, modal open/close state, and passing callbacks to domain components.
 
-1. Inspect the relevant existing files before proposing changes.
-2. Trace the data flow from screen/component -> service -> API -> database when persistence is involved.
-3. Prefer extending existing services and components over creating parallel abstractions.
-4. Reuse existing types from `src/types/index.ts`.
-5. Keep changes focused on the requested feature.
-6. Before changing architecture, explain why the existing pattern is insufficient.
-7. For cross-cutting changes, list the files that will change before implementation.
-8. After implementation, run the most relevant validation commands available in the repository.
+> Refer to the **`financecloud-design-system`** skill for detailed component contracts, design tokens, and canonical recipes.
 
-## Constraints
+### 2. Custom Hooks Layer (`src/hooks/`)
+- `useAppData.ts`: Manages global initial data loading (categories, payment methods, banks, currencies, rates, transactions, subscriptions) and global transaction operations.
+- `useAuth.ts`: Manages session auth state and login/logout workflows.
+- `useEvolutionChartD3.ts`: Encapsulates D3 layout, monthly aggregation, and SVG scaling logic for financial trend charts.
 
-- Do not introduce a new state-management library unless explicitly requested.
-- Do not move the app to a new navigation system unless explicitly requested.
-- Do not bypass the API layer to access Turso credentials from client code.
-- Do not silently change API contracts or database schemas.
-- Do not rewrite unrelated files just for stylistic consistency.
-- Never expose `TURSO_AUTH_TOKEN` or other secrets to client-side code.
+### 3. Service Layer (`src/services/`)
+- Client-side data services (`tursoService`, `categoryService`, `paymentMethodService`, `bankService`, `currencyService`, `subscriptionService`).
+- Shared persistence helpers (`localStorageHelper.ts`, `apiClient.ts`).
+- Automatic background generators (`subscriptionAutoGenerator.ts`).
 
-## Preferred implementation style
+### 4. API & Database Layer (`/api/` & Turso/libSQL)
+- Serverless API routes (`/api/transactions`, `/api/categories`, `/api/payment-methods`, `/api/banks`, `/api/auth`, `/api/health`).
+- Database client and migrations in `api/_db.ts`.
 
-Favor small, reversible changes. Preserve existing behavior unless the task explicitly changes it.
+---
+
+## Data Flow Pattern
+
+```text
+Screen / Component
+       │
+       ▼ (invokes service methods)
+Client Service (src/services/*)
+       │
+       ├──► (online) ──► /api/* (Vercel Serverless) ──► Turso SQLite Cloud
+       │
+       └──► (offline fallback) ──► localStorageHelper / AsyncStorage
+```
+
+---
+
+## Architecture Constraints
+
+1. **Never bypass the API layer**: Client code must never import `api/_db.ts` or access `TURSO_AUTH_TOKEN`.
+2. **State management**: React `useState` / `useEffect` and custom hooks in `src/hooks/` are used. Do not introduce external state libraries (Redux, Zustand, MobX) unless explicitly approved.
+3. **Navigation**: Tab navigation is handled in `App.tsx` and `AppTabBar.tsx`. Do not migrate to Expo Router or React Navigation without explicit instruction.
+4. **Component Reuse**: Never write custom inline `<Modal>`, `<Switch>`, or `<Pressable>` icon buttons when standardized UI primitives exist.
+5. **Shared Types**: Use centralized interfaces in `src/types/index.ts`. Never introduce duplicate type definitions in local component files.

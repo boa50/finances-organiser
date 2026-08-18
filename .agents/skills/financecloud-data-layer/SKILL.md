@@ -1,73 +1,58 @@
 ---
 name: financecloud-data-layer
-description: Use when modifying FinanceCloud transactions, categories, persistence, CRUD operations, Turso/libSQL, Vercel API routes, offline fallback, or synchronization behavior.
+description: Use when modifying FinanceCloud transactions, categories, payment methods, banks, currencies, subscriptions, persistence, CRUD operations, Turso/libSQL, Vercel API routes, offline fallback, or synchronization behavior.
 ---
 
 # FinanceCloud Data Layer
 
 ## Goal
 
-Preserve reliable CRUD and offline-first behavior while keeping Turso credentials server-side.
+Preserve reliable CRUD and offline-first persistence across all entities (transactions, categories, payment methods, banks, currencies, subscriptions) while maintaining strict server-side isolation for Turso credentials.
 
-## Data flow
+---
 
-Cloud path:
+## Data Flow
 
-`Screen/Component -> Service in src/services -> /api/* Vercel Function -> Turso/libSQL`
+### Cloud Persistence:
+`Screen / Component -> src/services/* -> /api/* (Vercel Serverless) -> Turso/libSQL`
 
-Offline fallback:
+### Offline Fallback:
+`Screen / Component -> src/services/* -> localStorageHelper -> localStorage / AsyncStorage`
 
-`Screen/Component -> Service -> localStorage`
+---
 
-Relevant files:
+## Data Layer Modules
 
-- `src/services/tursoService.ts`
-- `src/services/categoryService.ts`
-- `api/_db.ts`
-- `api/transactions.ts`
-- `api/categories.ts`
-- `api/health.ts`
-- `src/types/index.ts`
+### Client Services (`src/services/`):
+- `tursoService.ts`: Transaction CRUD, database initialization, clear all transactions, config status.
+- `categoryService.ts`: Category CRUD, ordering, default seeding, offline sync.
+- `paymentMethodService.ts`: Payment method CRUD, ordering, installments permission flag, offline sync.
+- `bankService.ts`: Bank entity CRUD, ordering, default seeding, offline sync.
+- `currencyService.ts`: Currency catalog CRUD, enable/disable toggles, pivot rate caching.
+- `subscriptionService.ts`: Recurring subscription CRUD, next charge computation.
+- `subscriptionAutoGenerator.ts`: Auto-generates transaction records for active subscriptions due in current month.
+- `localStorageHelper.ts`: Standardized generic local storage loader, saver, and key manager.
+- `apiClient.ts`: Authenticated fetch wrapper for `/api/*` endpoints.
 
-## Rules
+### API Routes (`api/`):
+- `GET|POST|PUT|DELETE /api/transactions`
+- `GET|POST|PUT|DELETE /api/categories`
+- `GET|POST|PUT|DELETE /api/payment-methods`
+- `GET|POST|PUT|DELETE /api/banks`
+- `POST /api/auth` (timingSafeEqual verification)
+- `GET /api/health`
 
-1. Inspect the existing service implementation before adding another persistence abstraction.
-2. Keep database credentials exclusively in server-side `/api` code.
-3. Client code must never import or expose `TURSO_AUTH_TOKEN`.
-4. Reuse shared TypeScript interfaces.
-5. Keep API request/response shapes consistent with existing routes unless the task explicitly changes them.
-6. Handle API failures without destroying valid local data.
-7. When adding a field:
-   - update the shared type;
-   - update the client service;
-   - update the API route;
-   - update database migration/schema logic;
-   - update localStorage serialization if applicable;
-   - update affected screens/forms.
-8. Preserve existing CRUD semantics for transactions and categories.
-9. Do not silently overwrite cloud data with stale local data.
-10. If synchronization semantics are ambiguous, stop and explain the risk before implementing automatic merging.
+---
 
-## API route expectations
+## Implementation Rules
 
-- Validate HTTP method.
-- Validate required input.
-- Return appropriate HTTP status codes.
-- Handle database errors without leaking credentials or sensitive internals.
-- Keep SQL parameterized.
-- Reuse `api/_db.ts` rather than creating independent database clients.
-
-## Offline behavior
-
-When the cloud API is unavailable:
-- Use the existing localStorage fallback.
-- Make the UI clear about failure only when appropriate.
-- Do not treat an offline write as confirmed cloud persistence unless the existing app explicitly defines that behavior.
-
-## Database changes
-
-Before changing schema/migration logic:
-1. Inspect existing tables and migration behavior.
-2. Consider existing users/data.
-3. Make migrations additive and backward-compatible where practical.
-4. Test both a fresh database and an existing database.
+1. **Inspect before adding**: Extend existing services before creating new ones; use `localStorageHelper.ts` for storage boilerplate.
+2. **Strict credential isolation**: Never import `api/_db.ts` or expose `TURSO_AUTH_TOKEN` in client code.
+3. **Additive field changes**: When modifying an entity schema:
+   - Update `src/types/index.ts`.
+   - Update the client service and `localStorageHelper` serialization.
+   - Update `api/_db.ts` table definitions and migrations.
+   - Update `/api/*` endpoint request validation and parameterized SQL.
+   - Update affected forms, modals, and UI cards.
+4. **Parameterized queries**: All server-side SQL queries must use parameterized placeholders (`?`, `:param`).
+5. **Preserve offline reliability**: When cloud API fails, gracefully fallback to local cache without data loss.

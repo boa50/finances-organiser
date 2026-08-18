@@ -3,46 +3,56 @@ name: financecloud-analytics
 description: Use when modifying FinanceCloud D3 charts, analytics, transaction aggregation, category breakdowns, monthly trends, currency conversion, exchange rates, or financial data visualization.
 ---
 
-# FinanceCloud Analytics
+# FinanceCloud Analytics & Charts
 
 ## Goal
 
-Keep financial calculations correct and charts consistent across currencies, date ranges, categories, and platforms.
+Ensure financial calculations are exact, currency conversions are correctly pivoted through BRL, and D3 + SVG visualizations remain modular, performant, and standardized across Web, Android, and iOS.
 
-## Existing architecture
+---
 
-- D3 performs data calculations/layout.
-- `react-native-svg` renders chart paths/shapes.
-- `D3CurrentMonthCharts.tsx` contains current-month donut/category-bar visualizations.
-- `D3EvolutionChart.tsx` contains monthly income/expense trend visualization.
-- `src/utils/currencies.ts` contains currency definitions, formatting, and live exchange-rate logic.
+## Analytics & Chart Architecture
 
-## Currency rules
+- **D3 Calculation & Layout**: D3 utilities (`d3.pie`, `d3.arc`, `d3.line`, `d3.area`, `d3.scaleLinear`, `d3.scaleBand`) compute geometry and data paths.
+- **Rendering Layer**: `react-native-svg` renders SVG shapes, paths, text, and gradients.
+- **Hook Extraction**: `src/hooks/useEvolutionChartD3.ts` encapsulates layout metrics, monthly aggregation, and SVG scaling.
 
-- Supported currencies: BRL, USD, EUR, GBP, CAD, AUD, JPY, CHF, INR.
-- Conversion uses BRL as the pivot.
-- Exchange rates are cached for 60 seconds.
-- Never assume two currencies can be converted by directly multiplying an arbitrary pair unless the existing currency utility explicitly supports it.
-- Keep display formatting separate from numeric conversion.
-- Avoid floating-point surprises in displayed monetary values; use the project's existing formatting utilities.
+### Component Structure:
+- `src/components/charts/IncomeExpenseDonutChart.tsx`: Donut chart showing income vs expense split with center net balance.
+- `src/components/charts/CategorySpendingBarChart.tsx`: Horizontal bar chart displaying spending distribution by category.
+- `src/components/charts/EvolutionTrendChart.tsx`: Multi-month financial evolution area/line chart with period selectors (1M, 3M, 6M, 1Y, All).
+- `src/components/analytics/MonthlyBreakdownCharts.tsx`: Container component assembling month donut and category breakdown charts.
+- `src/components/analytics/MonthDetailSummaryCard.tsx`: Metric card showing net balance, income, expense, and transaction count.
 
-## Chart rules
+> Refer to **`financecloud-design-system`** for UI primitives and typography tokens used within charts.
 
-1. Inspect the existing aggregation logic before changing chart calculations.
-2. Keep financial calculations independent from SVG rendering where practical.
-3. Preserve existing chart semantics unless the task explicitly changes them.
-4. Handle zero-data and single-data-point cases.
-5. Handle long category names and empty categories gracefully.
-6. Keep chart updates efficient; avoid unnecessary recalculation on every render.
-7. Ensure chart dimensions work on Web and native platforms.
-8. Do not introduce a second charting library.
+---
 
-## Financial correctness checklist
+## Currency Rules
 
-Before considering analytics work complete:
-- Income and expense signs are correct.
-- Category totals reconcile with the underlying transaction set.
-- Monthly grouping uses the intended date semantics.
-- Currency conversion is applied exactly once.
-- Rounding is performed for presentation, not prematurely during aggregation.
-- Empty datasets do not produce NaN/Infinity values.
+- **Supported currencies**: BRL, USD, EUR, GBP, CAD, AUD, JPY, CHF, INR.
+- **Pivot currency**: All conversions use `BRL` as the internal pivot.
+- **Cache**: Exchange rates are cached for 60 seconds (`src/utils/currencies.ts`).
+- **Never convert twice**: Do not apply currency conversion to an amount that was already converted.
+- **Separate math from display**: Calculate in full precision numbers; format strictly at the presentation boundary with `formatMoney()`.
+
+---
+
+## Chart Implementation Rules
+
+1. **Reconciliation**: Chart sums must reconcile with underlying transaction datasets.
+2. **Empty & edge cases**: Always handle zero-data, single-data-point, and negative balance scenarios without crashing or producing `NaN`/`Infinity`.
+3. **Typography consistency**: All SVG `<Text>` nodes must use `theme.fontFamily.sans`, `theme.fontSize`, and `theme.fontWeight` values from `src/theme.ts`.
+4. **No second chart library**: D3 + `react-native-svg` is the project standard; do not introduce Chart.js, Victory, or other libraries.
+5. **Memoization**: Memoize D3 calculations with `useMemo` so that screen re-renders do not recalculate complex chart layouts unnecessarily.
+
+---
+
+## Financial Correctness Checklist
+
+Before marking analytics tasks complete:
+- [ ] Income (positive) vs Expense (negative/cost) semantics are properly maintained.
+- [ ] Category spending bar percentages total 100% of expenses.
+- [ ] Multi-currency transactions are converted to the selected active currency.
+- [ ] Empty state renders `AppEmptyState` instead of a broken SVG container.
+- [ ] SVG dimensions adapt gracefully across mobile screens and wide desktop views.

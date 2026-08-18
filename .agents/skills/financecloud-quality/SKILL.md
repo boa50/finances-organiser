@@ -3,64 +3,68 @@ name: financecloud-quality
 description: Use when reviewing, testing, debugging, refactoring, or validating FinanceCloud changes before they are considered complete.
 ---
 
-# FinanceCloud Quality
+# FinanceCloud Quality & Review
 
 ## Goal
 
-Catch regressions early while keeping validation proportional to the change.
+Catch regressions early, maintain test coverage, and enforce strict adherence to the design system, UI primitive standardization, and architectural boundaries.
 
-## Standard workflow
+---
 
-After implementing a feature or fix:
+## Standard Validation Workflow
 
-1. Inspect the git diff.
-2. Run TypeScript checking using the repository's configured command.
-3. Run relevant tests if they exist.
-4. Run the relevant Expo/Web build when the change affects build-time behavior.
-5. For API changes, exercise the affected endpoint when local Vercel development is available.
-6. Review for accidental secrets, unrelated changes, and dead code.
-7. Summarize what was validated and what could not be validated.
+After implementing any feature or fix:
 
-## Review checklist
+1. **Inspect the git diff**: `git diff` — confirm no accidental file changes, unintended reformatting, or committed secrets.
+2. **Type check**: Run TypeScript validation (`npx tsc --noEmit`).
+3. **Unit tests**: Run Jest suite (`npm test`).
+4. **Web build check**: Run `npx expo export -p web` when modifying bundler config, platform-specific files, or dependencies.
+5. **API check**: For API modifications, test endpoints with `npx vercel dev` when practical.
+6. **Documentation check**: Review `README.md` and update if user workflows, configs, or features changed.
 
-### Correctness
-- Does the implementation satisfy the requested behavior?
-- Are existing transaction/category behaviors preserved?
-- Are loading, empty, error, and offline states handled?
+---
 
-### Type safety
-- No unnecessary `any`.
-- Shared interfaces are updated consistently.
-- API and client types agree.
+## Quality Review Checklist
 
-### Security
-- No Turso credentials in client code.
-- No secrets committed to source control.
-- API input is validated.
-- SQL remains parameterized.
+### 1. Design System & UI Reusability Audit
+- [ ] **No raw `<Text>`**: All textual elements wrap `<AppText variant="...">` with `src/theme.ts` typography tokens.
+- [ ] **No raw `<Modal>`**: All modal dialogues and forms use `<AppModal>`.
+- [ ] **No custom icon pressables**: Icon action buttons in cards and list rows use `<AppIconButton>`.
+- [ ] **No raw `<Switch>`**: Boolean switches use `<AppSwitch>`.
+- [ ] **No raw `<ActivityIndicator>`**: Loading states render `<AppLoadingView>`.
+- [ ] **No raw chip loops**: Horizontal selection groups use `<AppChipSelector>`.
+- [ ] **No duplicate card layouts**: Management items use `<EntityManagementCard>`.
+- [ ] **No hardcoded styles**: Colors, spacing, radii, and font sizes reference `theme.*` exclusively.
+- [ ] **No raw `window.confirm` / `Alert.alert`**: Confirmations use `confirmAction` from `src/utils/dialogs.ts`.
 
-### Cross-platform
-- Web behavior remains valid.
-- Android/iOS behavior remains valid.
-- Platform-specific files are used appropriately.
+### 2. Financial Correctness
+- [ ] Income and expense sign semantics are respected.
+- [ ] Currency conversion passes through BRL pivot exactly once.
+- [ ] Presentation formatting uses `formatMoney()` rather than raw arithmetic strings.
+- [ ] Zero-data, single-data-point, and negative balance states are handled gracefully without `NaN`/`Infinity`.
 
-### Performance
-- Avoid unnecessary API calls.
-- Avoid repeated exchange-rate requests within the 60-second cache window.
-- Avoid expensive D3 calculations on every render.
-- Avoid unnecessary list/screen re-renders.
+### 3. Type Safety & Maintainability
+- [ ] No unwarranted `any` types.
+- [ ] Data structures utilize centralized interfaces from `src/types/index.ts`.
+- [ ] Logic is placed in services (`src/services/`) and hooks (`src/hooks/`), not embedded inside UI renderers.
+- [ ] Shared persistence uses `localStorageHelper.ts`.
 
-### Maintainability
-- Reuse existing services/components.
-- Avoid duplicated business logic.
-- Keep changes focused.
+### 4. Security & API Isolation
+- [ ] Zero Turso credentials or database clients in client-side code.
+- [ ] No `.env` secrets or production keys in version control.
+- [ ] API routes validate HTTP methods and parameters with parameterized SQL queries.
 
-## Debugging procedure
+### 5. Cross-Platform Validation
+- [ ] Web layout functions seamlessly on desktop viewports.
+- [ ] Touch targets and mobile modal sheets function properly (<600px).
+- [ ] Date picking uses `AppDatePicker` across native and web.
 
-When a bug is reported:
-1. Reproduce or inspect the failure.
-2. Identify the smallest likely root cause.
-3. Make the smallest safe fix.
-4. Validate the fix.
-5. Check for regressions in the affected flow.
-6. Do not perform unrelated refactors unless requested.
+---
+
+## Debugging Procedure
+
+When resolving an issue:
+1. Reproduce and identify the root cause.
+2. Formulate the smallest safe, reversible fix.
+3. Reuse existing UI primitives and service methods.
+4. Execute `npm test` and `npx tsc --noEmit` to verify zero regressions.
