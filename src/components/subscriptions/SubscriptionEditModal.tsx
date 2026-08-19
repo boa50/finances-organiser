@@ -13,13 +13,15 @@ import { categoryService } from '../../services/categoryService';
 import { paymentMethodService } from '../../services/paymentMethodService';
 import { bankService } from '../../services/bankService';
 import { subscriptionService } from '../../services/subscriptionService';
-import { handleSubscriptionBillingDayUpdate } from '../../services/subscriptionAutoGenerator';
+import { getSubscriptionTargetDate, handleSubscriptionBillingUpdate } from '../../services/subscriptionAutoGenerator';
+import { normalizeTransactionDate } from '../../utils/financials';
 import { tursoService } from '../../services/tursoService';
 import { CategoryIcon } from '../CategoryIcon';
 import {
   AppButton,
   AppChipSelector,
   AppModal,
+  AppSegmentedControl,
   AppSwitch,
   AppText,
   AppTextInput,
@@ -52,12 +54,29 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState<PaymentMethodItem[]>([]);
   const [bankId, setBankId] = useState<string>('');
   const [availableBanks, setAvailableBanks] = useState<BankItem[]>([]);
+  const [frequency, setFrequency] = useState<'monthly' | 'annual'>('monthly');
   const [billingDay, setBillingDay] = useState('1');
+  const [billingMonth, setBillingMonth] = useState('1');
   const [active, setActive] = useState(true);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const monthOptions = [
+    { id: '1', label: t('months.1') || 'Jan' },
+    { id: '2', label: t('months.2') || 'Feb' },
+    { id: '3', label: t('months.3') || 'Mar' },
+    { id: '4', label: t('months.4') || 'Apr' },
+    { id: '5', label: t('months.5') || 'May' },
+    { id: '6', label: t('months.6') || 'Jun' },
+    { id: '7', label: t('months.7') || 'Jul' },
+    { id: '8', label: t('months.8') || 'Aug' },
+    { id: '9', label: t('months.9') || 'Sep' },
+    { id: '10', label: t('months.10') || 'Oct' },
+    { id: '11', label: t('months.11') || 'Nov' },
+    { id: '12', label: t('months.12') || 'Dec' },
+  ];
 
   const clearFields = () => {
     setTitle('');
@@ -66,7 +85,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
     setCategoryId('');
     setPaymentMethodId('');
     setBankId('');
+    setFrequency('monthly');
     setBillingDay('1');
+    setBillingMonth('1');
     setActive(true);
     setNotes('');
     setErrorMessage(null);
@@ -115,7 +136,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           setPaymentMethodId(pmExists ? (subscription.paymentMethodId || '') : '');
           const bankExists = bks.some((b) => b.id === subscription.bankId);
           setBankId(bankExists ? (subscription.bankId || '') : '');
+          setFrequency(subscription.frequency || 'monthly');
           setBillingDay(String(subscription.billingDay));
+          setBillingMonth(subscription.billingMonth ? String(subscription.billingMonth) : '1');
           setActive(subscription.active);
           setNotes(subscription.notes || '');
         } else {
@@ -125,7 +148,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           setCategoryId(cats.length > 0 ? cats[0].id : '');
           setPaymentMethodId('');
           setBankId('');
+          setFrequency('monthly');
           setBillingDay('1');
+          setBillingMonth('1');
           setActive(true);
           setNotes('');
         }
@@ -151,6 +176,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
     setErrorMessage(null);
     const parsedAmount = Number(amount.replace(',', '.'));
     const parsedDay = parseInt(billingDay, 10);
+    const parsedMonth = frequency === 'annual' ? parseInt(billingMonth, 10) : undefined;
 
     if (!title.trim()) {
       setErrorMessage(t('subscriptionModal.titleRequired'));
@@ -164,11 +190,18 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       setErrorMessage(t('subscriptionModal.billingDayRequired'));
       return;
     }
+    if (frequency === 'annual' && (!parsedMonth || isNaN(parsedMonth) || parsedMonth < 1 || parsedMonth > 12)) {
+      setErrorMessage(t('subscriptionModal.billingMonthRequired'));
+      return;
+    }
 
     setSaving(true);
     try {
       if (subscription) {
         const oldBillingDay = subscription.billingDay;
+        const oldBillingMonth = subscription.billingMonth;
+        const oldFrequency = subscription.frequency || 'monthly';
+
         const updated = await subscriptionService.updateSubscription(subscription.id, {
           title: title.trim(),
           amount: parsedAmount,
@@ -176,15 +209,22 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           categoryId: categoryId || undefined,
           paymentMethodId: paymentMethodId || undefined,
           bankId: bankId || undefined,
+          frequency,
           billingDay: parsedDay,
+          billingMonth: parsedMonth,
           active,
           notes: notes.trim() || undefined,
         });
 
-        // Trigger auto-generator checks if billing day or details changed
-        if (oldBillingDay !== parsedDay) {
+        // Trigger auto-generator checks if billing day, month, or frequency changed
+        const billingChanged =
+          oldBillingDay !== parsedDay ||
+          oldBillingMonth !== parsedMonth ||
+          oldFrequency !== frequency;
+
+        if (billingChanged) {
           const currentTxs = await tursoService.getTransactions();
-          await handleSubscriptionBillingDayUpdate(updated, currentTxs);
+          await handleSubscriptionBillingUpdate(updated, currentTxs);
         }
       } else {
         const created = await subscriptionService.addSubscription({
@@ -194,34 +234,58 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           categoryId: categoryId || undefined,
           paymentMethodId: paymentMethodId || undefined,
           bankId: bankId || undefined,
+          frequency,
           billingDay: parsedDay,
+          billingMonth: parsedMonth,
           active,
           notes: notes.trim() || undefined,
         });
 
-        // Trigger auto-generation for current month if applicable
+        // Trigger auto-generation for current period if applicable
         if (created.active) {
           const now = new Date();
-          const today = now.getDate();
-          if (created.billingDay <= today) {
-            const currentYear = now.getFullYear();
-            const currentMonth = now.getMonth();
-            const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-            const targetDate = `${monthStr}-${String(created.billingDay).padStart(2, '0')}`;
+          const currentYear = now.getFullYear();
 
-            await tursoService.addTransaction({
-              title: created.title,
-              amount: created.amount,
-              type: 'expense',
-              currencyId: created.currencyId,
-              categoryId: created.categoryId,
-              paymentMethodId: created.paymentMethodId,
-              bankId: created.bankId,
-              store: created.store,
-              date: targetDate,
-              notes: created.notes,
-              subscriptionId: created.id,
-            });
+          if (created.frequency === 'annual') {
+            const billingMonth0 = (created.billingMonth || 1) - 1;
+            const targetDate = getSubscriptionTargetDate(created.billingDay, currentYear, billingMonth0);
+            if (targetDate <= now) {
+              const targetIso = normalizeTransactionDate(targetDate);
+              await tursoService.addTransaction({
+                title: created.title,
+                amount: created.amount,
+                type: 'expense',
+                currencyId: created.currencyId,
+                categoryId: created.categoryId,
+                paymentMethodId: created.paymentMethodId,
+                bankId: created.bankId,
+                store: created.store,
+                date: targetIso,
+                notes: created.notes || undefined,
+                subscriptionId: created.id,
+              });
+            }
+          } else {
+            const today = now.getDate();
+            if (created.billingDay <= today) {
+              const currentMonth = now.getMonth();
+              const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+              const targetDate = `${monthStr}-${String(created.billingDay).padStart(2, '0')}`;
+
+              await tursoService.addTransaction({
+                title: created.title,
+                amount: created.amount,
+                type: 'expense',
+                currencyId: created.currencyId,
+                categoryId: created.categoryId,
+                paymentMethodId: created.paymentMethodId,
+                bankId: created.bankId,
+                store: created.store,
+                date: targetDate,
+                notes: created.notes,
+                subscriptionId: created.id,
+              });
+            }
           }
         }
       }
@@ -259,6 +323,20 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
             </View>
           )}
 
+
+        {/* Frequency */}
+        <View style={styles.fieldGroup}>
+          <AppText style={styles.label}>{t('subscriptionModal.frequencyField')}</AppText>
+          <AppSegmentedControl<'monthly' | 'annual'>
+            options={[
+              { label: t('subscriptionModal.frequencyMonthly'), value: 'monthly' },
+              { label: t('subscriptionModal.frequencyAnnual'), value: 'annual' },
+            ]}
+            selectedValue={frequency}
+            onSelect={setFrequency}
+          />
+        </View>
+
         {/* Title */}
         <View style={styles.fieldGroup}>
           <AppText style={styles.label}>{t('transactionModal.titleField')}</AppText>
@@ -272,7 +350,11 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         {/* Amount & Currency */}
         <View style={styles.row}>
           <View style={[styles.fieldGroup, styles.flex2]}>
-            <AppText style={styles.label}>{t('transactionModal.amountField')}</AppText>
+            <AppText style={styles.label}>
+              {frequency === 'annual'
+                ? t('subscriptionModal.annualAmountLabel')
+                : t('subscriptionModal.monthlyAmountLabel')}
+            </AppText>
             <AppTextInput
               value={amount}
               onChangeText={setAmount}
@@ -295,31 +377,40 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
           </View>
         )}
 
+        {/* Billing Month (Annual only) */}
+        {frequency === 'annual' && (
+          <View style={styles.fieldGroup}>
+            <AppText style={styles.label}>{t('subscriptionModal.billingMonthField')}</AppText>
+            <AppChipSelector
+              items={monthOptions}
+              selectedId={billingMonth}
+              onSelect={(item) => setBillingMonth(item.id)}
+              keyExtractor={(item) => item.id}
+              labelExtractor={(item) => item.label}
+            />
+          </View>
+        )}
+
         {/* Billing Day */}
         <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>{t('subscriptionModal.billingDayField')}</AppText>
+          <AppText style={styles.label}>
+            {frequency === 'annual'
+              ? t('subscriptionModal.billingDayFieldAnnual')
+              : t('subscriptionModal.billingDayField')}
+          </AppText>
           <AppTextInput
             value={billingDay}
             onChangeText={setBillingDay}
             placeholder="1"
           />
           <AppText style={styles.fieldHint}>
-            {t('subscriptionModal.billingDayHint', { day: billingDay || '1' })}
+            {frequency === 'annual'
+              ? t('subscriptionModal.billingDayHintAnnual', {
+                  month: monthOptions.find((m) => m.id === billingMonth)?.label || '',
+                  day: billingDay || '1',
+                })
+              : t('subscriptionModal.billingDayHint', { day: billingDay || '1' })}
           </AppText>
-        </View>
-
-        {/* Active Toggle */}
-        <View style={styles.activeToggleRow}>
-          <View style={styles.activeToggleInfo}>
-            <AppText style={styles.activeToggleTitle}>{t('subscriptionModal.statusField')}</AppText>
-            <AppText style={styles.activeToggleSub}>
-              {active ? t('subscriptionModal.activeDesc') : t('subscriptionModal.inactiveDesc')}
-            </AppText>
-          </View>
-          <AppSwitch
-            value={active}
-            onValueChange={setActive}
-          />
         </View>
 
         {/* Category */}

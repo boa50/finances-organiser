@@ -145,11 +145,14 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
   const activeCount = subscriptions.filter((s) => s.active).length;
   const inactiveCount = subscriptions.length - activeCount;
 
-  // Convert monthly total to BRL for summary metric
+  // Convert monthly total to BRL for summary metric (prorating annual subscriptions to monthly equivalent)
   const totalMonthlyBRL = useMemo(() => {
     return subscriptions
       .filter((s) => s.active)
-      .reduce((sum, s) => sum + convertCurrency(s.amount, s.currencyId, 'BRL'), 0);
+      .reduce((sum, s) => {
+        const amountBRL = convertCurrency(s.amount, s.currencyId, 'BRL');
+        return sum + (s.frequency === 'annual' ? amountBRL / 12 : amountBRL);
+      }, 0);
   }, [subscriptions]);
 
   const renderSubscriptionItem = useCallback(({ item }: { item: Subscription }) => {
@@ -160,6 +163,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
       color: theme.colors.accent,
     };
     const categoryDisplayName = catInfo.name || t('common.uncategorized');
+    const monthLabel = item.billingMonth ? (t(`months.${item.billingMonth}`) || String(item.billingMonth)) : '';
 
     return (
       <View style={styles.cardWrapper}>
@@ -195,7 +199,11 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
               <AppText style={styles.subAmount}>
                 {formatMoney(item.amount, item.currencyId)}
               </AppText>
-              <AppText style={styles.perMonthText}>{t('subscriptions.perMonth')}</AppText>
+              <AppText style={styles.perMonthText}>
+                {item.frequency === 'annual'
+                  ? t('subscriptions.perYear')
+                  : t('subscriptions.perMonth')}
+              </AppText>
             </View>
           </View>
 
@@ -204,7 +212,9 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
             <View style={styles.billingDayPill}>
               <Calendar size={13} color={theme.colors.accent} />
               <AppText style={styles.billingDayText}>
-                {t('subscriptions.dueOnDay', { day: item.billingDay })}
+                {item.frequency === 'annual'
+                  ? t('subscriptions.dueAnnually', { month: monthLabel, day: item.billingDay })
+                  : t('subscriptions.dueOnDay', { day: item.billingDay })}
               </AppText>
             </View>
 

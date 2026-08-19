@@ -126,7 +126,9 @@ export async function ensureTablesExist(client: Client): Promise<void> {
       payment_method_id TEXT,
       bank_id TEXT,
       store TEXT,
+      frequency TEXT NOT NULL DEFAULT 'monthly',
       billing_day INTEGER NOT NULL DEFAULT 1,
+      billing_month INTEGER,
       active INTEGER NOT NULL DEFAULT 1,
       notes TEXT,
       created_at TEXT NOT NULL,
@@ -154,6 +156,18 @@ export async function ensureTablesExist(client: Client): Promise<void> {
 
   try {
     await client.execute('ALTER TABLE subscriptions ADD COLUMN bank_id TEXT');
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    await client.execute("ALTER TABLE subscriptions ADD COLUMN frequency TEXT NOT NULL DEFAULT 'monthly'");
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    await client.execute('ALTER TABLE subscriptions ADD COLUMN billing_month INTEGER');
   } catch (e) {
     // Column already exists
   }

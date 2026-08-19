@@ -10,7 +10,7 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and handle authentication, transactions, categories, payment methods, and banks.
 - **Multi-currency & Currency management** — Dynamic currency management supporting BRL, USD, CAD, AUD, THB, JPY, KRW (WON), EUR, GBP, and COP (COL) with 2-step live exchange rate conversion (direct X-BRL or X-USD * USD-BRL fallback) and minimum 1 currency constraint.
 - **High-performance FlashList & Screen-bounded scrolling** — List virtualization via `@shopify/flash-list` across all data screens (`TransactionsScreen`, `SubscriptionsScreen`, `ManagementScreen`, and `OverviewScreen`) with split-layout pinned headers/filters and independent list scrolling.
-- **Subscription management** — Dedicated screen for managing monthly recurring subscription expenses with active/inactive toggles, payment day scheduling, and idempotent monthly transaction auto-generation.
+- **Subscription management** — Dedicated screen for managing monthly and annual recurring subscription expenses with monthly/annual frequency toggle, recurrence day/month scheduling, prorated monthly metric aggregation, and idempotent transaction auto-generation.
 - **Transaction & Installment management** — Full create, edit, duplicate, delete, search, and filter capabilities with monthly grouping, merchant tracking, BRL monetary conversion display on transaction cards (with converted original values shown alongside), single and multi-month installment support, and quick duplication defaulting to the current date.
 - **Comprehensive management hub, Enable/Disable toggles & Drag-and-drop reordering** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), Banks, and Currencies. Each customizable entity includes an enable/disable toggle switch; disabled items are hidden when creating or editing transactions and subscriptions while remaining preserved for historical reference on older records. All customizable entities can also be freely reordered via cross-platform drag-and-drop (Web & Mobile), with the custom sort order persisted and automatically reflected throughout the application.
 - **Internationalization (i18n)** — Full bilingual support for Brazilian Portuguese (`pt-BR`) and English (Australian) (`en-AU`) using `i18next` and `react-i18next`, with a header language switcher toggle and persistent user preference in `localStorage`.
@@ -170,7 +170,7 @@ finances-organiser/
     │   ├── OverviewScreen.tsx       # Dashboard with balance summary and recent transactions
     │   ├── AnalyticsScreen.tsx      # D3 charts (current month breakdown & historical evolution)
     │   ├── TransactionsScreen.tsx   # Searchable/filterable transaction history
-    │   ├── SubscriptionsScreen.tsx  # Monthly recurring subscription manager
+    │   ├── SubscriptionsScreen.tsx  # Monthly & annual recurring subscription manager
     │   ├── management/              # Management screen and sub-tabs for entity management
     │   │   ├── ManagementScreen.tsx # Tabbed management hub
     │   │   ├── CategoryManagementTab.tsx

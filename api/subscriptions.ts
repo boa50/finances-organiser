@@ -26,7 +26,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
         bankId: row.bank_id ? String(row.bank_id) : undefined,
         store: row.store ? String(row.store) : undefined,
+        frequency: String(row.frequency || 'monthly') as 'monthly' | 'annual',
         billingDay: Number(row.billing_day) || 1,
+        billingMonth: row.billing_month != null ? Number(row.billing_month) : undefined,
         active: Boolean(row.active),
         notes: row.notes ? String(row.notes) : undefined,
         createdAt: String(row.created_at),
@@ -37,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST /api/subscriptions
     if (req.method === 'POST') {
-      const { title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
+      const { title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, frequency, billingDay, billingMonth, billing_month, active, notes } = req.body || {};
       const currVal = currencyId || currency;
       if (!title || amount === undefined || !currVal) {
         return res.status(400).json({ error: 'Missing required subscription fields' });
@@ -45,7 +47,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const id = generateId('sub');
       const now = new Date().toISOString();
+      const freq = frequency === 'annual' ? 'annual' : 'monthly';
       const bDay = Math.min(Math.max(Number(billingDay) || 1, 1), 31);
+      const bMonthInput = billingMonth != null ? billingMonth : billing_month;
+      const bMonth = freq === 'annual' && bMonthInput != null ? Math.min(Math.max(Number(bMonthInput) || 1, 1), 12) : null;
       const isActive = active !== undefined ? Boolean(active) : true;
 
       const catIdVal = categoryId ? String(categoryId).trim() : null;
@@ -54,8 +59,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const storeVal = store ? String(store).trim() : null;
 
       await client.execute({
-        sql: `INSERT INTO subscriptions (id, title, amount, currency_id, category_id, payment_method_id, bank_id, store, billing_day, active, notes, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO subscriptions (id, title, amount, currency_id, category_id, payment_method_id, bank_id, store, frequency, billing_day, billing_month, active, notes, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           id,
           title.trim(),
@@ -65,7 +70,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           pmIdVal,
           bankIdVal,
           storeVal,
+          freq,
           bDay,
+          bMonth,
           isActive ? 1 : 0,
           notes ? String(notes).trim() : '',
           now,
@@ -82,7 +89,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         paymentMethodId: pmIdVal || undefined,
         bankId: bankIdVal || undefined,
         store: storeVal || undefined,
+        frequency: freq,
         billingDay: bDay,
+        billingMonth: bMonth != null ? bMonth : undefined,
         active: isActive,
         notes: notes ? String(notes).trim() : undefined,
         createdAt: now,
@@ -94,14 +103,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // PUT /api/subscriptions
     if (req.method === 'PUT') {
-      const { id, title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, billingDay, active, notes } = req.body || {};
+      const { id, title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, frequency, billingDay, billingMonth, billing_month, active, notes } = req.body || {};
       const currVal = currencyId || currency;
       if (!id || !title || amount === undefined || !currVal) {
         return res.status(400).json({ error: 'Missing required subscription fields for update' });
       }
 
       const now = new Date().toISOString();
+      const freq = frequency === 'annual' ? 'annual' : 'monthly';
       const bDay = Math.min(Math.max(Number(billingDay) || 1, 1), 31);
+      const bMonthInput = billingMonth != null ? billingMonth : billing_month;
+      const bMonth = freq === 'annual' && bMonthInput != null ? Math.min(Math.max(Number(bMonthInput) || 1, 1), 12) : null;
       const isActive = active !== undefined ? Boolean(active) : true;
 
       const catIdVal = categoryId ? String(categoryId).trim() : null;
@@ -111,7 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       await client.execute({
         sql: `UPDATE subscriptions
-              SET title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, billing_day = ?, active = ?, notes = ?, updated_at = ?
+              SET title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, frequency = ?, billing_day = ?, billing_month = ?, active = ?, notes = ?, updated_at = ?
               WHERE id = ?`,
         args: [
           title.trim(),
@@ -121,7 +133,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           pmIdVal,
           bankIdVal,
           storeVal,
+          freq,
           bDay,
+          bMonth,
           isActive ? 1 : 0,
           notes ? String(notes).trim() : '',
           now,
@@ -138,7 +152,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         paymentMethodId: pmIdVal || undefined,
         bankId: bankIdVal || undefined,
         store: storeVal || undefined,
+        frequency: freq,
         billingDay: bDay,
+        billingMonth: bMonth != null ? bMonth : undefined,
         active: isActive,
         notes: notes ? String(notes).trim() : undefined,
         updatedAt: now,

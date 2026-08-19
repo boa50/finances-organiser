@@ -51,4 +51,41 @@ describe('subscriptionService', () => {
     const subs = await subscriptionService.getSubscriptions();
     expect(subs.some((s) => s.id === createdSub.id)).toBe(false);
   });
+
+  it('adds, updates, and fetches an annual subscription', async () => {
+    const annualSub = await subscriptionService.addSubscription({
+      title: 'Amazon Prime Yearly',
+      amount: 199.0,
+      currencyId: 'BRL',
+      frequency: 'annual',
+      billingDay: 10,
+      billingMonth: 7,
+      active: true,
+      notes: 'Annual prime membership',
+    });
+
+    expect(annualSub.id).toBeDefined();
+    expect(annualSub.frequency).toBe('annual');
+    expect(annualSub.billingMonth).toBe(7);
+    expect(annualSub.billingDay).toBe(10);
+
+    const updated = await subscriptionService.updateSubscription(annualSub.id, {
+      billingMonth: 8,
+      billingDay: 15,
+      amount: 219.0,
+    });
+
+    expect(updated.frequency).toBe('annual');
+    expect(updated.billingMonth).toBe(8);
+    expect(updated.billingDay).toBe(15);
+    expect(updated.amount).toBe(219.0);
+
+    const subs = await subscriptionService.getSubscriptions();
+    const found = subs.find((s) => s.id === annualSub.id);
+    expect(found?.frequency).toBe('annual');
+    expect(found?.billingMonth).toBe(8);
+    expect(found?.billingDay).toBe(15);
+
+    await subscriptionService.deleteSubscription(annualSub.id);
+  });
 });

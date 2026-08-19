@@ -2,6 +2,7 @@ import {
   getSubscriptionTargetDate,
   processSubscriptionAutoGeneration,
   handleSubscriptionBillingDayUpdate,
+  handleSubscriptionBillingUpdate,
 } from '../subscriptionAutoGenerator';
 import { tursoService } from '../tursoService';
 import { Subscription, Transaction } from '../../types';
@@ -60,6 +61,7 @@ describe('subscriptionAutoGenerator', () => {
       amount: 21.9,
       currencyId: 'BRL',
       categoryId: 'cat-ent-1',
+      frequency: 'monthly',
       billingDay: 10,
       active: true,
       createdAt: '2026-01-01T00:00:00.000Z',
@@ -72,7 +74,36 @@ describe('subscriptionAutoGenerator', () => {
       amount: 110.0,
       currencyId: 'BRL',
       categoryId: 'cat-health-1',
+      frequency: 'monthly',
       billingDay: 5,
+      active: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const annualSub: Subscription = {
+      id: 'sub-annual-1',
+      title: 'Amazon Prime Annual',
+      amount: 199.9,
+      currencyId: 'BRL',
+      categoryId: 'cat-ent-1',
+      frequency: 'annual',
+      billingDay: 15,
+      billingMonth: 3, // March 15
+      active: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const inactiveAnnualSub: Subscription = {
+      id: 'sub-annual-inactive',
+      title: 'Costco Membership',
+      amount: 60.0,
+      currencyId: 'USD',
+      categoryId: 'cat-ent-1',
+      frequency: 'annual',
+      billingDay: 1,
+      billingMonth: 6,
       active: false,
       createdAt: '2026-01-01T00:00:00.000Z',
       updatedAt: '2026-01-01T00:00:00.000Z',
@@ -115,15 +146,101 @@ describe('subscriptionAutoGenerator', () => {
 
     it('does not generate transaction for inactive subscriptions', async () => {
       const refDate = new Date(2026, 7, 11);
-      const generated = await processSubscriptionAutoGeneration([inactiveSub], [], refDate);
+      const generated = await processSubscriptionAutoGeneration([inactiveSub, inactiveAnnualSub], [], refDate);
+
+      expect(generated.length).toBe(0);
+      expect(tursoService.addTransaction).not.toHaveBeenCalled();
+    });
+
+    it('generates annual transaction when billing date has passed this year and no tx exists', async () => {
+      const refDate = new Date(2026, 7, 11); // August 11, 2026 (March 15 has passed)
+      const existingTxs: Transaction[] = [];
+
+      const generated = await processSubscriptionAutoGeneration([annualSub], existingTxs, refDate);
+
+      expect(generated.length).toBe(1);
+      expect(generated[0].title).toBe('Amazon Prime Annual');
+      expect(generated[0].subscriptionId).toBe('sub-annual-1');
+      expect(generated[0].amount).toBe(199.9);
+      expect(tursoService.addTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subscriptionId: 'sub-annual-1',
+          date: '2026-03-15T00:00:00.000Z',
+          notes: undefined,
+        })
+      );
+    });
+
+    it('enforces annual idempotency: does not generate duplicate transaction if year tx exists', async () => {
+      const refDate = new Date(2026, 7, 11); // August 11, 2026
+      const existingTxs: Transaction[] = [
+        {
+          id: 'tx-annual-2026',
+          type: 'expense',
+          title: 'Amazon Prime Annual',
+          amount: 199.9,
+          currencyId: 'BRL',
+          categoryId: 'cat-ent-1',
+          subscriptionId: 'sub-annual-1',
+          date: '2026-03-15T00:00:00.000Z',
+          createdAt: '2026-03-15T00:00:00.000Z',
+        },
+      ];
+
+      // Next year target is March 15, 2027. RefDate is August 11, 2026.
+      // 12 months from refDate is August 11, 2027 -> March 15, 2027 is within 12 months,
+      // so it generates the 2027 transaction.
+      const generated = await processSubscriptionAutoGeneration([annualSub], existingTxs, refDate);
+
+      expect(generated.length).toBe(1);
+      expect(tursoService.addTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subscriptionId: 'sub-annual-1',
+          date: '2027-03-15T00:00:00.000Z',
+        })
+      );
+    });
+
+    it('does not generate next year annual transaction when more than 12 months away', async () => {
+      const refDate = new Date(2026, 0, 5); // January 5, 2026
+      const subNov: Subscription = {
+        id: 'sub-nov-annual',
+        title: 'Domain Registration',
+        amount: 50.0,
+        currencyId: 'USD',
+        frequency: 'annual',
+        billingDay: 20,
+        billingMonth: 11, // November 20
+        active: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      const existingTxs: Transaction[] = [
+        {
+          id: 'tx-nov-2026',
+          type: 'expense',
+          title: 'Domain Registration',
+          amount: 50.0,
+          currencyId: 'USD',
+          subscriptionId: 'sub-nov-annual',
+          date: '2026-11-20T00:00:00.000Z',
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+
+      // 2026 already exists. Next year target: Nov 20, 2027.
+      // 12 months from Jan 5, 2026 is Jan 5, 2027.
+      // Nov 20, 2027 is > 12 months away, so it must not generate.
+      const generated = await processSubscriptionAutoGeneration([subNov], existingTxs, refDate);
 
       expect(generated.length).toBe(0);
       expect(tursoService.addTransaction).not.toHaveBeenCalled();
     });
   });
 
-  describe('handleSubscriptionBillingDayUpdate', () => {
-    it('updates transaction date for current month when billingDay changes', async () => {
+  describe('handleSubscriptionBillingUpdate', () => {
+    it('updates transaction date for current month when billingDay changes (monthly)', async () => {
       const refDate = new Date(2026, 7, 11); // August 2026
       const sub: Subscription = {
         id: 'sub-1',
@@ -131,6 +248,7 @@ describe('subscriptionAutoGenerator', () => {
         amount: 30.0,
         currencyId: 'USD',
         categoryId: 'cat-serv-1',
+        frequency: 'monthly',
         billingDay: 25, // Updated from 5 to 25
         active: true,
         createdAt: '2026-01-01T00:00:00.000Z',
@@ -161,7 +279,7 @@ describe('subscriptionAutoGenerator', () => {
         createdAt: '2026-07-05T12:00:00.000Z',
       };
 
-      await handleSubscriptionBillingDayUpdate(sub, [currentMonthTx, pastMonthTx], refDate);
+      await handleSubscriptionBillingUpdate(sub, [currentMonthTx, pastMonthTx], refDate);
 
       expect(tursoService.updateTransaction).toHaveBeenCalledTimes(1);
       expect(tursoService.updateTransaction).toHaveBeenCalledWith(
@@ -172,7 +290,55 @@ describe('subscriptionAutoGenerator', () => {
       );
     });
 
-    it('does not touch past month transactions when billingDay changes', async () => {
+    it('updates current year transaction date when billingMonth and billingDay change (annual)', async () => {
+      const refDate = new Date(2026, 7, 11); // August 2026
+      const annualSub: Subscription = {
+        id: 'sub-annual-update',
+        title: 'VPN Yearly',
+        amount: 80.0,
+        currencyId: 'USD',
+        frequency: 'annual',
+        billingDay: 20, // Updated from 10 to 20
+        billingMonth: 10, // Updated from 5 (May) to 10 (October)
+        active: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-08-11T00:00:00.000Z',
+      };
+
+      const currentYearTx: Transaction = {
+        id: 'tx-annual-current-year',
+        type: 'expense',
+        title: 'VPN Yearly',
+        amount: 80.0,
+        currencyId: 'USD',
+        subscriptionId: 'sub-annual-update',
+        date: '2026-05-10T00:00:00.000Z', // Old date (May 10, 2026)
+        createdAt: '2026-05-10T00:00:00.000Z',
+      };
+
+      const pastYearTx: Transaction = {
+        id: 'tx-annual-past-year',
+        type: 'expense',
+        title: 'VPN Yearly',
+        amount: 80.0,
+        currencyId: 'USD',
+        subscriptionId: 'sub-annual-update',
+        date: '2025-05-10T00:00:00.000Z', // 2025 transaction
+        createdAt: '2025-05-10T00:00:00.000Z',
+      };
+
+      await handleSubscriptionBillingUpdate(annualSub, [currentYearTx, pastYearTx], refDate);
+
+      expect(tursoService.updateTransaction).toHaveBeenCalledTimes(1);
+      expect(tursoService.updateTransaction).toHaveBeenCalledWith(
+        'tx-annual-current-year',
+        expect.objectContaining({
+          date: '2026-10-20T00:00:00.000Z',
+        })
+      );
+    });
+
+    it('does not touch past month or past year transactions when billing changes', async () => {
       const refDate = new Date(2026, 7, 11); // August 2026
       const sub: Subscription = {
         id: 'sub-1',
@@ -180,6 +346,7 @@ describe('subscriptionAutoGenerator', () => {
         amount: 30.0,
         currencyId: 'USD',
         categoryId: 'cat-serv-1',
+        frequency: 'monthly',
         billingDay: 25,
         active: true,
         createdAt: '2026-01-01T00:00:00.000Z',
@@ -204,3 +371,4 @@ describe('subscriptionAutoGenerator', () => {
     });
   });
 });
+

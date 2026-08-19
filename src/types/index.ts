@@ -28,7 +28,9 @@ export interface Subscription {
   paymentMethodId?: string;
   bankId?: string;
   store?: string;
+  frequency?: 'monthly' | 'annual';
   billingDay: number; // 1 to 31
+  billingMonth?: number; // 1 to 12 (Jan=1, Dec=12). Used when frequency === 'annual'.
   active: boolean;
   notes?: string;
   createdAt: string;

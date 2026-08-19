@@ -6,6 +6,7 @@ import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from 
 import { categoryService } from '../../services/categoryService';
 import { paymentMethodService } from '../../services/paymentMethodService';
 import { bankService } from '../../services/bankService';
+import { subscriptionService } from '../../services/subscriptionService';
 import { AppCard, AppIconBadge, AppBadge, AppText, AppIconButton } from '../ui';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import theme from '../../theme';
@@ -43,6 +44,18 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   const isIncome = transaction.type === 'income';
   const currencyInfo = getCurrencyInfo(transaction.currencyId);
   const displayTitle = title ?? transaction.title;
+
+  const isSubscription = Boolean(transaction.subscriptionId);
+  const subInfo = isSubscription
+    ? subscriptionService.getSubscriptionsSync().find((s) => s.id === transaction.subscriptionId)
+    : undefined;
+  const isAnnualSubscription =
+    subInfo?.frequency === 'annual' ||
+    transaction.notes === 'Annual recurring subscription';
+
+  const subscriptionBadgeLabel = isAnnualSubscription
+    ? t('common.annualSubscription')
+    : t('common.subscription');
 
   const date = new Date(transaction.date);
   const isValidDate = !Number.isNaN(date.getTime());
@@ -172,7 +185,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
 
             {transaction.subscriptionId ? (
               <AppBadge
-                label={t('common.subscription')}
+                label={subscriptionBadgeLabel}
                 variant="accent"
                 size="sm"
               />
@@ -204,7 +217,11 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
           </View>
         </View>
 
-        {transaction.notes ? <AppText style={styles.txNotes}>{transaction.notes}</AppText> : null}
+        {transaction.notes &&
+        transaction.notes !== 'Annual recurring subscription' &&
+        transaction.notes !== 'Monthly recurring subscription' ? (
+          <AppText style={styles.txNotes}>{transaction.notes}</AppText>
+        ) : null}
       </View>
     </AppCard>
   );
