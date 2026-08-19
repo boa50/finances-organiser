@@ -52,6 +52,13 @@ describe('subscriptionAutoGenerator', () => {
       expect(date.getMonth()).toBe(1);
       expect(date.getDate()).toBe(29);
     });
+
+    it('clamps billing day 31 to April 30 in 30-day month', () => {
+      const date = getSubscriptionTargetDate(31, 2026, 3); // April 2026
+      expect(date.getFullYear()).toBe(2026);
+      expect(date.getMonth()).toBe(3);
+      expect(date.getDate()).toBe(30);
+    });
   });
 
   describe('processSubscriptionAutoGeneration', () => {
@@ -120,6 +127,31 @@ describe('subscriptionAutoGenerator', () => {
       expect(generated[0].subscriptionId).toBe('sub-active-1');
       expect(generated[0].amount).toBe(21.9);
       expect(tursoService.addTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('generates transaction on Feb 28 for monthly subscription with billing day 31 in non-leap year', async () => {
+      const refDate = new Date(2027, 1, 28); // February 28, 2027
+      const subDay31: Subscription = {
+        id: 'sub-day31',
+        title: 'End of Month Cloud',
+        amount: 50.0,
+        currencyId: 'BRL',
+        frequency: 'monthly',
+        billingDay: 31,
+        active: true,
+        createdAt: '2027-01-01T00:00:00.000Z',
+        updatedAt: '2027-01-01T00:00:00.000Z',
+      };
+
+      const generated = await processSubscriptionAutoGeneration([subDay31], [], refDate);
+
+      expect(generated.length).toBe(1);
+      expect(tursoService.addTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          subscriptionId: 'sub-day31',
+          date: '2027-02-28T00:00:00.000Z',
+        })
+      );
     });
 
     it('enforces idempotency: does not generate duplicate transaction if month transaction exists', async () => {

@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryAggregate, Transaction } from '../../types';
 import { convertCurrency } from '../../utils/currencies';
+import { parseTransactionDate } from '../../utils/financials';
 import { categoryService } from '../../services/categoryService';
 import { AppSectionHeader } from '../ui';
 import { IncomeExpenseDonutChart } from '../charts/IncomeExpenseDonutChart';
@@ -25,7 +26,7 @@ export const MonthlyBreakdownCharts: React.FC<MonthlyBreakdownChartsProps> = ({
   const currentMonth = selectedMonthDate.getMonth();
 
   const monthTransactions = transactions.filter((tx) => {
-    const d = new Date(tx.date);
+    const d = parseTransactionDate(tx.date);
     return !isNaN(d.getTime()) && d.getFullYear() === currentYear && d.getMonth() === currentMonth;
   });
 

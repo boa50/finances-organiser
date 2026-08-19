@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
 import { Transaction, TursoConfig } from '../types';
 import { DEFAULT_CURRENCY } from '../utils/currencies';
-import { calculateFinancialSummary, GroupedRecentItem, groupRecentTransactions } from '../utils/financials';
+import { calculateFinancialSummary, GroupedRecentItem, groupRecentTransactions, parseTransactionDate } from '../utils/financials';
 import { TransactionEditModal } from '../components/transactions/TransactionEditModal';
 import { TransactionItemCard } from '../components/transactions/TransactionItemCard';
 import { NetBalanceHeroCard } from '../components/overview/NetBalanceHeroCard';
@@ -45,7 +45,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   const monthName = currentMonthDate.toLocaleString(i18n.language || undefined, { month: 'long' });
 
   const renderRecentItem = useCallback(({ item }: { item: GroupedRecentItem }) => {
-    const dateObj = new Date(item.date);
+    const dateObj = parseTransactionDate(item.date);
     const dateStr = isNaN(dateObj.getTime())
       ? item.date
       : dateObj.toLocaleDateString(i18n.language || undefined, { month: 'short', day: 'numeric' });

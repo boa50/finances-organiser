@@ -38,15 +38,67 @@ export interface TransactionFilterOptions {
 }
 
 /**
+ * Safely parses a transaction date (string YYYY-MM-DD... or Date) into a local Date object
+ * at 00:00:00.000 local time, preventing UTC offset shifts.
+ */
+export function parseTransactionDate(dateInput: Date | string | undefined | null): Date {
+  if (!dateInput) return new Date(NaN);
+  if (dateInput instanceof Date) {
+    if (Number.isNaN(dateInput.getTime())) return new Date(NaN);
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate(), 0, 0, 0, 0);
+  }
+  const str = String(dateInput).trim();
+  if (!str) return new Date(NaN);
+  const match = str.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10); // 1-12
+    const rawDay = parseInt(match[3], 10);
+    if (!Number.isNaN(year) && !Number.isNaN(month) && month >= 1 && month <= 12) {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const validDay = Math.min(Math.max(rawDay, 1), daysInMonth);
+      return new Date(year, month - 1, validDay, 0, 0, 0, 0);
+    }
+  }
+  const parsed = new Date(str);
+  if (!Number.isNaN(parsed.getTime())) {
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0);
+  }
+  return new Date(NaN);
+}
+
+/**
+ * Formats a Date object as YYYY-MM-DD using local calendar date values.
+ */
+export function formatDateToYMD(date: Date): string {
+  if (Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
  * Normalizes a transaction date string or Date object so that the time part
  * is set to the beginning of the day (00:00:00.000Z), preserving the date part.
+ * Safely clamps invalid days (e.g. Feb 31 -> Feb 28/29) to the actual days in that month.
  */
 export function normalizeTransactionDate(dateInput: Date | string): string {
   if (typeof dateInput === 'string') {
     const trimmed = dateInput.trim();
-    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+    const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) {
-      return `${match[1]}T00:00:00.000Z`;
+      const year = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10); // 1-12
+      const rawDay = parseInt(match[3], 10);
+      if (!Number.isNaN(year) && !Number.isNaN(month) && month >= 1 && month <= 12) {
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const validDay = Math.min(Math.max(rawDay, 1), daysInMonth);
+        const yStr = String(year);
+        const mStr = String(month).padStart(2, '0');
+        const dStr = String(validDay).padStart(2, '0');
+        return `${yStr}-${mStr}-${dStr}T00:00:00.000Z`;
+      }
     }
     const parsed = new Date(trimmed);
     if (!Number.isNaN(parsed.getTime())) {
@@ -70,6 +122,37 @@ export function normalizeTransactionDate(dateInput: Date | string): string {
 }
 
 /**
+ * Calculates the exact date for an installment item given the base purchase date
+ * and the zero-based installment offset (0 for 1st installment, 1 for 2nd, etc.).
+ *
+ * Handles variable month lengths gracefully by clamping the target day to the
+ * maximum available days in the target month (e.g. Jan 31 + 1 month -> Feb 28/29),
+ * while preserving the original base day on subsequent months with 31 days (e.g. Mar 31).
+ */
+export function calculateInstallmentDate(
+  baseDateInput: Date | string,
+  installmentOffset: number
+): Date {
+  const base = parseTransactionDate(baseDateInput);
+  if (Number.isNaN(base.getTime())) {
+    return new Date();
+  }
+
+  const baseYear = base.getFullYear();
+  const baseMonth = base.getMonth();
+  const baseDay = base.getDate();
+
+  const totalMonths = baseMonth + installmentOffset;
+  const targetYear = baseYear + Math.floor(totalMonths / 12);
+  const targetMonth = ((totalMonths % 12) + 12) % 12;
+
+  const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const targetDay = Math.min(Math.max(baseDay, 1), daysInTargetMonth);
+
+  return new Date(targetYear, targetMonth, targetDay, 0, 0, 0, 0);
+}
+
+/**
  * Calculates overall, current-month, and last 60 days financial totals (income, expense, net balance)
  * converted to a target currency (default: BRL).
  */
@@ -81,12 +164,26 @@ export function calculateFinancialSummary(
   const currentYear = referenceDate.getFullYear();
   const currentMonth = referenceDate.getMonth();
 
-  const endOfRefDay = new Date(referenceDate);
-  endOfRefDay.setHours(23, 59, 59, 999);
+  const endOfRefDay = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
 
-  const startOf60DaysWindow = new Date(referenceDate);
+  const startOf60DaysWindow = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
   startOf60DaysWindow.setDate(startOf60DaysWindow.getDate() - 60);
-  startOf60DaysWindow.setHours(0, 0, 0, 0);
 
   let totalIncome = 0;
   let totalExpense = 0;
@@ -97,7 +194,7 @@ export function calculateFinancialSummary(
 
   transactions.forEach((tx) => {
     const val = convertCurrency(tx.amount, tx.currencyId, targetCurrency);
-    const txDate = new Date(tx.date);
+    const txDate = parseTransactionDate(tx.date);
     const isValidDate = !isNaN(txDate.getTime());
 
     const isCurrentMonth =
@@ -215,7 +312,7 @@ export function groupRecentTransactions(
     });
   });
 
-  result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  result.sort((a, b) => parseTransactionDate(b.date).getTime() - parseTransactionDate(a.date).getTime());
   return result.slice(0, limit);
 }
 
@@ -229,7 +326,7 @@ export function aggregateTransactionsByMonth(
   const monthMap: { [key: string]: { income: number; expense: number; date: Date } } = {};
 
   transactions.forEach((tx) => {
-    const txDate = new Date(tx.date);
+    const txDate = parseTransactionDate(tx.date);
     if (isNaN(txDate.getTime())) return;
 
     const year = txDate.getFullYear();
@@ -282,7 +379,7 @@ export function aggregateEvolutionData(
   const monthMap: Record<string, { income: number; expense: number }> = {};
 
   transactions.forEach((tx) => {
-    const txDate = new Date(tx.date);
+    const txDate = parseTransactionDate(tx.date);
     if (isNaN(txDate.getTime())) return;
 
     const year = txDate.getFullYear();
@@ -371,6 +468,19 @@ export function filterTransactions(
 ): Transaction[] {
   const { type = 'all', category, searchQuery, startDate, endDate, categories } = options;
 
+  const startParsed = startDate ? parseTransactionDate(startDate).getTime() : null;
+  const endParsed = endDate
+    ? new Date(
+        parseTransactionDate(endDate).getFullYear(),
+        parseTransactionDate(endDate).getMonth(),
+        parseTransactionDate(endDate).getDate(),
+        23,
+        59,
+        59,
+        999
+      ).getTime()
+    : null;
+
   return transactions.filter((tx) => {
     if (type !== 'all' && tx.type !== type) return false;
     if (category && (tx.categoryId || '').toLowerCase() !== category.toLowerCase()) return false;
@@ -388,8 +498,8 @@ export function filterTransactions(
       if (!titleMatch && !categoryMatch && !storeMatch && !notesMatch) return false;
     }
 
-    if (startDate && new Date(tx.date).getTime() < new Date(startDate).getTime()) return false;
-    if (endDate && new Date(tx.date).getTime() > new Date(endDate).getTime()) return false;
+    if (startParsed !== null && parseTransactionDate(tx.date).getTime() < startParsed) return false;
+    if (endParsed !== null && parseTransactionDate(tx.date).getTime() > endParsed) return false;
 
     return true;
   });

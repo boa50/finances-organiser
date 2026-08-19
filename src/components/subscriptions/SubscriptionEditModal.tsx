@@ -266,12 +266,10 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
               });
             }
           } else {
-            const today = now.getDate();
-            if (created.billingDay <= today) {
-              const currentMonth = now.getMonth();
-              const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-              const targetDate = `${monthStr}-${String(created.billingDay).padStart(2, '0')}`;
-
+            const currentMonth = now.getMonth();
+            const targetDate = getSubscriptionTargetDate(created.billingDay, currentYear, currentMonth);
+            if (targetDate <= now) {
+              const targetIso = normalizeTransactionDate(targetDate);
               await tursoService.addTransaction({
                 title: created.title,
                 amount: created.amount,
@@ -281,8 +279,8 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
                 paymentMethodId: created.paymentMethodId,
                 bankId: created.bankId,
                 store: created.store,
-                date: targetDate,
-                notes: created.notes,
+                date: targetIso,
+                notes: created.notes || undefined,
                 subscriptionId: created.id,
               });
             }

@@ -1,7 +1,7 @@
 import { createClient, Client } from '@libsql/client/web';
 import { Transaction, TursoConfig } from '../types';
 import { generateId } from '../utils/idGenerator';
-import { normalizeTransactionDate, parseInstallmentTitle } from '../utils/financials';
+import { calculateInstallmentDate, normalizeTransactionDate, parseInstallmentTitle } from '../utils/financials';
 import { isJsonResponse } from './apiResponseUtils';
 
 const LOCAL_TX_KEY = 'finances_local_transactions';
@@ -605,8 +605,7 @@ class TursoDatabaseService {
       const createdTransactions: Transaction[] = [];
 
       for (let i = 1; i <= totalInst; i++) {
-        const installmentDate = new Date(currentDate);
-        installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+        const installmentDate = calculateInstallmentDate(currentDate, i - 1);
 
         const template = siblings.find((s) => s.installmentNumber === i) || existing;
 

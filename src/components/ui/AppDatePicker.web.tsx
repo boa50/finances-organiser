@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
 import theme from '../../theme';
+import { formatDateToYMD, parseTransactionDate } from '../../utils/financials';
 
 export interface AppDatePickerProps {
   visible: boolean;
@@ -20,8 +21,11 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
   const { t } = useTranslation();
 
   const handleChange = (event: any) => {
-    const selectedDate = new Date(`${event.target.value}T00:00:00`);
-    if (!Number.isNaN(selectedDate.getTime())) onChange(selectedDate);
+    const val = event.target?.value;
+    if (val) {
+      const selectedDate = parseTransactionDate(val);
+      if (!Number.isNaN(selectedDate.getTime())) onChange(selectedDate);
+    }
   };
 
   return (
@@ -31,7 +35,7 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
           <AppText style={styles.title}>{t('common.selectDate')}</AppText>
           {React.createElement('input', {
             type: 'date',
-            value: value.toISOString().slice(0, 10),
+            value: formatDateToYMD(value),
             onChange: handleChange,
             style: browserDateInputStyle,
           })}

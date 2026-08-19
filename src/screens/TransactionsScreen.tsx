@@ -9,7 +9,7 @@ import {
 import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
-import { filterTransactions } from '../utils/financials';
+import { filterTransactions, parseTransactionDate } from '../utils/financials';
 import { convertCurrency, formatMoney, DEFAULT_CURRENCY } from '../utils/currencies';
 import { tursoService } from '../services/tursoService';
 import { categoryService } from '../services/categoryService';
@@ -36,7 +36,7 @@ export type TransactionListItem =
   | { type: 'transaction'; id: string; data: Transaction };
 
 export function monthKey(dateValue: string): string {
-  const date = new Date(dateValue);
+  const date = parseTransactionDate(dateValue);
   return Number.isNaN(date.getTime()) ? 'undated' : `${date.getFullYear()}-${date.getMonth()}`;
 }
 
@@ -60,7 +60,7 @@ export function buildFlattenedTransactions(
     const mk = monthKey(tx.date);
     if (mk !== lastMonthKey) {
       lastMonthKey = mk;
-      const date = new Date(tx.date);
+      const date = parseTransactionDate(tx.date);
       const isValid = !Number.isNaN(date.getTime());
       const label = isValid
         ? date.toLocaleDateString(locale || undefined, { month: 'long', year: 'numeric' })

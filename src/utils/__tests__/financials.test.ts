@@ -4,10 +4,13 @@ import {
   aggregateTransactionsByCategory,
   aggregateTransactionsByMonth,
   calculateFinancialSummary,
+  calculateInstallmentDate,
   filterTransactions,
+  formatDateToYMD,
   groupRecentTransactions,
   normalizeTransactionDate,
   parseInstallmentTitle,
+  parseTransactionDate,
 } from '../financials';
 
 describe('Financial Utilities', () => {
@@ -267,6 +270,141 @@ describe('Financial Utilities', () => {
     it('normalizes Date object to beginning of day 00:00:00.000Z', () => {
       const d = new Date(2026, 7, 12, 14, 30, 0); // Aug 12, 2026 14:30
       expect(normalizeTransactionDate(d)).toBe('2026-08-12T00:00:00.000Z');
+    });
+
+    it('safely clamps out-of-range day strings (e.g. Feb 31 -> Feb 28)', () => {
+      expect(normalizeTransactionDate('2026-02-31')).toBe('2026-02-28T00:00:00.000Z');
+    });
+
+    it('safely clamps out-of-range day strings on leap year (e.g. Feb 31, 2028 -> Feb 29)', () => {
+      expect(normalizeTransactionDate('2028-02-31')).toBe('2028-02-29T00:00:00.000Z');
+    });
+
+    it('safely clamps 31st on 30-day month (e.g. Apr 31 -> Apr 30)', () => {
+      expect(normalizeTransactionDate('2026-04-31')).toBe('2026-04-30T00:00:00.000Z');
+    });
+  });
+
+  describe('calculateInstallmentDate', () => {
+    it('generates correct monthly installment sequence starting from Jan 31 without month skipping', () => {
+      const baseDate = new Date(2026, 0, 31); // Jan 31, 2026
+
+      const expectedDates = [
+        { month: 0, day: 31, year: 2026 },  // Jan 31
+        { month: 1, day: 28, year: 2026 },  // Feb 28 (clamped)
+        { month: 2, day: 31, year: 2026 },  // Mar 31 (restored to 31)
+        { month: 3, day: 30, year: 2026 },  // Apr 30 (clamped)
+        { month: 4, day: 31, year: 2026 },  // May 31 (restored to 31)
+        { month: 5, day: 30, year: 2026 },  // Jun 30 (clamped)
+        { month: 6, day: 31, year: 2026 },  // Jul 31 (restored to 31)
+        { month: 7, day: 31, year: 2026 },  // Aug 31
+        { month: 8, day: 30, year: 2026 },  // Sep 30 (clamped)
+        { month: 9, day: 31, year: 2026 },  // Oct 31 (restored to 31)
+        { month: 10, day: 30, year: 2026 }, // Nov 30 (clamped)
+        { month: 11, day: 31, year: 2026 }, // Dec 31
+        { month: 0, day: 31, year: 2027 },  // Jan 31, 2027 (next year rollover)
+      ];
+
+      expectedDates.forEach((expected, offset) => {
+        const d = calculateInstallmentDate(baseDate, offset);
+        expect(d.getFullYear()).toBe(expected.year);
+        expect(d.getMonth()).toBe(expected.month);
+        expect(d.getDate()).toBe(expected.day);
+      });
+    });
+
+    it('correctly handles leap years for Feb (e.g. Jan 31, 2028 -> Feb 29, 2028)', () => {
+      const baseDate = new Date(2028, 0, 31); // Jan 31, 2028 (leap year)
+      const febDate = calculateInstallmentDate(baseDate, 1);
+      expect(febDate.getFullYear()).toBe(2028);
+      expect(febDate.getMonth()).toBe(1);
+      expect(febDate.getDate()).toBe(29);
+    });
+
+    it('handles negative offsets when reconstructing base date', () => {
+      const march31 = new Date(2026, 2, 31); // Mar 31, 2026 (installment 3)
+      const reconstructedBase = calculateInstallmentDate(march31, -2);
+      expect(reconstructedBase.getFullYear()).toBe(2026);
+      expect(reconstructedBase.getMonth()).toBe(0);
+      expect(reconstructedBase.getDate()).toBe(31);
+    });
+
+    it('handles regular mid-month dates without changing day', () => {
+      const baseDate = new Date(2026, 0, 15); // Jan 15, 2026
+      const febDate = calculateInstallmentDate(baseDate, 1);
+      expect(febDate.getMonth()).toBe(1);
+      expect(febDate.getDate()).toBe(15);
+    });
+
+    it('works when baseDateInput is an ISO string without timezone day shift', () => {
+      const baseIso = '2026-08-19T00:00:00.000Z';
+      const nextMonth = calculateInstallmentDate(baseIso, 1);
+      expect(nextMonth.getFullYear()).toBe(2026);
+      expect(nextMonth.getMonth()).toBe(8); // September
+      expect(nextMonth.getDate()).toBe(19);
+    });
+  });
+
+  describe('parseTransactionDate', () => {
+    it('correctly parses ISO date string without shifting to previous day in any timezone', () => {
+      const parsed = parseTransactionDate('2026-08-19T00:00:00.000Z');
+      expect(parsed.getFullYear()).toBe(2026);
+      expect(parsed.getMonth()).toBe(7); // August (0-indexed)
+      expect(parsed.getDate()).toBe(19);
+    });
+
+    it('correctly parses YYYY-MM-DD string', () => {
+      const parsed = parseTransactionDate('2026-08-19');
+      expect(parsed.getFullYear()).toBe(2026);
+      expect(parsed.getMonth()).toBe(7);
+      expect(parsed.getDate()).toBe(19);
+    });
+
+    it('correctly parses Date objects without mutation', () => {
+      const d = new Date(2026, 7, 19, 14, 30, 0);
+      const parsed = parseTransactionDate(d);
+      expect(parsed.getFullYear()).toBe(2026);
+      expect(parsed.getMonth()).toBe(7);
+      expect(parsed.getDate()).toBe(19);
+      expect(parsed.getHours()).toBe(0);
+      expect(parsed.getMinutes()).toBe(0);
+    });
+
+    it('safely clamps out-of-range days in string format', () => {
+      const parsed = parseTransactionDate('2026-02-31');
+      expect(parsed.getFullYear()).toBe(2026);
+      expect(parsed.getMonth()).toBe(1); // Feb
+      expect(parsed.getDate()).toBe(28);
+    });
+
+    it('handles null, undefined, or empty gracefully by returning invalid Date', () => {
+      const parsedNull = parseTransactionDate(null);
+      expect(parsedNull).toBeInstanceOf(Date);
+      expect(Number.isNaN(parsedNull.getTime())).toBe(true);
+
+      const parsedUndefined = parseTransactionDate(undefined);
+      expect(parsedUndefined).toBeInstanceOf(Date);
+      expect(Number.isNaN(parsedUndefined.getTime())).toBe(true);
+
+      const parsedEmpty = parseTransactionDate('');
+      expect(parsedEmpty).toBeInstanceOf(Date);
+      expect(Number.isNaN(parsedEmpty.getTime())).toBe(true);
+
+      const parsedInvalid = parseTransactionDate('invalid-date');
+      expect(parsedInvalid).toBeInstanceOf(Date);
+      expect(Number.isNaN(parsedInvalid.getTime())).toBe(true);
+    });
+  });
+
+  describe('formatDateToYMD', () => {
+    it('formats Date object to YYYY-MM-DD using local calendar date values', () => {
+      const d = new Date(2026, 7, 19, 23, 59, 59);
+      expect(formatDateToYMD(d)).toBe('2026-08-19');
+    });
+
+    it('correctly pads single-digit months and days', () => {
+      const d = new Date(2026, 0, 5, 0, 0, 0);
+      expect(formatDateToYMD(d)).toBe('2026-01-05');
     });
   });
 });

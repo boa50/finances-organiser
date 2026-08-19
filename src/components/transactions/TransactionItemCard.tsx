@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Transaction } from '../../types';
 import { formatMoney, getCurrencyInfo, convertCurrency, DEFAULT_CURRENCY } from '../../utils/currencies';
+import { parseTransactionDate } from '../../utils/financials';
 import { categoryService } from '../../services/categoryService';
 import { paymentMethodService } from '../../services/paymentMethodService';
 import { bankService } from '../../services/bankService';
@@ -57,7 +58,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
     ? t('common.annualSubscription')
     : t('common.subscription');
 
-  const date = new Date(transaction.date);
+  const date = parseTransactionDate(transaction.date);
   const isValidDate = !Number.isNaN(date.getTime());
   const formattedDate = dateString ?? (isValidDate
     ? date.toLocaleDateString(i18n.language || undefined, { month: 'short', day: 'numeric' })

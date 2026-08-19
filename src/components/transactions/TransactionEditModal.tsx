@@ -28,7 +28,7 @@ import {
 } from '../ui';
 import { CreditCard, Building2, Calendar } from 'lucide-react-native';
 import theme from '../../theme';
-import { normalizeTransactionDate } from '../../utils/financials';
+import { calculateInstallmentDate, normalizeTransactionDate, parseTransactionDate } from '../../utils/financials';
 
 export interface TransactionEditModalProps {
   visible: boolean;
@@ -38,7 +38,7 @@ export interface TransactionEditModalProps {
 }
 
 function dateFromTransaction(dateStr: string): Date {
-  const d = new Date(dateStr);
+  const d = parseTransactionDate(dateStr);
   return Number.isNaN(d.getTime()) ? new Date() : d;
 }
 
@@ -146,8 +146,10 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             setTitle(originalTitle);
 
             const thisDate = dateFromTransaction(transaction.date);
-            const baseDate = new Date(thisDate);
-            baseDate.setMonth(baseDate.getMonth() - ((transaction.installmentNumber || 1) - 1));
+            const baseDate = calculateInstallmentDate(
+              thisDate,
+              -((transaction.installmentNumber || 1) - 1)
+            );
             setDate(baseDate);
 
             setInstallments(transaction.installments);
@@ -252,11 +254,9 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       if (!transaction && finalInstallments > 1) {
         const perAmount = parsedAmount / finalInstallments;
         const groupId = `inst-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-        const baseDate = new Date(date);
 
         for (let i = 1; i <= finalInstallments; i++) {
-          const installmentDate = new Date(baseDate);
-          installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+          const installmentDate = calculateInstallmentDate(date, i - 1);
 
           await tursoService.addTransaction({
             ...transactionData,
@@ -274,11 +274,9 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         await tursoService.deleteTransactionGroup(groupId, transaction);
 
         const perAmount = parsedAmount / finalInstallments;
-        const baseDate = new Date(date);
 
         for (let i = 1; i <= finalInstallments; i++) {
-          const installmentDate = new Date(baseDate);
-          installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
+          const installmentDate = calculateInstallmentDate(date, i - 1);
 
           await tursoService.addTransaction({
             ...transactionData,
