@@ -10,6 +10,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
 import { filterTransactions } from '../utils/financials';
+import { convertCurrency, formatMoney, DEFAULT_CURRENCY } from '../utils/currencies';
 import { tursoService } from '../services/tursoService';
 import { categoryService } from '../services/categoryService';
 import { confirmAction } from '../utils/dialogs';
@@ -30,20 +31,29 @@ interface TransactionsScreenProps {
   onRefresh: () => void;
 }
 
-type TransactionListItem =
-  | { type: 'header'; id: string; label: string }
+export type TransactionListItem =
+  | { type: 'header'; id: string; label: string; netBalance: number }
   | { type: 'transaction'; id: string; data: Transaction };
 
-function monthKey(dateValue: string): string {
+export function monthKey(dateValue: string): string {
   const date = new Date(dateValue);
   return Number.isNaN(date.getTime()) ? 'undated' : `${date.getFullYear()}-${date.getMonth()}`;
 }
 
-function buildFlattenedTransactions(
+export function buildFlattenedTransactions(
   transactions: Transaction[],
   locale?: string,
   undatedLabel: string = 'Undated transactions'
 ): TransactionListItem[] {
+  const monthNetMap = new Map<string, number>();
+  for (const tx of transactions) {
+    const mk = monthKey(tx.date);
+    const amount = convertCurrency(tx.amount, tx.currencyId, DEFAULT_CURRENCY);
+    const current = monthNetMap.get(mk) || 0;
+    const delta = tx.type === 'income' ? amount : -amount;
+    monthNetMap.set(mk, current + delta);
+  }
+
   const items: TransactionListItem[] = [];
   let lastMonthKey = '';
   for (const tx of transactions) {
@@ -55,7 +65,8 @@ function buildFlattenedTransactions(
       const label = isValid
         ? date.toLocaleDateString(locale || undefined, { month: 'long', year: 'numeric' })
         : undatedLabel;
-      items.push({ type: 'header', id: `header-${mk}`, label });
+      const netBalance = monthNetMap.get(mk) ?? 0;
+      items.push({ type: 'header', id: `header-${mk}`, label, netBalance });
     }
     items.push({ type: 'transaction', id: tx.id, data: tx });
   }
@@ -194,9 +205,24 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
   const renderItem = useCallback(({ item }: { item: TransactionListItem }) => {
     if (item.type === 'header') {
+      const isPositive = item.netBalance > 0;
+      const isNegative = item.netBalance < 0;
+      const color = isPositive
+        ? theme.colors.success
+        : isNegative
+        ? theme.colors.danger
+        : theme.colors.textSecondary;
+      const sign = isPositive ? '+' : isNegative ? '-' : '';
+      const formattedNet = `${sign}${formatMoney(Math.abs(item.netBalance), DEFAULT_CURRENCY)}`;
+
       return (
         <View style={styles.monthHeader}>
-          <AppText style={styles.monthTitle}>{item.label}</AppText>
+          <AppText style={styles.monthTitle} numberOfLines={1}>
+            {item.label}
+          </AppText>
+          <AppText style={[styles.monthNetBalance, { color }]} tabularNums>
+            {formattedNet}
+          </AppText>
         </View>
       );
     }
@@ -345,6 +371,9 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   monthHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: theme.spacing.xs,
     paddingTop: theme.spacing.md,
     paddingBottom: theme.spacing.xs,
@@ -355,5 +384,12 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.bold,
     textTransform: 'capitalize',
     letterSpacing: 0.5,
+    flex: 1,
+    marginRight: theme.spacing.md,
+  },
+  monthNetBalance: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.bold,
+    letterSpacing: -0.2,
   },
 });
