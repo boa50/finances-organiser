@@ -125,9 +125,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: theme.spacing['4xl'],
     paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.borderSubtle,
   },
   brandContainer: {
     flexDirection: 'row',
@@ -143,7 +141,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.extrabold,
     letterSpacing: -0.4,
@@ -157,8 +154,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: theme.colors.surfaceRecessed,
-    borderColor: theme.colors.borderLight,
     borderWidth: 1,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 5,
@@ -166,7 +161,6 @@ const styles = StyleSheet.create({
     cursor: 'pointer' as any,
   },
   langBtnText: {
-    color: theme.colors.accent,
     fontSize: 10,
     fontWeight: theme.fontWeight.bold,
   },

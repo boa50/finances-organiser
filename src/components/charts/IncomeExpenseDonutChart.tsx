@@ -49,8 +49,12 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
 
   return (
     <AppCard variant="glass" padding="4xl" style={styles.card}>
-      <AppText style={styles.cardTitle}>{t('analytics.incomeExpenseRatio')}</AppText>
-      <AppText style={styles.cardSubtitle}>{t('analytics.incomeExpenseRatioSubtitle')}</AppText>
+      <AppText style={[styles.cardTitle, { color: theme.colors.textPrimary }]}>
+        {t('analytics.incomeExpenseRatio')}
+      </AppText>
+      <AppText style={[styles.cardSubtitle, { color: theme.colors.textSecondary }]}>
+        {t('analytics.incomeExpenseRatioSubtitle')}
+      </AppText>
       <View style={styles.donutRow}>
         <View style={styles.donutWrapper}>
           <Svg width={donutSize} height={donutSize}>
@@ -63,7 +67,9 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
           </Svg>
 
           <View style={styles.donutCenter}>
-            <AppText style={styles.donutCenterLabel}>{t('analytics.netBalance')}</AppText>
+            <AppText style={[styles.donutCenterLabel, { color: theme.colors.textSecondary }]}>
+              {t('analytics.netBalance')}
+            </AppText>
             <AppText
               style={[
                 styles.donutCenterValue,
@@ -96,36 +102,66 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
         </View>
 
         <View style={styles.statsColumn}>
-          <View style={styles.statBox}>
+          <View
+            style={[
+              styles.statBox,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderSubtle,
+              },
+            ]}
+          >
             <View style={[styles.statBadge, { backgroundColor: theme.colors.successBg }]}>
               <View style={[styles.statDot, { backgroundColor: theme.colors.success }]} />
             </View>
             <View style={styles.statInfo}>
-              <AppText style={styles.statLabel}>{t('analytics.totalIncome')}</AppText>
+              <AppText style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                {t('analytics.totalIncome')}
+              </AppText>
               <AppText style={[styles.statValue, { color: theme.colors.success }]} tabularNums>
                 +{formatMoney(totalIncome, targetCurrency)}
               </AppText>
             </View>
           </View>
 
-          <View style={styles.statBox}>
+          <View
+            style={[
+              styles.statBox,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderSubtle,
+              },
+            ]}
+          >
             <View style={[styles.statBadge, { backgroundColor: theme.colors.dangerBg }]}>
               <View style={[styles.statDot, { backgroundColor: theme.colors.danger }]} />
             </View>
             <View style={styles.statInfo}>
-              <AppText style={styles.statLabel}>{t('analytics.totalExpense')}</AppText>
+              <AppText style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                {t('analytics.totalExpense')}
+              </AppText>
               <AppText style={[styles.statValue, { color: theme.colors.danger }]} tabularNums>
                 -{formatMoney(totalExpense, targetCurrency)}
               </AppText>
             </View>
           </View>
 
-          <View style={styles.statBox}>
+          <View
+            style={[
+              styles.statBox,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderSubtle,
+              },
+            ]}
+          >
             <View style={[styles.statBadge, { backgroundColor: theme.colors.accentBg }]}>
               <View style={[styles.statDot, { backgroundColor: theme.colors.accent }]} />
             </View>
             <View style={styles.statInfo}>
-              <AppText style={styles.statLabel}>{t('analytics.totalCashflow')}</AppText>
+              <AppText style={[styles.statLabel, { color: theme.colors.textSecondary }]}>
+                {t('analytics.totalCashflow')}
+              </AppText>
               <AppText style={[styles.statValue, { color: theme.colors.accent }]} tabularNums>
                 {formatMoney(totalFlow, targetCurrency)}
               </AppText>
@@ -145,12 +181,10 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.xs,
   },
   cardTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
   },
   cardSubtitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
   },
@@ -175,7 +209,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   donutCenterLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
@@ -204,12 +237,10 @@ const styles = StyleSheet.create({
   statBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceRecessed,
     padding: theme.spacing.md,
     borderRadius: theme.radii.base,
     gap: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
   },
   statBadge: {
     width: 32,
@@ -227,7 +258,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
   },
   statValue: {

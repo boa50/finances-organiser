@@ -86,6 +86,8 @@ describe('Theme System', () => {
     it('uses light canvas and dark text for high-contrast accessibility', () => {
       expect(lightTheme.colors.background).toBe(palette.slate100);
       expect(lightTheme.colors.textPrimary).toBe(palette.slate900);
+      expect(lightTheme.colors.textSecondary).toBe(palette.slate700);
+      expect(lightTheme.colors.textTertiary).toBe(palette.slate600);
       expect(lightTheme.colors.surface).toBe(palette.white);
       expect(lightTheme.colors.accent).toBe(palette.sky600);
     });

@@ -22,11 +22,17 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
 
   return (
     <AppCard variant="glass" padding="4xl" style={styles.card}>
-      <AppText style={styles.cardTitle}>{t('analytics.expenseCategories', { month: monthName })}</AppText>
-      <AppText style={styles.cardSubtitle}>{t('analytics.expenseCategoriesSubtitle')}</AppText>
+      <AppText style={[styles.cardTitle, { color: theme.colors.textPrimary }]}>
+        {t('analytics.expenseCategories', { month: monthName })}
+      </AppText>
+      <AppText style={[styles.cardSubtitle, { color: theme.colors.textSecondary }]}>
+        {t('analytics.expenseCategoriesSubtitle')}
+      </AppText>
 
       {categoryAggregates.length === 0 ? (
-        <AppText style={styles.emptyCatText}>{t('analytics.noExpensesForMonth')}</AppText>
+        <AppText style={[styles.emptyCatText, { color: theme.colors.textTertiary }]}>
+          {t('analytics.noExpensesForMonth')}
+        </AppText>
       ) : (
         <View style={styles.categoryList}>
           {categoryAggregates.map((cat, index) => (
@@ -34,10 +40,12 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
               <View style={styles.catHeader}>
                 <View style={styles.catNameRow}>
                   <View style={[styles.catColorDot, { backgroundColor: cat.color || theme.colors.accent }]} />
-                  <AppText style={styles.catName}>{cat.category}</AppText>
+                  <AppText style={[styles.catName, { color: theme.colors.textPrimary }]}>
+                    {cat.category}
+                  </AppText>
                 </View>
                 <View style={styles.catAmountRow}>
-                  <AppText style={styles.catAmount} tabularNums>
+                  <AppText style={[styles.catAmount, { color: theme.colors.textPrimary }]} tabularNums>
                     {formatMoney(cat.amount, targetCurrency)}
                   </AppText>
                   <View
@@ -49,7 +57,7 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
                       },
                     ]}
                   >
-                    <AppText style={styles.catPercent} tabularNums>
+                    <AppText style={[styles.catPercent, { color: theme.colors.textSecondary }]} tabularNums>
                       {cat.percentage.toFixed(1)}%
                     </AppText>
                   </View>
@@ -83,18 +91,15 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.xs,
   },
   cardTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
   },
   cardSubtitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
     marginBottom: theme.spacing.xl,
   },
   emptyCatText: {
-    color: theme.colors.textTertiary,
     fontSize: theme.fontSize.sm,
     fontStyle: 'italic',
     marginVertical: theme.spacing.base,
@@ -121,7 +126,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   catName: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.semibold,
   },
@@ -131,26 +135,21 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   catAmount: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.bold,
   },
   percentPill: {
-    backgroundColor: theme.colors.surfaceRecessed,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: theme.radii.pill,
     borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
   },
   catPercent: {
-    color: theme.colors.textSecondary,
     fontSize: 10,
     fontWeight: theme.fontWeight.bold,
   },
   barTrack: {
     height: 6,
-    backgroundColor: theme.colors.surfaceRecessed,
     borderRadius: 3,
     overflow: 'hidden',
   },

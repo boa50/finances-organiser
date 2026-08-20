@@ -16,7 +16,7 @@ export const lightColors: ThemeColors = {
   // Text
   textPrimary: palette.slate900,
   textSecondary: palette.slate700,
-  textTertiary: palette.slate500,
+  textTertiary: palette.slate600,
   textLight: palette.slate800,
   textMuted: palette.slate600,
 

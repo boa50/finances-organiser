@@ -32,9 +32,9 @@ export const AppSectionHeader: React.FC<AppSectionHeaderProps> = ({
   return (
     <View style={[styles.container, style]}>
       <View style={styles.textColumn}>
-        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+        <AppText style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</AppText>
         {subtitle ? (
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{subtitle}</Text>
+          <AppText style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{subtitle}</AppText>
         ) : null}
       </View>
 
@@ -45,7 +45,7 @@ export const AppSectionHeader: React.FC<AppSectionHeaderProps> = ({
           onPress={onActionPress}
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
-          <Text style={[styles.actionText, { color: theme.colors.accent }]}>{actionLabel}</Text>
+          <AppText style={[styles.actionText, { color: theme.colors.accent }]}>{actionLabel}</AppText>
         </Pressable>
       ) : null}
     </View>
@@ -63,18 +63,15 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.extrabold,
     letterSpacing: -0.3,
   },
   subtitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.medium,
   },
   actionText: {
-    color: theme.colors.accent,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
   },

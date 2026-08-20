@@ -40,13 +40,20 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
       {/* Top Header Row with Label & Privacy Toggle */}
       <View style={styles.topHeader}>
         <View style={styles.labelGroup}>
-          <AppText style={styles.heroLabel}>
+          <AppText style={[styles.heroLabel, { color: theme.colors.textSecondary }]}>
             {t('overview.netBalance60Days', { currency })}
           </AppText>
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.privacyBtn, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [
+            styles.privacyBtn,
+            {
+              backgroundColor: theme.colors.surfaceRecessed,
+              borderColor: theme.colors.borderLight,
+            },
+            pressed && { opacity: 0.7 },
+          ]}
           onPress={() => setIsPrivacyMasked((prev) => !prev)}
           accessibilityLabel={isPrivacyMasked ? 'Show balance' : 'Hide balance'}
         >
@@ -61,7 +68,7 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
       {/* Hero Value Row with Background Sparkline Wave */}
       <View style={styles.valueRow}>
         <View style={styles.valueContainer}>
-          <AppText style={styles.heroValue} tabularNums>
+          <AppText style={[styles.heroValue, { color: theme.colors.textPrimary }]} tabularNums>
             {displayBalance}
           </AppText>
         </View>
@@ -113,7 +120,9 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
             <View style={[styles.incomeIconBadge, { backgroundColor: theme.colors.successBgStrong }]}>
               <TrendingUp size={12} color={theme.colors.success} strokeWidth={2.5} />
             </View>
-            <AppText style={styles.metaLabel}>{t('overview.income', { month: monthName })}</AppText>
+            <AppText style={[styles.metaLabel, { color: theme.colors.textSecondary }]}>
+              {t('overview.income', { month: monthName })}
+            </AppText>
           </View>
           <AppText style={[styles.metaValue, { color: theme.colors.success }]} tabularNums>
             {displayIncome}
@@ -133,7 +142,9 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
             <View style={[styles.expenseIconBadge, { backgroundColor: theme.colors.dangerBgStrong }]}>
               <TrendingDown size={12} color={theme.colors.danger} strokeWidth={2.5} />
             </View>
-            <AppText style={styles.metaLabel}>{t('overview.expense', { month: monthName })}</AppText>
+            <AppText style={[styles.metaLabel, { color: theme.colors.textSecondary }]}>
+              {t('overview.expense', { month: monthName })}
+            </AppText>
           </View>
           <AppText style={[styles.metaValue, { color: theme.colors.danger }]} tabularNums>
             {displayExpense}
@@ -155,7 +166,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
@@ -179,7 +189,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   heroValue: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize['4xl'],
     fontWeight: theme.fontWeight.black,
     letterSpacing: -0.8,
@@ -222,7 +231,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   metaLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },

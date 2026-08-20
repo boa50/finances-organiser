@@ -28,13 +28,15 @@ export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
         },
       ]}
     >
-      <AppText style={styles.detailTitle}>
+      <AppText style={[styles.detailTitle, { color: theme.colors.textSecondary }]}>
         {t('analytics.monthSummaryTitle', { month: activeMonth.monthLabel })}
       </AppText>
       <View style={styles.detailRow}>
         <View style={styles.detailMetric}>
-          <AppText style={styles.detailLabel}>{t('common.income')}</AppText>
-          <AppText style={[styles.detailValue, { color: theme.colors.success }]}>
+          <AppText style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>
+            {t('common.income')}
+          </AppText>
+          <AppText style={[styles.detailValue, { color: theme.colors.success }]} tabularNums>
             +{formatMoney(activeMonth.income, targetCurrency)}
           </AppText>
         </View>
@@ -42,8 +44,10 @@ export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
         <View style={[styles.detailDivider, { backgroundColor: theme.colors.borderLight }]} />
 
         <View style={styles.detailMetric}>
-          <AppText style={styles.detailLabel}>{t('common.expense')}</AppText>
-          <AppText style={[styles.detailValue, { color: theme.colors.danger }]}>
+          <AppText style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>
+            {t('common.expense')}
+          </AppText>
+          <AppText style={[styles.detailValue, { color: theme.colors.danger }]} tabularNums>
             -{formatMoney(activeMonth.expense, targetCurrency)}
           </AppText>
         </View>
@@ -51,12 +55,15 @@ export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
         <View style={[styles.detailDivider, { backgroundColor: theme.colors.borderLight }]} />
 
         <View style={styles.detailMetric}>
-          <AppText style={styles.detailLabel}>{t('analytics.netBalance')}</AppText>
+          <AppText style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>
+            {t('analytics.netBalance')}
+          </AppText>
           <AppText
             style={[
               styles.detailValue,
               { color: activeMonth.net >= 0 ? theme.colors.accent : theme.colors.danger },
             ]}
+            tabularNums
           >
             {formatMoney(activeMonth.net, targetCurrency)}
           </AppText>
@@ -72,14 +79,11 @@ export type SelectedMonthDetailCardProps = MonthDetailSummaryCardProps;
 const styles = StyleSheet.create({
   monthDetailCard: {
     marginTop: theme.spacing['2xl'],
-    backgroundColor: theme.colors.surfaceSubtle,
     borderRadius: theme.radii.lg,
     padding: theme.spacing.xl,
     borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
   },
   detailTitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
@@ -98,10 +102,8 @@ const styles = StyleSheet.create({
   detailDivider: {
     width: 1,
     height: 28,
-    backgroundColor: theme.colors.borderLight,
   },
   detailLabel: {
-    color: theme.colors.textTertiary,
     fontSize: theme.fontSize.xs,
     marginBottom: theme.spacing.xxs,
   },

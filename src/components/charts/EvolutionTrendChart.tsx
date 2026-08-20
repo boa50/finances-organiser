@@ -91,8 +91,12 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
       {/* Top Header Row with Title on Left and Period Selection on Right */}
       <View style={styles.headerRow}>
         <View style={styles.titleCol}>
-          <AppText style={styles.cardTitle}>{t('analytics.evolutionTitle')}</AppText>
-          <AppText style={styles.cardSubtitle}>{t('analytics.evolutionSubtitle')}</AppText>
+          <AppText style={[styles.cardTitle, { color: theme.colors.textPrimary }]}>
+            {t('analytics.evolutionTitle')}
+          </AppText>
+          <AppText style={[styles.cardSubtitle, { color: theme.colors.textSecondary }]}>
+            {t('analytics.evolutionSubtitle')}
+          </AppText>
         </View>
 
         <View style={styles.headerControls}>
@@ -113,11 +117,15 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: theme.colors.success }]} />
-          <AppText style={styles.legendText}>{t('common.income')}</AppText>
+          <AppText style={[styles.legendText, { color: theme.colors.textSecondary }]}>
+            {t('common.income')}
+          </AppText>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: theme.colors.danger }]} />
-          <AppText style={styles.legendText}>{t('common.expense')}</AppText>
+          <AppText style={[styles.legendText, { color: theme.colors.textSecondary }]}>
+            {t('common.expense')}
+          </AppText>
         </View>
       </View>
 
@@ -309,12 +317,10 @@ const styles = StyleSheet.create({
     minWidth: 180,
   },
   cardTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
   },
   cardSubtitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
   },
@@ -339,7 +345,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   legendText: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },
