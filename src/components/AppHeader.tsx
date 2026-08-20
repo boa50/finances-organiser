@@ -59,6 +59,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         />
 
         <Pressable
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => [
             styles.iconActionBtn,
             {
@@ -78,6 +80,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => [
             styles.iconActionBtn,
             {
@@ -94,6 +98,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => [
             styles.iconActionBtn,
             {
@@ -157,6 +163,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 5,
     borderRadius: theme.radii.pill,
+    cursor: 'pointer' as any,
   },
   langBtnText: {
     color: theme.colors.accent,

@@ -60,6 +60,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
 
       <View style={styles.topControlBar}>
         <Pressable
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => [
             styles.iconActionBtn,
             {
@@ -79,6 +81,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
         </Pressable>
 
         <Pressable
+          accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={({ pressed }) => [
             styles.iconActionBtn,
             {
@@ -123,7 +127,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onAuthenticated }) => 
               <Wallet size={28} color={theme.colors.accent} strokeWidth={2.5} />
             </View>
             <AppText style={styles.title}>{t('header.title')}</AppText>
-            <AppText style={styles.subtitle}>{t('auth.subtitle')}</AppText>
+            <AppText style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{t('auth.subtitle')}</AppText>
           </View>
 
           {/* Form section */}
@@ -173,6 +177,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing['4xl'],
     paddingVertical: theme.spacing.md,
+    zIndex: 10,
+    elevation: 10,
   },
   iconActionBtn: {
     flexDirection: 'row',
@@ -182,6 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 5,
     borderRadius: theme.radii.pill,
+    cursor: 'pointer' as any,
   },
   langBtnText: {
     fontSize: 10,
@@ -192,7 +199,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: theme.spacing['4xl'],
-    marginTop: -40,
   },
   cardContainer: {
     width: '100%',
@@ -203,6 +209,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     elevation: 12,
     gap: theme.spacing['5xl'],
+    marginTop: -40,
   },
   header: {
     alignItems: 'center',
