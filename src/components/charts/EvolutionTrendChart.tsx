@@ -6,8 +6,8 @@ import { Transaction, MonthlyAggregate } from '../../types';
 import { aggregateEvolutionData } from '../../utils/financials';
 import { useEvolutionChartD3 } from '../../hooks/useEvolutionChartD3';
 import { MonthDetailSummaryCard } from '../analytics/MonthDetailSummaryCard';
-import { AppSegmentedControl, AppText } from '../ui';
-import theme from '../../theme';
+import { AppCard, AppSegmentedControl, AppText } from '../ui';
+import theme, { useTheme } from '../../theme';
 
 export type EvolutionPeriod = '5y' | '1y' | '6m';
 
@@ -34,6 +34,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
   targetCurrency,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [selectedPeriod, setSelectedPeriod] = useState<EvolutionPeriod>('1y');
   const [selectedMonth, setSelectedMonth] = useState<MonthlyAggregate | null>(null);
 
@@ -86,7 +87,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
   const stride = Math.max(1, Math.ceil(monthlyData.length / maxVisibleTicks));
 
   return (
-    <View style={styles.card}>
+    <AppCard variant="glass" padding="4xl" style={styles.card}>
       {/* Top Header Row with Title on Left and Period Selection on Right */}
       <View style={styles.headerRow}>
         <View style={styles.titleCol}>
@@ -207,7 +208,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
                       y1={0}
                       x2={cx}
                       y2={innerHeight}
-                      stroke="rgba(56, 189, 248, 0.4)"
+                      stroke={theme.colors.borderAccent}
                       strokeWidth={1.5}
                       strokeDasharray="3 3"
                     />
@@ -222,16 +223,6 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
                       fillOpacity={0.2}
                     />
                   )}
-                  <Circle
-                    cx={cx}
-                    cy={cyIncome}
-                    r={isSelected ? 5 : 3.5}
-                    fill={theme.colors.success}
-                    fillOpacity={1}
-                    stroke={theme.colors.surfaceElevated}
-                    strokeWidth={2}
-                  />
-
                   {isSelected && (
                     <Circle
                       cx={cx}
@@ -241,30 +232,41 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
                       fillOpacity={0.2}
                     />
                   )}
+
+                  {/* Node circles */}
+                  <Circle
+                    cx={cx}
+                    cy={cyIncome}
+                    r={isSelected ? 6 : 4}
+                    fill={theme.colors.success}
+                    stroke={theme.colors.surface}
+                    strokeWidth={2}
+                  />
                   <Circle
                     cx={cx}
                     cy={cyExpense}
-                    r={isSelected ? 5 : 3.5}
+                    r={isSelected ? 6 : 4}
                     fill={theme.colors.danger}
-                    fillOpacity={1}
-                    stroke={theme.colors.surfaceElevated}
+                    stroke={theme.colors.surface}
                     strokeWidth={2}
                   />
 
-                  {(shouldShowLabel || isSelected) && (
+                  {/* X Axis Label */}
+                  {shouldShowLabel && (
                     <SvgText
                       x={cx}
-                      y={innerHeight + 22}
+                      y={innerHeight + 20}
                       fill={isSelected ? theme.colors.accent : theme.colors.textSecondary}
                       fontSize={theme.fontSize.xs}
-                      fontWeight={isSelected ? theme.fontWeight.bold : theme.fontWeight.regular}
                       fontFamily={theme.fontFamily.sans}
+                      fontWeight={isSelected ? theme.fontWeight.bold : theme.fontWeight.regular}
                       textAnchor="middle"
                     >
                       {d.monthLabel}
                     </SvgText>
                   )}
 
+                  {/* Touch Target for tapping month */}
                   <Rect
                     x={cx - 20}
                     y={0}
@@ -283,7 +285,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
       {activeMonth && (
         <MonthDetailSummaryCard activeMonth={activeMonth} targetCurrency={targetCurrency} />
       )}
-    </View>
+    </AppCard>
   );
 };
 
@@ -292,13 +294,7 @@ export type D3EvolutionChartProps = EvolutionTrendChartProps;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surfaceGlass,
-    borderRadius: theme.radii.card,
-    padding: theme.spacing['4xl'],
     marginVertical: theme.spacing.xs,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
   },
   headerRow: {
     flexDirection: 'row',

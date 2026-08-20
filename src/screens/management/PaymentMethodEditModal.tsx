@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { PaymentMethodItem } from '../../types';
 import { AppModal, AppText, AppSwitch } from '../../components/ui';
 import { CreditCard } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 interface PaymentMethodEditModalProps {
   visible: boolean;
@@ -32,6 +32,7 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
   onSave,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   return (
     <AppModal
@@ -42,9 +43,16 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
     >
       <View style={styles.modalBody}>
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.pmName')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.pmName')}</AppText>
           <TextInput
-            style={styles.textInput}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
             placeholder={t('management.pmNamePlaceholder')}
             placeholderTextColor={theme.colors.textTertiary}
             value={pmNameInput}
@@ -54,11 +62,14 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.allowInstallments')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.allowInstallments')}</AppText>
           <Pressable
             style={({ pressed }) => [
               styles.toggleRow,
-              pmAllowInstallments && styles.toggleRowActive,
+              {
+                backgroundColor: pmAllowInstallments ? theme.colors.accentBg : theme.colors.surfaceRecessed,
+                borderColor: pmAllowInstallments ? theme.colors.accent : theme.colors.borderLight,
+              },
               pressed && { opacity: 0.85 },
             ]}
             onPress={() => setPmAllowInstallments(!pmAllowInstallments)}
@@ -69,7 +80,7 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
                 onValueChange={setPmAllowInstallments}
               />
             </View>
-            <AppText style={styles.toggleLabel}>
+            <AppText style={[styles.toggleLabel, { color: theme.colors.textSecondary }]}>
               {pmAllowInstallments
                 ? t('management.allowInstallmentsEnabled')
                 : t('management.allowInstallmentsDisabled')}
@@ -78,18 +89,28 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.preview')}</AppText>
-          <View style={styles.previewBox}>
-            <View style={[styles.iconBadge, { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent }]}>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.preview')}</AppText>
+          <View
+            style={[
+              styles.previewBox,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
+            <View style={[styles.iconBadge, { backgroundColor: theme.colors.accentBg, borderColor: theme.colors.borderAccent }]}>
               <CreditCard size={22} color={theme.colors.accent} />
             </View>
-            <AppText style={styles.previewName}>{pmNameInput.trim() || t('management.pmNameFallback')}</AppText>
+            <AppText style={[styles.previewName, { color: theme.colors.textPrimary }]}>
+              {pmNameInput.trim() || t('management.pmNameFallback')}
+            </AppText>
           </View>
         </View>
 
         {pmErrorMsg && (
-          <View style={styles.errorBox}>
-            <AppText style={styles.errorText}>{pmErrorMsg}</AppText>
+          <View style={[styles.errorBox, { backgroundColor: theme.colors.dangerBg, borderColor: theme.colors.danger }]}>
+            <AppText style={[styles.errorText, { color: theme.colors.danger }]}>{pmErrorMsg}</AppText>
           </View>
         )}
 
@@ -103,9 +124,9 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
           disabled={pmSaving}
         >
           {pmSaving ? (
-            <ActivityIndicator color={theme.colors.background} />
+            <ActivityIndicator color={theme.colors.white} />
           ) : (
-            <AppText style={styles.saveSubmitText}>
+            <AppText style={[styles.saveSubmitText, { color: theme.colors.white }]}>
               {editingPm ? t('management.saveChanges') : t('management.createPm')}
             </AppText>
           )}
@@ -124,50 +145,37 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   formLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   textInput: {
-    backgroundColor: theme.colors.background,
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     borderRadius: theme.radii.lg,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
-    backgroundColor: theme.colors.background,
     padding: theme.spacing.md,
     borderRadius: theme.radii.lg,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-  },
-  toggleRowActive: {
-    borderColor: theme.colors.accent,
-    backgroundColor: 'rgba(56, 189, 248, 0.08)',
   },
   toggleLabel: {
     flex: 1,
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
   },
   previewBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.lg,
-    backgroundColor: theme.colors.background,
     padding: theme.spacing.lg,
     borderRadius: theme.radii.xl,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   iconBadge: {
     width: 44,
@@ -179,19 +187,15 @@ const styles = StyleSheet.create({
   },
   previewName: {
     flex: 1,
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
   errorBox: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
     borderRadius: theme.radii.base,
     padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.danger,
   },
   errorText: {
-    color: theme.colors.danger,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },
@@ -202,7 +206,6 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   saveSubmitText: {
-    color: theme.colors.white,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.extrabold,
   },

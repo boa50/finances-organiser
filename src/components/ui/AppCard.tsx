@@ -1,17 +1,18 @@
 import React from 'react';
 import {
+  Platform,
   Pressable,
   StyleProp,
   StyleSheet,
   View,
   ViewStyle,
 } from 'react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppCardProps {
   children: React.ReactNode;
   variant?: 'default' | 'elevated' | 'outlined' | 'glass' | 'hero' | 'recessed';
-  padding?: keyof typeof theme.spacing;
+  padding?: keyof typeof import('../../theme').spacing;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
 }
@@ -23,6 +24,7 @@ export const AppCard: React.FC<AppCardProps> = ({
   style,
   onPress,
 }) => {
+  const { theme } = useTheme();
   const paddingValue = theme.spacing[padding] ?? theme.spacing['4xl'];
 
   const getVariantStyle = (): ViewStyle => {
@@ -31,14 +33,14 @@ export const AppCard: React.FC<AppCardProps> = ({
         return {
           backgroundColor: theme.colors.surfaceElevated,
           borderColor: theme.colors.borderAccent,
-          boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.35)',
+          boxShadow: theme.colors.heroShadow,
           elevation: 8,
         };
       case 'elevated':
         return {
           backgroundColor: theme.colors.surfaceElevated,
           borderColor: theme.colors.borderLight,
-          boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.28)',
+          boxShadow: theme.colors.cardShadow,
           elevation: 6,
         };
       case 'outlined':
@@ -50,7 +52,7 @@ export const AppCard: React.FC<AppCardProps> = ({
         return {
           backgroundColor: theme.colors.surfaceGlass,
           borderColor: theme.colors.borderLight,
-          boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+          boxShadow: theme.colors.cardShadow,
           elevation: 5,
         };
       case 'recessed':

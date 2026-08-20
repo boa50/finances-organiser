@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 import { AppButton } from './AppButton';
 import { AppCard } from './AppCard';
 import { AppText } from './AppText';
@@ -22,11 +22,29 @@ export const AppEmptyState: React.FC<AppEmptyStateProps> = ({
   onActionPress,
   style,
 }) => {
+  const { theme } = useTheme();
+
   return (
     <AppCard style={[styles.card, style]} variant="glass" padding="6xl">
-      {icon && <View style={styles.iconContainer}>{icon}</View>}
-      <AppText style={styles.title}>{title}</AppText>
-      {description ? <AppText style={styles.description}>{description}</AppText> : null}
+      {icon && (
+        <View
+          style={[
+            styles.iconContainer,
+            {
+              backgroundColor: theme.colors.surfaceMuted,
+              borderColor: theme.colors.borderSubtle,
+            },
+          ]}
+        >
+          {icon}
+        </View>
+      )}
+      <AppText style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</AppText>
+      {description ? (
+        <AppText style={[styles.description, { color: theme.colors.textSecondary }]}>
+          {description}
+        </AppText>
+      ) : null}
       {actionTitle && onActionPress ? (
         <View style={styles.actionContainer}>
           <AppButton

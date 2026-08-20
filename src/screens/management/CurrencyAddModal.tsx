@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { CurrencyInfo } from '../../types';
 import { VALID_CURRENCIES } from '../../utils/currencies';
 import { AppButton, AppModal, AppText, FeedbackMessage } from '../../components/ui';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 import { Check } from 'lucide-react-native';
 
 interface CurrencyAddModalProps {
@@ -25,6 +25,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
   onAddCurrency,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
   const availableOptions = VALID_CURRENCIES.filter(
@@ -64,18 +65,21 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
                   onPress={() => setSelectedCode(item.code)}
                   style={({ pressed }) => [
                     styles.optionCard,
-                    isSelected && styles.optionCardSelected,
+                    {
+                      backgroundColor: isSelected ? theme.colors.surfaceSubtle : theme.colors.surface,
+                      borderColor: isSelected ? theme.colors.accent : theme.colors.borderLight,
+                    },
                     pressed && { opacity: 0.8 },
                   ]}
                 >
                   <AppText style={styles.flag}>{item.flag}</AppText>
                   <View style={styles.optionDetails}>
-                    <AppText style={styles.code}>{item.code}</AppText>
-                    <AppText style={styles.name}>
+                    <AppText style={[styles.code, { color: theme.colors.textPrimary }]}>{item.code}</AppText>
+                    <AppText style={[styles.name, { color: theme.colors.textMuted }]}>
                       {t(`currencies.${item.code}`, { defaultValue: item.name })}
                     </AppText>
                   </View>
-                  <AppText style={styles.symbol}>{item.symbol}</AppText>
+                  <AppText style={[styles.symbol, { color: theme.colors.accent }]}>{item.symbol}</AppText>
                   {isSelected && <Check size={18} color={theme.colors.accent} />}
                 </Pressable>
               );
@@ -114,7 +118,6 @@ const styles = StyleSheet.create({
   },
   noOptionsText: {
     fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
     textAlign: 'center',
     paddingVertical: theme.spacing.xl,
   },
@@ -129,14 +132,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.md,
     borderRadius: theme.radii.md,
-    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: theme.colors.border,
     gap: theme.spacing.md,
-  },
-  optionCardSelected: {
-    borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.surfaceSubtle,
   },
   flag: {
     fontSize: theme.fontSize.xl,
@@ -147,16 +144,13 @@ const styles = StyleSheet.create({
   code: {
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.bold,
-    color: theme.colors.textPrimary,
   },
   name: {
     fontSize: theme.fontSize.xs,
-    color: theme.colors.textMuted,
   },
   symbol: {
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
-    color: theme.colors.accent,
     marginRight: theme.spacing.xs,
   },
   actions: {

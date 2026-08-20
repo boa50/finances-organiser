@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { AlertCircle, CheckCircle, Info } from 'lucide-react-native';
-import theme from '../../theme';
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react-native';
+import { AppText } from './AppText';
+import theme, { useTheme } from '../../theme';
 
 export interface FeedbackMessageProps {
   message: string;
@@ -14,6 +15,8 @@ export const FeedbackMessage: React.FC<FeedbackMessageProps> = ({
   type = 'error',
   visible = true,
 }) => {
+  const { theme } = useTheme();
+
   if (!visible || !message) {
     return null;
   }

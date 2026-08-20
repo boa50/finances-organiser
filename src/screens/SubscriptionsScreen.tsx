@@ -20,6 +20,7 @@ import {
   AppCard,
   AppEmptyState,
   AppIconButton,
+  AppLoadingView,
   AppSectionHeader,
   AppSegmentedControl,
   AppSwitch,
@@ -27,7 +28,7 @@ import {
   AppTextInput,
 } from '../components/ui';
 import { Calendar, CreditCard } from 'lucide-react-native';
-import theme from '../theme';
+import theme, { useTheme } from '../theme';
 
 interface SubscriptionsScreenProps {
   onSubscriptionsUpdated?: () => void;
@@ -37,6 +38,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
   onSubscriptionsUpdated,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; icon: string; color: string }>>({});
   const [loading, setLoading] = useState(true);
@@ -175,7 +177,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
               </View>
               <View style={styles.subTextGroup}>
                 <View style={styles.subTitleRow}>
-                  <AppText style={styles.subTitle}>{item.title}</AppText>
+                  <AppText style={[styles.subTitle, { color: theme.colors.textPrimary }]}>{item.title}</AppText>
                   <AppBadge
                     label={item.active ? t('common.active') : t('common.inactive')}
                     variant={item.active ? 'success' : 'neutral'}
@@ -183,11 +185,11 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
                   />
                 </View>
                 <View style={styles.subMetaRow}>
-                  <AppText style={styles.subCategory}>{categoryDisplayName}</AppText>
+                  <AppText style={[styles.subCategory, { color: theme.colors.textSecondary }]}>{categoryDisplayName}</AppText>
                   {item.store && (
                     <>
-                      <AppText style={styles.dot}>•</AppText>
-                      <AppText style={styles.subStore}>{item.store}</AppText>
+                      <AppText style={[styles.dot, { color: theme.colors.borderStrong }]}>•</AppText>
+                      <AppText style={[styles.subStore, { color: theme.colors.textMuted }]}>{item.store}</AppText>
                     </>
                   )}
                 </View>
@@ -196,10 +198,10 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
 
             {/* Amount */}
             <View style={styles.amountGroup}>
-              <AppText style={styles.subAmount}>
+              <AppText style={[styles.subAmount, { color: theme.colors.textPrimary }]}>
                 {formatMoney(item.amount, item.currencyId)}
               </AppText>
-              <AppText style={styles.perMonthText}>
+              <AppText style={[styles.perMonthText, { color: theme.colors.textTertiary }]}>
                 {item.frequency === 'annual'
                   ? t('subscriptions.perYear')
                   : t('subscriptions.perMonth')}
@@ -208,10 +210,10 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
           </View>
 
           {/* Sub Card Footer Info */}
-          <View style={styles.subCardFooter}>
-            <View style={styles.billingDayPill}>
+          <View style={[styles.subCardFooter, { borderTopColor: theme.colors.borderSubtle }]}>
+            <View style={[styles.billingDayPill, { backgroundColor: theme.colors.accentBg }]}>
               <Calendar size={13} color={theme.colors.accent} />
-              <AppText style={styles.billingDayText}>
+              <AppText style={[styles.billingDayText, { color: theme.colors.accent }]}>
                 {item.frequency === 'annual'
                   ? t('subscriptions.dueAnnually', { month: monthLabel, day: item.billingDay })
                   : t('subscriptions.dueOnDay', { day: item.billingDay })}
@@ -242,18 +244,14 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
         </AppCard>
       </View>
     );
-  }, [categoriesMap, handleToggleActive, handleOpenEditModal, handleDelete, t]);
+  }, [categoriesMap, handleToggleActive, handleOpenEditModal, handleDelete, t, theme]);
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.accent} />
-      </View>
-    );
+    return <AppLoadingView />;
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Pinned Top Area */}
       <View style={styles.fixedHeader}>
         <AppSectionHeader
@@ -267,8 +265,8 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
         <AppCard variant="glass" style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View>
-              <AppText style={styles.summaryLabel}>{t('subscriptions.totalMonthly')}</AppText>
-              <AppText style={styles.summaryValue}>
+              <AppText style={[styles.summaryLabel, { color: theme.colors.textSecondary }]}>{t('subscriptions.totalMonthly')}</AppText>
+              <AppText style={[styles.summaryValue, { color: theme.colors.danger }]}>
                 {formatMoney(totalMonthlyBRL, 'BRL')}
               </AppText>
             </View>
@@ -352,7 +350,6 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   fixedHeader: {
     paddingHorizontal: theme.spacing['4xl'],
@@ -381,7 +378,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.background,
   },
   summaryCard: {
     padding: theme.spacing.md,
@@ -392,12 +388,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   summaryLabel: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
   },
   summaryValue: {
-    color: theme.colors.danger,
     fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
     marginTop: 2,
@@ -440,7 +434,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   subTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.md,
     fontWeight: theme.fontWeight.bold,
   },
@@ -451,15 +444,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   subCategory: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
   },
   dot: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
   },
   subStore: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },
@@ -467,12 +457,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   subAmount: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.md,
     fontWeight: theme.fontWeight.bold,
   },
   perMonthText: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
   },
   subCardFooter: {
@@ -482,7 +470,6 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     paddingTop: theme.spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.borderSubtle,
     flexWrap: 'wrap',
     gap: theme.spacing.xs,
   },
@@ -490,13 +477,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 4,
     borderRadius: 999,
   },
   billingDayText: {
-    color: theme.colors.accent,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },

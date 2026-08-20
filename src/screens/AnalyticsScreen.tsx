@@ -11,7 +11,7 @@ import { EvolutionTrendChart } from '../components/charts';
 import { DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
 import { AppCard, AppText } from '../components/ui';
 import { ArrowDownLeft, ArrowUpRight, Scale } from 'lucide-react-native';
-import theme from '../theme';
+import theme, { useTheme } from '../theme';
 
 interface AnalyticsScreenProps {
   transactions: Transaction[];
@@ -19,6 +19,7 @@ interface AnalyticsScreenProps {
 
 export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   // Compute total statistics across all recorded transactions
   let totalIncomeConverted = 0;
@@ -36,11 +37,14 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
   const netOverall = totalIncomeConverted - totalExpenseConverted;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.contentContainer}
+    >
       {/* Primary Page Header */}
       <View style={styles.header}>
-        <AppText style={styles.pageTitle}>{t('analytics.title')}</AppText>
-        <AppText style={styles.pageSubtitle}>
+        <AppText style={[styles.pageTitle, { color: theme.colors.textPrimary }]}>{t('analytics.title')}</AppText>
+        <AppText style={[styles.pageSubtitle, { color: theme.colors.textSecondary }]}>
           {t('analytics.subtitle')}
         </AppText>
       </View>
@@ -52,7 +56,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
             <View style={[styles.kpiIconBadge, { backgroundColor: theme.colors.successBg }]}>
               <ArrowUpRight size={14} color={theme.colors.success} strokeWidth={2.5} />
             </View>
-            <AppText style={styles.kpiLabel}>{t('analytics.lifetimeIncomes')}</AppText>
+            <AppText style={[styles.kpiLabel, { color: theme.colors.textSecondary }]}>{t('analytics.lifetimeIncomes')}</AppText>
           </View>
           <AppText style={[styles.kpiValue, { color: theme.colors.success }]} tabularNums>
             +{formatMoney(totalIncomeConverted, DEFAULT_CURRENCY)}
@@ -64,7 +68,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
             <View style={[styles.kpiIconBadge, { backgroundColor: theme.colors.dangerBg }]}>
               <ArrowDownLeft size={14} color={theme.colors.danger} strokeWidth={2.5} />
             </View>
-            <AppText style={styles.kpiLabel}>{t('analytics.lifetimeExpenses')}</AppText>
+            <AppText style={[styles.kpiLabel, { color: theme.colors.textSecondary }]}>{t('analytics.lifetimeExpenses')}</AppText>
           </View>
           <AppText style={[styles.kpiValue, { color: theme.colors.danger }]} tabularNums>
             -{formatMoney(totalExpenseConverted, DEFAULT_CURRENCY)}
@@ -76,7 +80,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
             <View style={[styles.kpiIconBadge, { backgroundColor: theme.colors.accentBg }]}>
               <Scale size={14} color={theme.colors.accent} strokeWidth={2.5} />
             </View>
-            <AppText style={styles.kpiLabel}>{t('analytics.netAccumulated')}</AppText>
+            <AppText style={[styles.kpiLabel, { color: theme.colors.textSecondary }]}>{t('analytics.netAccumulated')}</AppText>
           </View>
           <AppText
             style={[
@@ -102,7 +106,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   contentContainer: {
     padding: theme.spacing['4xl'],
@@ -116,13 +119,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xxs,
   },
   pageTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize['3xl'],
     fontWeight: theme.fontWeight.extrabold,
     letterSpacing: -0.5,
   },
   pageSubtitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.base,
     marginTop: theme.spacing.xxs,
   },
@@ -150,7 +151,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   kpiLabel: {
-    color: theme.colors.textSecondary,
     fontSize: 11,
     fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',

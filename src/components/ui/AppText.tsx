@@ -6,12 +6,12 @@ import {
   TextProps as RNTextProps,
   TextStyle,
 } from 'react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppTextProps extends RNTextProps {
-  variant?: keyof typeof theme.typography;
+  variant?: keyof typeof import('../../theme').typography;
   color?: string;
-  weight?: keyof typeof theme.fontWeight;
+  weight?: keyof typeof import('../../theme').fontWeight;
   align?: 'left' | 'center' | 'right' | 'justify';
   tabularNums?: boolean;
   style?: StyleProp<TextStyle>;
@@ -28,6 +28,7 @@ export const AppText: React.FC<AppTextProps> = ({
   children,
   ...rest
 }) => {
+  const { theme } = useTheme();
   const variantStyle = theme.typography[variant] || theme.typography.body;
 
   const customStyle: TextStyle = {};
@@ -37,7 +38,15 @@ export const AppText: React.FC<AppTextProps> = ({
   if (tabularNums) customStyle.fontVariant = ['tabular-nums'];
 
   return (
-    <RNText style={[styles.base, variantStyle, customStyle, style]} {...rest}>
+    <RNText
+      style={[
+        { fontFamily: theme.fontFamily.sans, color: theme.colors.textPrimary },
+        variantStyle,
+        customStyle,
+        style,
+      ]}
+      {...rest}
+    >
       {children}
     </RNText>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, View, Pressable, StyleSheet, ModalProps, StyleProp, ViewStyle, Dimensions } from 'react-native';
 import { AppText } from './AppText';
 import { X } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppModalProps extends Omit<ModalProps, 'children'> {
   visible: boolean;
@@ -24,21 +24,57 @@ export const AppModal: React.FC<AppModalProps> = ({
   children,
   ...rest
 }) => {
+  const { theme } = useTheme();
   const isSmallScreen = Dimensions.get('window').width < 600;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} {...rest}>
-      <View style={[styles.overlay, isSmallScreen && styles.overlayMobile]}>
-        <View style={[styles.card, { maxWidth }, isSmallScreen && styles.cardMobile, cardStyle]}>
-          {isSmallScreen && <View style={styles.dragHandle} />}
+      <View
+        style={[
+          styles.overlay,
+          { backgroundColor: theme.colors.overlay },
+          isSmallScreen && styles.overlayMobile,
+        ]}
+      >
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.surfaceElevated,
+              borderColor: theme.colors.borderLight,
+              boxShadow: theme.colors.cardShadow,
+              maxWidth,
+            },
+            isSmallScreen && styles.cardMobile,
+            cardStyle,
+          ]}
+        >
+          {isSmallScreen && (
+            <View style={[styles.dragHandle, { backgroundColor: theme.colors.borderLight }]} />
+          )}
           {(title || subtitle) && (
             <View style={styles.header}>
               <View style={styles.titleContainer}>
-                {title && <AppText style={styles.title}>{title}</AppText>}
-                {subtitle && <AppText style={styles.subtitle}>{subtitle}</AppText>}
+                {title && (
+                  <AppText style={[styles.title, { color: theme.colors.textPrimary }]}>
+                    {title}
+                  </AppText>
+                )}
+                {subtitle && (
+                  <AppText style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+                    {subtitle}
+                  </AppText>
+                )}
               </View>
               <Pressable
-                style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.7 }]}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  {
+                    backgroundColor: theme.colors.surfaceRecessed,
+                    borderColor: theme.colors.borderSubtle,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
                 onPress={onClose}
                 accessibilityLabel="Close modal"
               >
@@ -56,7 +92,6 @@ export const AppModal: React.FC<AppModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: theme.colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing['4xl'],
@@ -69,19 +104,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: theme.colors.borderLight,
     alignSelf: 'center',
     marginBottom: theme.spacing.lg,
   },
   card: {
-    backgroundColor: theme.colors.surfaceElevated,
     borderRadius: theme.radii.modal,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
     width: '100%',
     maxHeight: '90%',
     padding: theme.spacing['5xl'],
-    boxShadow: '0px 16px 36px rgba(0, 0, 0, 0.45)',
     elevation: 12,
   },
   cardMobile: {

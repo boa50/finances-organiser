@@ -15,7 +15,7 @@ import {
 } from '../../services/categoryService';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { AppChipSelector, AppModal, AppText } from '../../components/ui';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 interface CategoryEditModalProps {
   visible: boolean;
@@ -49,6 +49,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
   onSave,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const typeLabel = activeCategoryType === 'income' ? t('common.income') : t('common.expense');
 
   return (
@@ -64,9 +65,16 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
     >
       <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.categoryName')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.categoryName')}</AppText>
           <TextInput
-            style={styles.textInput}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
             placeholder={t('management.categoryNamePlaceholder')}
             placeholderTextColor={theme.colors.textTertiary}
             value={nameInput}
@@ -76,7 +84,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.colorTheme')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.colorTheme')}</AppText>
           <View style={styles.colorGrid}>
             {PRESET_CATEGORY_COLORS.map((c) => (
               <Pressable
@@ -84,7 +92,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
                 style={({ pressed }) => [
                   styles.colorDot,
                   { backgroundColor: c },
-                  colorInput === c && styles.colorDotSelected,
+                  colorInput === c && [styles.colorDotSelected, { borderColor: theme.colors.textPrimary }],
                   pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => setColorInput(c)}
@@ -94,15 +102,13 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.iconBadge')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.iconBadge')}</AppText>
           <AppChipSelector
             items={AVAILABLE_CATEGORY_ICONS}
             selectedId={iconInput}
-            isSelected={(item) => item.iconName === iconInput}
             onSelect={(item) => setIconInput(item.iconName)}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.iconName}
             labelExtractor={(item) => item.label}
-            getItemColor={() => colorInput}
             renderIcon={(item, active) => (
               <CategoryIcon
                 iconName={item.iconName}
@@ -114,8 +120,16 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.preview')}</AppText>
-          <View style={styles.previewBox}>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.preview')}</AppText>
+          <View
+            style={[
+              styles.previewBox,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
             <View
               style={[
                 styles.iconBadge,
@@ -124,7 +138,7 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
             >
               <CategoryIcon iconName={iconInput} color={colorInput} size={22} />
             </View>
-            <AppText style={styles.previewName}>
+            <AppText style={[styles.previewName, { color: theme.colors.textPrimary }]}>
               {nameInput.trim() || t('management.categoryNameFallback')}
             </AppText>
             <View
@@ -151,8 +165,8 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         {errorMsg && (
-          <View style={styles.errorBox}>
-            <AppText style={styles.errorText}>{errorMsg}</AppText>
+          <View style={[styles.errorBox, { backgroundColor: theme.colors.dangerBg, borderColor: theme.colors.danger }]}>
+            <AppText style={[styles.errorText, { color: theme.colors.danger }]}>{errorMsg}</AppText>
           </View>
         )}
 
@@ -169,9 +183,9 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator color={theme.colors.background} />
+            <ActivityIndicator color={theme.colors.white} />
           ) : (
-            <AppText style={styles.saveSubmitText}>
+            <AppText style={[styles.saveSubmitText, { color: theme.colors.white }]}>
               {editingCategory ? t('management.saveCategory') : t('management.createCategory')}
             </AppText>
           )}
@@ -190,21 +204,17 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   formLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   textInput: {
-    backgroundColor: theme.colors.background,
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     borderRadius: theme.radii.lg,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -219,18 +229,15 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   colorDotSelected: {
-    borderColor: theme.colors.textPrimary,
     transform: [{ scale: 1.1 }],
   },
   previewBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.lg,
-    backgroundColor: theme.colors.background,
     padding: theme.spacing.lg,
     borderRadius: theme.radii.xl,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   iconBadge: {
     width: 44,
@@ -242,7 +249,6 @@ const styles = StyleSheet.create({
   },
   previewName: {
     flex: 1,
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
@@ -252,14 +258,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.sm,
   },
   errorBox: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
     borderRadius: theme.radii.base,
     padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.danger,
   },
   errorText: {
-    color: theme.colors.danger,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },
@@ -270,7 +273,6 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   saveSubmitText: {
-    color: theme.colors.white,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.extrabold,
   },

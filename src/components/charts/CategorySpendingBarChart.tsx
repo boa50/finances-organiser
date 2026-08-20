@@ -3,8 +3,8 @@ import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CategoryAggregate } from '../../types';
 import { formatMoney } from '../../utils/currencies';
-import { AppText } from '../ui';
-import theme from '../../theme';
+import { AppCard, AppText } from '../ui';
+import theme, { useTheme } from '../../theme';
 
 export interface CategorySpendingBarChartProps {
   categoryAggregates: CategoryAggregate[];
@@ -18,9 +18,10 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
   targetCurrency,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   return (
-    <View style={styles.card}>
+    <AppCard variant="glass" padding="4xl" style={styles.card}>
       <AppText style={styles.cardTitle}>{t('analytics.expenseCategories', { month: monthName })}</AppText>
       <AppText style={styles.cardSubtitle}>{t('analytics.expenseCategoriesSubtitle')}</AppText>
 
@@ -39,7 +40,15 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
                   <AppText style={styles.catAmount} tabularNums>
                     {formatMoney(cat.amount, targetCurrency)}
                   </AppText>
-                  <View style={styles.percentPill}>
+                  <View
+                    style={[
+                      styles.percentPill,
+                      {
+                        backgroundColor: theme.colors.surfaceRecessed,
+                        borderColor: theme.colors.borderSubtle,
+                      },
+                    ]}
+                  >
                     <AppText style={styles.catPercent} tabularNums>
                       {cat.percentage.toFixed(1)}%
                     </AppText>
@@ -47,7 +56,7 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
                 </View>
               </View>
 
-              <View style={styles.barTrack}>
+              <View style={[styles.barTrack, { backgroundColor: theme.colors.surfaceRecessed }]}>
                 <View
                   style={[
                     styles.barFill,
@@ -62,7 +71,7 @@ export const CategorySpendingBarChart: React.FC<CategorySpendingBarChartProps> =
           ))}
         </View>
       )}
-    </View>
+    </AppCard>
   );
 };
 
@@ -71,13 +80,7 @@ export type D3CategoryBarChartProps = CategorySpendingBarChartProps;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surfaceGlass,
-    borderRadius: theme.radii.card,
-    padding: theme.spacing['4xl'],
     marginVertical: theme.spacing.xs,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
   },
   cardTitle: {
     color: theme.colors.textPrimary,

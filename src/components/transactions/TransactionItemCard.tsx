@@ -9,8 +9,8 @@ import { paymentMethodService } from '../../services/paymentMethodService';
 import { bankService } from '../../services/bankService';
 import { subscriptionService } from '../../services/subscriptionService';
 import { AppCard, AppIconBadge, AppBadge, AppText, AppIconButton } from '../ui';
+import theme, { useTheme } from '../../theme';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
-import theme from '../../theme';
 
 export interface TransactionItemCardProps {
   transaction: Transaction;
@@ -42,6 +42,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   bankName,
 }) => {
   const { t, i18n } = useTranslation();
+  const { theme } = useTheme();
   const isIncome = transaction.type === 'income';
   const currencyInfo = getCurrencyInfo(transaction.currencyId);
   const displayTitle = title ?? transaction.title;
@@ -122,12 +123,12 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
 
       <View style={styles.txMainInfo}>
         <View style={styles.txTopRow}>
-          <AppText style={styles.txTitle} numberOfLines={1}>
+          <AppText style={[styles.txTitle, { color: theme.colors.textPrimary }]} numberOfLines={1}>
             {displayTitle}
           </AppText>
           <View style={styles.amountContainer}>
             {needsConversion && (
-              <AppText style={styles.originalAmount} tabularNums>
+              <AppText style={[styles.originalAmount, { color: theme.colors.textSecondary }]} tabularNums>
                 {`(${formatMoney(displayAmount, currencyCode)})`}
               </AppText>
             )}
@@ -146,33 +147,33 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
 
         <View style={styles.txBottomRow}>
           <View style={styles.txMetaLeft}>
-            <AppText style={styles.txCategory}>{catLabel}</AppText>
+            <AppText style={[styles.txCategory, { color: theme.colors.textSecondary }]}>{catLabel}</AppText>
             {transaction.store ? (
               <>
-                <AppText style={styles.dotSeparator}>•</AppText>
-                <AppText style={styles.txStore}>{transaction.store}</AppText>
+                <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
+                <AppText style={[styles.txStore, { color: theme.colors.textMuted }]}>{transaction.store}</AppText>
               </>
             ) : null}
             {pmLabel ? (
               <>
-                <AppText style={styles.dotSeparator}>•</AppText>
-                <AppText style={styles.txPaymentMethod}>{pmLabel}</AppText>
+                <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
+                <AppText style={[styles.txPaymentMethod, { color: theme.colors.textMuted }]}>{pmLabel}</AppText>
               </>
             ) : null}
             {bkLabel ? (
               <>
-                <AppText style={styles.dotSeparator}>•</AppText>
-                <AppText style={styles.txPaymentMethod}>{bkLabel}</AppText>
+                <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
+                <AppText style={[styles.txPaymentMethod, { color: theme.colors.textMuted }]}>{bkLabel}</AppText>
               </>
             ) : null}
             {instText ? (
               <>
-                <AppText style={styles.dotSeparator}>•</AppText>
-                <AppText style={styles.txInstallment}>{instText}</AppText>
+                <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
+                <AppText style={[styles.txInstallment, { color: theme.colors.accent }]}>{instText}</AppText>
               </>
             ) : null}
-            <AppText style={styles.dotSeparator}>•</AppText>
-            <AppText style={styles.txDate}>{formattedDate}</AppText>
+            <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
+            <AppText style={[styles.txDate, { color: theme.colors.textTertiary }]}>{formattedDate}</AppText>
           </View>
 
           <View style={styles.actionsRow}>
@@ -214,14 +215,13 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
                 accessibilityLabel={`Delete ${transaction.title}`}
               />
             )}
-
           </View>
         </View>
 
         {transaction.notes &&
         transaction.notes !== 'Annual recurring subscription' &&
         transaction.notes !== 'Monthly recurring subscription' ? (
-          <AppText style={styles.txNotes}>{transaction.notes}</AppText>
+          <AppText style={[styles.txNotes, { color: theme.colors.textTertiary }]}>{transaction.notes}</AppText>
         ) : null}
       </View>
     </AppCard>
@@ -247,7 +247,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   txTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
     flex: 1,
@@ -259,7 +258,6 @@ const styles = StyleSheet.create({
   },
   originalAmount: {
     fontSize: theme.fontSize.xs,
-    color: theme.colors.textSecondary,
     fontWeight: theme.fontWeight.medium,
   },
   txAmount: {
@@ -282,33 +280,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   txCategory: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },
   txStore: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
   },
   txPaymentMethod: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
   },
   txInstallment: {
-    color: theme.colors.accent,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
   },
   txDate: {
-    color: theme.colors.textTertiary,
     fontSize: theme.fontSize.xs,
   },
   dotSeparator: {
-    color: theme.colors.borderLight,
     fontSize: theme.fontSize.xs,
   },
   txNotes: {
-    color: theme.colors.textTertiary,
     fontSize: 11,
     fontStyle: 'italic',
     marginTop: 2,

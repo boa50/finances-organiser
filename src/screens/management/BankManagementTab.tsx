@@ -12,7 +12,7 @@ import {
   RenderDraggableItemInfo,
 } from '../../components/ui';
 import { Building2, Plus, Search } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 interface BankManagementTabProps {
   banks: BankItem[];
@@ -36,6 +36,7 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
   onReorderBanks,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const isSearching = searchQuery.trim().length > 0;
 
   const filteredBanks = useMemo(() => {
@@ -72,11 +73,15 @@ export const BankManagementTab: React.FC<BankManagementTabProps> = ({
         <AppCard style={styles.filterCard} variant="glass" padding="lg">
           <View style={styles.actionButtonsRow}>
             <Pressable
-              style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.createBtn,
+                { backgroundColor: theme.colors.accent },
+                pressed && { opacity: 0.85 },
+              ]}
               onPress={onOpenAddModal}
             >
               <Plus size={16} color={theme.colors.white} />
-              <AppText style={styles.createBtnText}>{t('management.newBank')}</AppText>
+              <AppText style={[styles.createBtnText, { color: theme.colors.white }]}>{t('management.newBank')}</AppText>
             </Pressable>
           </View>
 
@@ -138,13 +143,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xs,
-    backgroundColor: theme.colors.accent,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.radii.pill,
   },
   createBtnText: {
-    color: theme.colors.white,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },

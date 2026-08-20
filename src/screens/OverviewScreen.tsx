@@ -10,7 +10,7 @@ import { TransactionItemCard } from '../components/transactions/TransactionItemC
 import { NetBalanceHeroCard } from '../components/overview/NetBalanceHeroCard';
 import { AppBadge, AppEmptyState, AppSectionHeader, AppText } from '../components/ui';
 import { ArrowDownLeft, ArrowUpRight, ChartNoAxesCombined, Plus } from 'lucide-react-native';
-import theme from '../theme';
+import theme, { useTheme } from '../theme';
 
 interface OverviewScreenProps {
   transactions: Transaction[];
@@ -26,6 +26,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   onRefresh,
 }) => {
   const { t, i18n } = useTranslation();
+  const { theme } = useTheme();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [newTransactionModalVisible, setNewTransactionModalVisible] = useState(false);
 
@@ -66,14 +67,14 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Pinned Top Section: Header, Hero Card & Quick Actions */}
         <View style={styles.fixedHeader}>
           {/* Header Banner & Turso Cloud Badge */}
           <View style={styles.header}>
             <View>
-              <AppText style={styles.welcomeTitle}>{t('overview.title')}</AppText>
-              <AppText style={styles.welcomeSubtitle}>{t('overview.subtitle')}</AppText>
+              <AppText style={[styles.welcomeTitle, { color: theme.colors.textPrimary }]}>{t('overview.title')}</AppText>
+              <AppText style={[styles.welcomeSubtitle, { color: theme.colors.textSecondary }]}>{t('overview.subtitle')}</AppText>
             </View>
 
             <AppBadge
@@ -134,7 +135,6 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   fixedHeader: {
     paddingHorizontal: theme.spacing['4xl'],
@@ -165,45 +165,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeTitle: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize['2xl'],
     fontWeight: theme.fontWeight.extrabold,
     letterSpacing: -0.4,
   },
   welcomeSubtitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.sm,
     marginTop: 2,
-  },
-  quickActionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
-    marginVertical: 2,
-  },
-  quickActionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.surfaceElevated,
-    borderColor: theme.colors.borderLight,
-    borderWidth: 1,
-    borderRadius: theme.radii.pill,
-    paddingVertical: 9,
-    paddingHorizontal: theme.spacing.md,
-  },
-  quickActionIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickActionLabel: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
   },
 });

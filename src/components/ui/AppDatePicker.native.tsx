@@ -3,7 +3,7 @@ import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppDatePickerProps {
   visible: boolean;
@@ -19,6 +19,7 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   const handleChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS !== 'ios') onClose();
@@ -27,9 +28,19 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <AppText style={styles.title}>{t('common.selectDate')}</AppText>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.borderLight,
+            },
+          ]}
+        >
+          <AppText style={[styles.title, { color: theme.colors.textPrimary }]}>
+            {t('common.selectDate')}
+          </AppText>
           <DateTimePicker
             value={value}
             mode="date"
@@ -41,7 +52,9 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
               style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
               onPress={onClose}
             >
-              <AppText style={styles.doneText}>{t('common.done')}</AppText>
+              <AppText style={[styles.doneText, { color: theme.colors.accent }]}>
+                {t('common.done')}
+              </AppText>
             </Pressable>
           )}
         </View>

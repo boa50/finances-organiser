@@ -11,7 +11,7 @@ import {
   AppTextInput,
   RenderDraggableItemInfo,
 } from '../../components/ui';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 import { Plus, Search } from 'lucide-react-native';
 
 interface CurrencyManagementTabProps {
@@ -34,6 +34,7 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
   onReorderCurrencies,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const isSearching = searchQuery.trim().length > 0;
 
   const filteredCurrencies = useMemo(() => {
@@ -60,7 +61,7 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
             name={currency.code}
             subtitle={localizedName}
             icon={<AppText style={styles.flagText}>{currency.flag || '🌐'}</AppText>}
-            badge={<AppText style={styles.symbolBadge}>{currency.symbol}</AppText>}
+            badge={<AppText style={[styles.symbolBadge, { color: theme.colors.accent, backgroundColor: theme.colors.surfaceSubtle }]}>{currency.symbol}</AppText>}
             onDelete={() => onDeleteCurrency(currency)}
             canDelete={canDelete}
             enabled={currency.enabled !== false}
@@ -81,11 +82,15 @@ export const CurrencyManagementTab: React.FC<CurrencyManagementTabProps> = ({
         <AppCard style={styles.filterCard} variant="glass" padding="lg">
           <View style={styles.topControls}>
             <Pressable
-              style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.createBtn,
+                { backgroundColor: theme.colors.accent },
+                pressed && { opacity: 0.85 },
+              ]}
               onPress={onOpenAddModal}
             >
               <Plus size={16} color={theme.colors.white} />
-              <AppText style={styles.createBtnText}>{t('management.addCurrency')}</AppText>
+              <AppText style={[styles.createBtnText, { color: theme.colors.white }]}>{t('management.addCurrency')}</AppText>
             </Pressable>
           </View>
 
@@ -150,13 +155,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xs,
-    backgroundColor: theme.colors.accent,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.radii.pill,
   },
   createBtnText: {
-    color: theme.colors.white,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },
@@ -180,8 +183,6 @@ const styles = StyleSheet.create({
   symbolBadge: {
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
-    color: theme.colors.accent,
-    backgroundColor: theme.colors.surfaceSubtle,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: 2,
     borderRadius: theme.radii.sm,

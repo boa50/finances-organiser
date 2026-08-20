@@ -14,8 +14,8 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **Transaction & Installment management** — Full create, edit, duplicate, delete, search, and filter capabilities with monthly grouping and monthly net balance indicators, merchant tracking, BRL monetary conversion display on transaction cards (with converted original values shown alongside), single and multi-month installment support, and quick duplication defaulting to the current date.
 - **Comprehensive management hub, Enable/Disable toggles & Drag-and-drop reordering** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), Banks, and Currencies. Each customizable entity includes an enable/disable toggle switch; disabled items are hidden when creating or editing transactions and subscriptions while remaining preserved for historical reference on older records. All customizable entities can also be freely reordered via cross-platform drag-and-drop (Web & Mobile), with the custom sort order persisted and automatically reflected throughout the application.
 - **Internationalization (i18n)** — Full bilingual support for Brazilian Portuguese (`pt-BR`) and English (Australian) (`en-AU`) using `i18next` and `react-i18next`, with a header language switcher toggle and persistent user preference in `localStorage`.
-- **Design system & UI primitives** — Centralized design tokens (`theme.ts`) and reusable UI primitive components.
-- **Unit testing** — Jest test suite covering financial calculations, currency conversion, authentication, categories, transactions, subscriptions, currency management, and i18n key parity.
+- **Design system, Dark/Light modes & Theme switch** — Full Dark and Light theme modes with high-contrast accessibility, modular theme architecture under `src/theme/`, persistent preference in `localStorage` (`financecloud_theme_mode`), dynamic React `useTheme()` hook, and a simple header switch button with `Moon` and `Sun` vector icons.
+- **Unit testing** — Jest test suite covering financial calculations, currency conversion, authentication, categories, transactions, subscriptions, currency management, theme tokens/modes/persistence, and i18n key parity.
 - **Cross-platform & Cloud sync** — Runs on Web, Android, and iOS via Expo with seamless offline/online fallback.
 
 ## 📋 Prerequisites
@@ -90,6 +90,7 @@ npm test
 ```
 
 The test suite covers:
+- **Theme system & Persistence** — Dark and light theme tokens, semantic color mappings, contrast guarantees, storage persistence (`src/theme/__tests__/theme.test.ts`).
 - **Financial calculations** — Income/expense aggregation, net balance, monthly grouping, and search filtering (`financials.test.ts`).
 - **Currency utilities & service** — Formatting, 2-step pivot conversion, exchange rate caching, and currency CRUD rules (`currencies.test.ts`, `currencyService.test.ts`).
 - **Authentication utilities & service** — Password validation, timing-safe comparison, session storage persistence, and Metro fallback (`authUtils.test.ts`, `authService.test.ts`).
@@ -136,7 +137,15 @@ finances-organiser/
 ├── assets/                          # App icons, splash screen, favicon
 │
 └── src/
-    ├── theme.ts                     # Centralized design tokens (colors, palette, typography, spacing, radii)
+    ├── theme.ts                     # Root theme backward-compatibility re-export
+    ├── theme/                       # Modular Design System & Theme Subsystem
+    │   ├── types.ts                 # Theme TypeScript definitions & contracts
+    │   ├── palette.ts               # Base color palette tokens (Slate, Sky, Emerald, Rose, Amber)
+    │   ├── tokens.ts                # Layout tokens (spacing, radii, fontSize, fontWeight, fontFamily)
+    │   ├── darkTheme.ts             # Dark mode color definitions & typography
+    │   ├── lightTheme.ts            # Light mode color definitions & typography
+    │   ├── ThemeContext.tsx         # React Context, ThemeProvider, persistence, and useTheme hook
+    │   └── index.ts                 # Theme module public exports
     │
     ├── i18n/                        # Internationalization setup and locale dictionaries
     │   ├── index.ts                 # i18next configuration, storage persistence, and toggle helpers
@@ -185,12 +194,15 @@ finances-organiser/
         │   ├── AppText.tsx          # Standardized text component enforcing typography tokens
         │   ├── AppTextInput.tsx     # Styled text input with error state & clear button
         │   ├── AppButton.tsx        # Variant button component (primary, secondary, outline, danger)
+        │   ├── AppIconButton.tsx    # Standardized icon button component (edit, delete, duplicate, custom)
         │   ├── AppCard.tsx          # Surface container card (default, elevated, outlined, glass)
         │   ├── AppBadge.tsx         # Pill badge for status indicators and flags
         │   ├── AppIconBadge.tsx     # Icon container badge with variant background
         │   ├── AppSectionHeader.tsx # Standardized section title, subtitle & action header
         │   ├── AppSegmentedControl.tsx # Segmented tab filter control
         │   ├── AppEmptyState.tsx    # Reusable empty data state view
+        │   ├── AppLoadingView.tsx   # Standardized loading view with activity spinner
+        │   ├── AppModal.tsx         # Standardized modal dialog primitive
         │   ├── AppSwitch.tsx        # Reusable animated toggle switch primitive
         │   ├── AppChipSelector.tsx  # Reusable horizontal chip selector primitive
         │   ├── AppDatePicker.tsx    # Cross-platform date picker barrel
@@ -220,7 +232,7 @@ finances-organiser/
         ├── management/              # Entity management components
         │   ├── EntityManagementCard.tsx     # Reorderable entity card with switch toggle
         │   └── index.ts
-        ├── AppHeader.tsx            # Sticky global header with DB status, sync & logout
+        ├── AppHeader.tsx            # Sticky global header with DB status, theme toggle, sync & logout
         ├── AppTabBar.tsx            # Bottom navigation tab bar
         ├── CategoryIcon.tsx         # Lucide vector icon mapping for category display
         └── index.ts                 # Top-level components barrel export
@@ -234,13 +246,13 @@ finances-organiser/
 | **Serverless API Layer** | Vercel Node.js Serverless Functions in `/api` handle database CRUD operations securely using server-side Turso credentials. |
 | **State management** | React `useState` / `useEffect` in the root `App` component; data flows down via props. |
 | **Navigation** | Manual tab router in `App.tsx` (tabs switch rendered screens). |
-| **Design system** | Centralized `src/theme.ts` design tokens (palette, colors, spacing, radii, typography); 10 reusable UI primitive components in `src/components/ui/`. |
+| **Design system & Theming** | Modularized design subsystem (`src/theme/`) supporting Dark and Light modes; persistent user choice in `localStorage` (`financecloud_theme_mode`); reactive `useTheme()` hook; header `Sun`/`Moon` switch button; 16 reusable UI primitive components in `src/components/ui/`. |
 | **Icons & Emojis** | Lucide React Native vector icons mapped via `CategoryIcon.tsx`; no emojis in the UI (country flags only for currency representations). |
 | **Data persistence** | Vercel Functions + Turso SQLite Cloud as primary store; `localStorage` as offline fallback. |
 | **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; transactions and subscriptions store ID foreign keys (`category_id`, `payment_method_id`, `bank_id`) to custom entities with `ON DELETE SET NULL` reference cascade; no hardcoded defaults. |
-| **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography. |
+| **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography and reactive theme colors. |
 | **List Virtualization** | High-performance recycling via `@shopify/flash-list` with screen-bounded split layouts (pinned headers & search bars, independent list scrolling). |
-| **Unit testing** | Jest + ts-jest test runner covering pure utility functions, auth services, entity CRUD, localized currencies, and i18n key parity & codebase scan (100 passing unit tests across 13 suites). |
+| **Unit testing** | Jest + ts-jest test runner covering pure utility functions, auth services, entity CRUD, localized currencies, theme tokens/modes/persistence, and i18n key parity & codebase scan (152 passing unit tests across 16 suites). |
 | **Internationalization (i18n)** | `i18next` + `react-i18next` with `pt-BR` and `en-AU` catalogs; reactive `useTranslation` hooks; language selector on header; persistence in `localStorage` (`financecloud_language`). |
 | **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |
 | **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60s TTL). |

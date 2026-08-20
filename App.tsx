@@ -20,21 +20,25 @@ import { AppHeader, AppTabBar, TabName, TransactionEditModal } from './src/compo
 import { useAuth } from './src/hooks/useAuth';
 import { useAppData } from './src/hooks/useAppData';
 import { Plus } from 'lucide-react-native';
-import theme from './src/theme';
+import { ThemeProvider, useTheme } from './src/theme';
 
-export default function App() {
+function MainApp() {
   const { isAuthenticated, authenticate, logout } = useAuth();
   const { transactions, tursoConfig, loadData, clearAllTransactions } = useAppData(isAuthenticated);
   const [activeTab, setActiveTab] = useState<TabName>('overview');
   const [addTransactionModalVisible, setAddTransactionModalVisible] = useState(false);
+  const { theme, isDark } = useTheme();
 
   if (!isAuthenticated) {
     return <LoginScreen onAuthenticated={authenticate} />;
   }
 
   return (
-    <SafeAreaView style={styles.safeContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+    <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.colors.background }]}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.colors.background}
+      />
 
       <AppHeader
         isConnected={tursoConfig.isConnected}
@@ -72,7 +76,14 @@ export default function App() {
 
       {(activeTab === 'overview' || activeTab === 'transactions') && (
         <Pressable
-          style={({ pressed }) => [styles.fab, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [
+            styles.fab,
+            {
+              backgroundColor: theme.colors.accent,
+              boxShadow: theme.colors.fabShadow,
+            },
+            pressed && { opacity: 0.85 },
+          ]}
           onPress={() => setAddTransactionModalVisible(true)}
         >
           <Plus size={28} color={theme.colors.white} strokeWidth={2.5} />
@@ -91,10 +102,17 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return (
+    <ThemeProvider>
+      <MainApp />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   screenContainer: {
@@ -107,10 +125,8 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: theme.colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0px 6px 20px rgba(56, 189, 248, 0.45)',
     elevation: 10,
     zIndex: 25,
   },

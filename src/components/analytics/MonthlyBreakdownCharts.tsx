@@ -8,7 +8,7 @@ import { categoryService } from '../../services/categoryService';
 import { AppSectionHeader } from '../ui';
 import { IncomeExpenseDonutChart } from '../charts/IncomeExpenseDonutChart';
 import { CategorySpendingBarChart } from '../charts/CategorySpendingBarChart';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface MonthlyBreakdownChartsProps {
   transactions: Transaction[];
@@ -22,6 +22,7 @@ export const MonthlyBreakdownCharts: React.FC<MonthlyBreakdownChartsProps> = ({
   selectedMonthDate = new Date(),
 }) => {
   const { t, i18n } = useTranslation();
+  const { theme } = useTheme();
   const currentYear = selectedMonthDate.getFullYear();
   const currentMonth = selectedMonthDate.getMonth();
 
@@ -57,7 +58,7 @@ export const MonthlyBreakdownCharts: React.FC<MonthlyBreakdownChartsProps> = ({
         category: catDisplayName,
         amount,
         percentage: totalExpense > 0 ? (amount / totalExpense) * 100 : 0,
-        color: categoryObj?.color || '#3B82F6',
+        color: categoryObj?.color || theme.colors.accent,
         type: 'expense' as const,
       };
     })

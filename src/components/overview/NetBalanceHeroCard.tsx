@@ -5,7 +5,7 @@ import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { Eye, EyeOff, TrendingUp, TrendingDown } from 'lucide-react-native';
 import { AppCard, AppText } from '../ui';
 import { formatMoney } from '../../utils/currencies';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface NetBalanceHeroCardProps {
   netBalance: number;
@@ -24,6 +24,7 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
   monthName,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [isPrivacyMasked, setIsPrivacyMasked] = useState(false);
 
   const displayBalance = isPrivacyMasked ? '••••••' : formatMoney(netBalance, currency);
@@ -99,9 +100,17 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
 
       {/* Income & Expense Split Boxes */}
       <View style={styles.heroMetaRow}>
-        <View style={styles.metaBox}>
+        <View
+          style={[
+            styles.metaBox,
+            {
+              backgroundColor: theme.colors.surfaceRecessed,
+              borderColor: theme.colors.borderSubtle,
+            },
+          ]}
+        >
           <View style={styles.metaIconHeader}>
-            <View style={styles.incomeIconBadge}>
+            <View style={[styles.incomeIconBadge, { backgroundColor: theme.colors.successBgStrong }]}>
               <TrendingUp size={12} color={theme.colors.success} strokeWidth={2.5} />
             </View>
             <AppText style={styles.metaLabel}>{t('overview.income', { month: monthName })}</AppText>
@@ -111,9 +120,17 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
           </AppText>
         </View>
 
-        <View style={styles.metaBox}>
+        <View
+          style={[
+            styles.metaBox,
+            {
+              backgroundColor: theme.colors.surfaceRecessed,
+              borderColor: theme.colors.borderSubtle,
+            },
+          ]}
+        >
           <View style={styles.metaIconHeader}>
-            <View style={styles.expenseIconBadge}>
+            <View style={[styles.expenseIconBadge, { backgroundColor: theme.colors.dangerBgStrong }]}>
               <TrendingDown size={12} color={theme.colors.danger} strokeWidth={2.5} />
             </View>
             <AppText style={styles.metaLabel}>{t('overview.expense', { month: monthName })}</AppText>
@@ -128,11 +145,7 @@ export const NetBalanceHeroCard: React.FC<NetBalanceHeroCardProps> = ({
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: theme.colors.surfaceElevated,
-    borderColor: theme.colors.borderLight,
-    borderRadius: theme.radii.card,
-  },
+  card: {},
   topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -152,9 +165,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: theme.colors.surfaceRecessed,
     borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -189,8 +200,6 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     borderRadius: theme.radii.base,
     borderWidth: 1,
-    backgroundColor: theme.colors.surfaceRecessed,
-    borderColor: theme.colors.borderSubtle,
   },
   metaIconHeader: {
     flexDirection: 'row',
@@ -202,7 +211,6 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: 'rgba(16, 185, 129, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -210,7 +218,6 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: 'rgba(244, 63, 94, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },

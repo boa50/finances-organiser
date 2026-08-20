@@ -14,7 +14,7 @@ import {
   RenderDraggableItemInfo,
 } from '../../components/ui';
 import { Plus, Search } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 interface CategoryManagementTabProps {
   categories: CategoryItem[];
@@ -42,6 +42,7 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
   onReorderCategories,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const isSearching = searchQuery.trim().length > 0;
 
   const filteredCategories = useMemo(() => {
@@ -105,11 +106,15 @@ export const CategoryManagementTab: React.FC<CategoryManagementTabProps> = ({
 
             <View style={styles.actionButtonsRow}>
               <Pressable
-                style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+                style={({ pressed }) => [
+                  styles.createBtn,
+                  { backgroundColor: theme.colors.accent },
+                  pressed && { opacity: 0.85 },
+                ]}
                 onPress={onOpenAddModal}
               >
                 <Plus size={16} color={theme.colors.white} />
-                <AppText style={styles.createBtnText}>
+                <AppText style={[styles.createBtnText, { color: theme.colors.white }]}>
                   {t('management.newCategory', { type: typeLabel })}
                 </AppText>
               </Pressable>
@@ -177,13 +182,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xs,
-    backgroundColor: theme.colors.accent,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.radii.pill,
   },
   createBtnText: {
-    color: theme.colors.white,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },

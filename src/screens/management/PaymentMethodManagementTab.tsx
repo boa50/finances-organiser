@@ -12,7 +12,7 @@ import {
   RenderDraggableItemInfo,
 } from '../../components/ui';
 import { CreditCard, Plus, Search } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 interface PaymentMethodManagementTabProps {
   paymentMethods: PaymentMethodItem[];
@@ -36,6 +36,7 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
   onReorderPaymentMethods,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const isSearching = searchQuery.trim().length > 0;
 
   const filteredPms = useMemo(() => {
@@ -76,11 +77,15 @@ export const PaymentMethodManagementTab: React.FC<PaymentMethodManagementTabProp
         <AppCard style={styles.filterCard} variant="glass" padding="lg">
           <View style={styles.actionButtonsRow}>
             <Pressable
-              style={({ pressed }) => [styles.createBtn, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.createBtn,
+                { backgroundColor: theme.colors.accent },
+                pressed && { opacity: 0.85 },
+              ]}
               onPress={onOpenAddModal}
             >
               <Plus size={16} color={theme.colors.white} />
-              <AppText style={styles.createBtnText}>{t('management.newPaymentMethod')}</AppText>
+              <AppText style={[styles.createBtnText, { color: theme.colors.white }]}>{t('management.newPaymentMethod')}</AppText>
             </Pressable>
           </View>
 
@@ -142,13 +147,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.xs,
-    backgroundColor: theme.colors.accent,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.radii.pill,
   },
   createBtnText: {
-    color: theme.colors.white,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },

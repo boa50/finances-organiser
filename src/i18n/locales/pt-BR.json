@@ -39,7 +39,10 @@
     "tursoOffline": "Turso Offline",
     "clearAll": "Limpar Tudo",
     "logout": "Sair",
-    "switchLanguage": "Mudar Idioma"
+    "switchLanguage": "Mudar Idioma",
+    "switchToLight": "Mudar para modo claro",
+    "switchToDark": "Mudar para modo escuro",
+    "toggleTheme": "Alternar Tema"
   },
   "tabs": {
     "overview": "Visão Geral",

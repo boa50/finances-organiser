@@ -20,11 +20,11 @@ import {
   AppEmptyState,
   AppSectionHeader,
   AppSegmentedControl,
-  AppTextInput,
   AppText,
+  AppTextInput,
 } from '../components/ui';
 import { Search, Trash2 } from 'lucide-react-native';
-import theme from '../theme';
+import theme, { useTheme } from '../theme';
 
 interface TransactionsScreenProps {
   transactions: Transaction[];
@@ -78,6 +78,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   onRefresh,
 }) => {
   const { t, i18n } = useTranslation();
+  const { theme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -217,7 +218,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
       return (
         <View style={styles.monthHeader}>
-          <AppText style={styles.monthTitle} numberOfLines={1}>
+          <AppText style={[styles.monthTitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
             {item.label}
           </AppText>
           <AppText style={[styles.monthNetBalance, { color }]} tabularNums>
@@ -237,11 +238,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         />
       </View>
     );
-  }, [handleEdit, handleDuplicate, handleDelete]);
+  }, [handleEdit, handleDuplicate, handleDelete, theme.colors]);
 
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Pinned Header & Filter Bar */}
         <View style={styles.fixedHeader}>
           <AppSectionHeader
@@ -250,11 +251,20 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             rightElement={
               transactions.length > 0 ? (
                 <Pressable
-                  style={({ pressed }) => [styles.clearAllBtn, pressed && { opacity: 0.7 }]}
+                  style={({ pressed }) => [
+                    styles.clearAllBtn,
+                    {
+                      backgroundColor: theme.colors.dangerBg,
+                      borderColor: theme.colors.danger,
+                    },
+                    pressed && { opacity: 0.7 },
+                  ]}
                   onPress={handleClearAll}
                 >
                   <Trash2 size={14} color={theme.colors.danger} />
-                  <AppText style={styles.clearAllBtnText}>{t('header.clearAll')}</AppText>
+                  <AppText style={[styles.clearAllBtnText, { color: theme.colors.danger }]}>
+                    {t('header.clearAll')}
+                  </AppText>
                 </Pressable>
               ) : undefined
             }
@@ -326,7 +336,6 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   fixedHeader: {
     paddingHorizontal: theme.spacing['4xl'],
@@ -355,15 +364,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.xs,
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-    borderColor: theme.colors.danger,
     borderWidth: 1,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 6,
     borderRadius: theme.radii.pill,
   },
   clearAllBtnText: {
-    color: theme.colors.danger,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
   },
@@ -379,7 +385,6 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xs,
   },
   monthTitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.bold,
     textTransform: 'capitalize',

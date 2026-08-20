@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { AppCard, AppText, AppSwitch, AppIconButton } from '../ui';
 import { GripVertical } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface EntityManagementCardProps {
   icon?: React.ReactNode;
@@ -35,6 +35,7 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
   enabled = true,
   onToggleEnabled,
 }) => {
+  const { theme } = useTheme();
   const badgeBg = color ? `${color}25` : `${theme.colors.accent}25`;
   const isItemEnabled = enabled !== false;
 
@@ -42,7 +43,7 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
     <AppCard
       style={[
         styles.card,
-        isDragging && styles.cardDragging,
+        isDragging && [styles.cardDragging, { borderColor: theme.colors.accent, backgroundColor: theme.colors.surfaceHighlight }],
         !isItemEnabled && styles.cardDisabled,
       ]}
       padding="lg"
@@ -54,7 +55,7 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
             style={[
               styles.dragHandle,
               dragHandleProps?.style,
-              isDragging && styles.dragHandleActive,
+              isDragging && [styles.dragHandleActive, { backgroundColor: theme.colors.accentBg }],
             ]}
             accessibilityLabel={`Reorder ${name}`}
             accessibilityRole="button"
@@ -68,10 +69,16 @@ export const EntityManagementCard: React.FC<EntityManagementCardProps> = ({
         {icon && <View style={[styles.iconBadge, { backgroundColor: badgeBg }]}>{icon}</View>}
         <View style={styles.infoCol}>
           <View style={styles.titleRow}>
-            <AppText style={[styles.name, !isItemEnabled && styles.nameDisabled]}>{name}</AppText>
+            <AppText style={[styles.name, { color: theme.colors.textPrimary }, !isItemEnabled && { color: theme.colors.textSecondary }]}>
+              {name}
+            </AppText>
             {badge}
           </View>
-          {subtitle && <AppText style={styles.subtitle}>{subtitle}</AppText>}
+          {subtitle && (
+            <AppText style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+              {subtitle}
+            </AppText>
+          )}
         </View>
       </View>
 
@@ -118,8 +125,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   cardDragging: {
-    borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.surfaceHighlight,
+    borderWidth: 1,
   },
   cardDisabled: {
     opacity: 0.65,
@@ -137,9 +143,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: theme.radii.sm,
   },
-  dragHandleActive: {
-    backgroundColor: `${theme.colors.accent}15`,
-  },
+  dragHandleActive: {},
   iconBadge: {
     width: 40,
     height: 40,
@@ -156,15 +160,11 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   name: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
-  nameDisabled: {
-    color: theme.colors.textSecondary,
-  },
+  nameDisabled: {},
   subtitle: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
     textTransform: 'capitalize',

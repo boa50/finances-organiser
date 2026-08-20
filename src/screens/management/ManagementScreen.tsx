@@ -12,7 +12,7 @@ import { bankService } from '../../services/bankService';
 import { currencyService } from '../../services/currencyService';
 import { confirmAction } from '../../utils/dialogs';
 import { AppLoadingView, AppSectionHeader, AppSegmentedControl } from '../../components/ui';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 import { CategoryManagementTab } from './CategoryManagementTab';
 import { PaymentMethodManagementTab } from './PaymentMethodManagementTab';
@@ -38,6 +38,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
   initialSection = 'categories',
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [activeSection, setActiveSection] = useState<ManagementSectionId>(initialSection);
   const [activeCategoryType, setActiveCategoryType] = useState<TransactionType>('expense');
   const [searchQuery, setSearchQuery] = useState('');
@@ -516,7 +517,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.fixedHeader}>
           <AppSectionHeader
             title={t('management.title')}
@@ -650,7 +651,6 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   fixedHeader: {
     paddingHorizontal: theme.spacing['4xl'],

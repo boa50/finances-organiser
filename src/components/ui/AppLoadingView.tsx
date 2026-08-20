@@ -1,17 +1,23 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppLoadingViewProps {
   message?: string;
 }
 
 export const AppLoadingView: React.FC<AppLoadingViewProps> = ({ message }) => {
+  const { theme } = useTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ActivityIndicator size="large" color={theme.colors.accent} />
-      {message && <AppText style={styles.message}>{message}</AppText>}
+      {message && (
+        <AppText style={[styles.message, { color: theme.colors.textSecondary }]}>
+          {message}
+        </AppText>
+      )}
     </View>
   );
 };

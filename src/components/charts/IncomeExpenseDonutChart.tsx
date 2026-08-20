@@ -4,8 +4,8 @@ import Svg, { Path, G } from 'react-native-svg';
 import * as d3 from 'd3';
 import { useTranslation } from 'react-i18next';
 import { formatMoney } from '../../utils/currencies';
-import { AppText } from '../ui';
-import theme from '../../theme';
+import { AppCard, AppText } from '../ui';
+import theme, { useTheme } from '../../theme';
 
 export interface IncomeExpenseDonutChartProps {
   totalIncome: number;
@@ -19,6 +19,7 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
   targetCurrency,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const netBalance = totalIncome - totalExpense;
   const totalFlow = totalIncome + totalExpense;
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
@@ -47,7 +48,7 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
   const arcs = pieGenerator(pieData);
 
   return (
-    <View style={styles.card}>
+    <AppCard variant="glass" padding="4xl" style={styles.card}>
       <AppText style={styles.cardTitle}>{t('analytics.incomeExpenseRatio')}</AppText>
       <AppText style={styles.cardSubtitle}>{t('analytics.incomeExpenseRatioSubtitle')}</AppText>
       <View style={styles.donutRow}>
@@ -132,7 +133,7 @@ export const IncomeExpenseDonutChart: React.FC<IncomeExpenseDonutChartProps> = (
           </View>
         </View>
       </View>
-    </View>
+    </AppCard>
   );
 };
 
@@ -141,13 +142,7 @@ export type D3DonutChartProps = IncomeExpenseDonutChartProps;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.surfaceGlass,
-    borderRadius: theme.radii.card,
-    padding: theme.spacing['4xl'],
     marginVertical: theme.spacing.xs,
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
   },
   cardTitle: {
     color: theme.colors.textPrimary,

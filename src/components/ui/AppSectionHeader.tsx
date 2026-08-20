@@ -7,7 +7,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import theme from '../../theme';
+import { AppText } from './AppText';
+import theme, { useTheme } from '../../theme';
 
 export interface AppSectionHeaderProps {
   title: string;
@@ -26,11 +27,15 @@ export const AppSectionHeader: React.FC<AppSectionHeaderProps> = ({
   rightElement,
   style,
 }) => {
+  const { theme } = useTheme();
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.textColumn}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+        {subtitle ? (
+          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{subtitle}</Text>
+        ) : null}
       </View>
 
       {rightElement ? (
@@ -40,7 +45,7 @@ export const AppSectionHeader: React.FC<AppSectionHeaderProps> = ({
           onPress={onActionPress}
           style={({ pressed }) => [pressed && { opacity: 0.7 }]}
         >
-          <Text style={styles.actionText}>{actionLabel}</Text>
+          <Text style={[styles.actionText, { color: theme.colors.accent }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>

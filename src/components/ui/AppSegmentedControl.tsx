@@ -7,7 +7,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import theme from '../../theme';
+import { AppText } from './AppText';
+import theme, { useTheme } from '../../theme';
 
 export interface SegmentedControlOption<T extends string = string> {
   label: string;
@@ -38,10 +39,21 @@ export function AppSegmentedControl<T extends string = string>({
   size = 'md',
   style,
 }: AppSegmentedControlProps<T>) {
+  const { theme } = useTheme();
   const isSm = size === 'sm';
 
   return (
-    <View style={[styles.container, fullWidth && styles.fullWidth, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.colors.surfaceRecessed,
+          borderColor: theme.colors.borderSubtle,
+        },
+        fullWidth && styles.fullWidth,
+        style,
+      ]}
+    >
       {options.map((option) => {
         const isSelected = option.value === selectedValue;
 
@@ -69,23 +81,30 @@ export function AppSegmentedControl<T extends string = string>({
               styles.tab,
               isSm && styles.tabSm,
               fullWidth && styles.flexTab,
-              isSelected && styles.selectedTab,
+              isSelected && [
+                styles.selectedTab,
+                {
+                  backgroundColor: theme.colors.accentBgStrong,
+                  borderColor: theme.colors.accent,
+                },
+              ],
               customSelectedStyle,
               pressed && { opacity: 0.8 },
             ]}
             onPress={() => onSelect(option.value)}
           >
             {option.icon && <View style={styles.iconContainer}>{option.icon}</View>}
-            <Text
+            <AppText
               style={[
                 styles.tabText,
+                { color: theme.colors.textSecondary },
                 isSm && styles.tabTextSm,
-                isSelected && styles.selectedTabText,
+                isSelected && [styles.selectedTabText, { color: theme.colors.accent }],
                 customSelectedTextStyle,
               ]}
             >
               {option.label}
-            </Text>
+            </AppText>
           </Pressable>
         );
       })}
@@ -96,11 +115,9 @@ export function AppSegmentedControl<T extends string = string>({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surfaceRecessed,
     borderRadius: theme.radii.pill,
     padding: 3,
     borderWidth: 1,
-    borderColor: theme.colors.borderSubtle,
   },
   fullWidth: {
     width: '100%',
@@ -126,25 +143,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedTab: {
-    backgroundColor: theme.colors.accentBgStrong,
-    borderColor: theme.colors.accent,
-    boxShadow: '0px 2px 8px rgba(56, 189, 248, 0.25)',
+    borderWidth: 1,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabText: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
-    fontFamily: theme.fontFamily.sans,
   },
   tabTextSm: {
     fontSize: theme.fontSize.xs,
   },
   selectedTabText: {
-    color: theme.colors.accent,
     fontWeight: theme.fontWeight.bold,
   },
 });

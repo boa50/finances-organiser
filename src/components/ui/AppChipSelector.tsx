@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { AppText } from './AppText';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppChipSelectorProps<T> {
   items: T[];
@@ -24,6 +24,7 @@ export function AppChipSelector<T>({
   getItemColor,
   isSelected,
 }: AppChipSelectorProps<T>) {
+  const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const handleWheel = (e: any) => {
@@ -58,8 +59,8 @@ export function AppChipSelector<T>({
           : key === String(selectedId) || label === String(selectedId);
         const itemColor = getItemColor ? getItemColor(item) : undefined;
 
-        let activeChipStyle = {};
-        let activeTextStyle = {};
+        let activeChipStyle: any = {};
+        let activeTextStyle: any = {};
 
         if (active) {
           if (itemColor) {
@@ -72,8 +73,14 @@ export function AppChipSelector<T>({
               fontWeight: theme.fontWeight.bold,
             };
           } else {
-            activeChipStyle = styles.chipActiveDefault;
-            activeTextStyle = styles.chipTextActiveDefault;
+            activeChipStyle = {
+              backgroundColor: theme.colors.accentBgStrong,
+              borderColor: theme.colors.accent,
+            };
+            activeTextStyle = {
+              color: theme.colors.accent,
+              fontWeight: theme.fontWeight.bold,
+            };
           }
         }
 
@@ -82,13 +89,23 @@ export function AppChipSelector<T>({
             key={key}
             style={({ pressed }) => [
               styles.chip,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.borderSubtle,
+              },
               active && activeChipStyle,
               pressed && { opacity: 0.75 },
             ]}
             onPress={() => onSelect(item)}
           >
             {renderIcon && <View style={styles.iconWrapper}>{renderIcon(item, active)}</View>}
-            <AppText style={[styles.chipText, active && activeTextStyle]}>
+            <AppText
+              style={[
+                styles.chipText,
+                { color: theme.colors.textSecondary },
+                active && activeTextStyle,
+              ]}
+            >
               {label}
             </AppText>
           </Pressable>

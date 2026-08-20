@@ -3,7 +3,7 @@ import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { ChartNoAxesCombined, House, List, Repeat, SlidersHorizontal } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { AppText } from './ui';
-import theme from '../theme';
+import theme, { useTheme } from '../theme';
 
 export type TabName = 'overview' | 'analytics' | 'transactions' | 'subscriptions' | 'categories';
 
@@ -14,6 +14,7 @@ export interface AppTabBarProps {
 
 export const AppTabBar: React.FC<AppTabBarProps> = ({ activeTab, onTabChange }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   const tabs: { id: TabName; label: string; icon: (color: string) => React.ReactNode }[] = [
     {
@@ -45,7 +46,16 @@ export const AppTabBar: React.FC<AppTabBarProps> = ({ activeTab, onTabChange }) 
 
   return (
     <View style={styles.dockContainer}>
-      <View style={styles.navTabBar}>
+      <View
+        style={[
+          styles.navTabBar,
+          {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.borderLight,
+            boxShadow: theme.colors.navShadow,
+          },
+        ]}
+      >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const color = isActive ? theme.colors.accent : theme.colors.textSecondary;
@@ -54,13 +64,25 @@ export const AppTabBar: React.FC<AppTabBarProps> = ({ activeTab, onTabChange }) 
               key={tab.id}
               style={({ pressed }) => [
                 styles.navTab,
-                isActive && styles.navTabActive,
+                isActive && [
+                  styles.navTabActive,
+                  {
+                    backgroundColor: theme.colors.accentBgStrong,
+                    borderColor: theme.colors.borderAccent,
+                  },
+                ],
                 pressed && { opacity: 0.7, transform: [{ scale: 0.96 }] },
               ]}
               onPress={() => onTabChange(tab.id)}
             >
               {tab.icon(color)}
-              <AppText style={[styles.navText, isActive && styles.navTextActive]}>
+              <AppText
+                style={[
+                  styles.navText,
+                  { color: theme.colors.textSecondary },
+                  isActive && [styles.navTextActive, { color: theme.colors.accent }],
+                ]}
+              >
                 {tab.label}
               </AppText>
             </Pressable>
@@ -84,9 +106,7 @@ const styles = StyleSheet.create({
   },
   navTabBar: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.surface + "F0",
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
     borderRadius: theme.radii.pill,
     paddingVertical: 5,
     paddingHorizontal: theme.spacing.sm,
@@ -94,7 +114,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     maxWidth: 540,
     width: '100%',
-    boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.5)',
     elevation: 12,
   },
   navTab: {
@@ -109,17 +128,13 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   navTabActive: {
-    backgroundColor: theme.colors.accentBgStrong,
-    borderColor: 'rgba(56, 189, 248, 0.35)',
-    boxShadow: '0px 2px 10px rgba(56, 189, 248, 0.25)',
+    borderWidth: 1,
   },
   navText: {
-    color: theme.colors.textSecondary,
     fontSize: 10,
     fontWeight: theme.fontWeight.medium,
   },
   navTextActive: {
-    color: theme.colors.accent,
     fontWeight: theme.fontWeight.bold,
   },
 });

@@ -27,7 +27,7 @@ import {
   FeedbackMessage,
 } from '../ui';
 import { CreditCard, Building2, Calendar } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 import { calculateInstallmentDate, normalizeTransactionDate, parseTransactionDate } from '../../utils/financials';
 
 export interface TransactionEditModalProps {
@@ -49,6 +49,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   onSaved,
 }) => {
   const { t, i18n } = useTranslation();
+  const { theme } = useTheme();
   const [type, setType] = useState<TransactionType>('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -448,13 +449,27 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                       setInstallments(n);
                       setInstallmentInputText(String(n));
                     }}
-                    style={({ pressed }) => [styles.installmentBtn, pressed && { opacity: 0.7 }]}
+                    style={({ pressed }) => [
+                      styles.installmentBtn,
+                      {
+                        backgroundColor: theme.colors.surfaceRecessed,
+                        borderColor: theme.colors.borderLight,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
                   >
-                    <AppText style={styles.installmentBtnText}>−</AppText>
+                    <AppText style={[styles.installmentBtnText, { color: theme.colors.textPrimary }]}>−</AppText>
                   </Pressable>
 
                   <TextInput
-                    style={styles.installmentInput}
+                    style={[
+                      styles.installmentInput,
+                      {
+                        backgroundColor: theme.colors.surfaceRecessed,
+                        borderColor: theme.colors.borderLight,
+                        color: theme.colors.textPrimary,
+                      },
+                    ]}
                     value={installmentInputText}
                     onChangeText={(text) => {
                       setInstallmentInputText(text);
@@ -473,14 +488,21 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
                       setInstallments(n);
                       setInstallmentInputText(String(n));
                     }}
-                    style={({ pressed }) => [styles.installmentBtn, pressed && { opacity: 0.7 }]}
+                    style={({ pressed }) => [
+                      styles.installmentBtn,
+                      {
+                        backgroundColor: theme.colors.surfaceRecessed,
+                        borderColor: theme.colors.borderLight,
+                      },
+                      pressed && { opacity: 0.7 },
+                    ]}
                   >
-                    <AppText style={styles.installmentBtnText}>+</AppText>
+                    <AppText style={[styles.installmentBtnText, { color: theme.colors.textPrimary }]}>+</AppText>
                   </Pressable>
                 </View>
 
                 {installments > 1 && parsedAmountNum > 0 && (
-                  <AppText style={styles.installmentHint}>
+                  <AppText style={[styles.installmentHint, { color: theme.colors.accent }]}>
                     {t('transactionModal.installmentHint', {
                       count: installments,
                       currency: currencyId,
@@ -523,11 +545,18 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         <Field label={t('transactionModal.dateField')}>
           <Pressable
             onPress={() => setDatePickerVisible(true)}
-            style={({ pressed }) => [styles.datePickerBtn, pressed && { opacity: 0.7 }]}
+            style={({ pressed }) => [
+              styles.datePickerBtn,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderLight,
+              },
+              pressed && { opacity: 0.7 },
+            ]}
           >
             <View style={styles.datePickerBtnLeft}>
               <Calendar size={16} color={theme.colors.accent} />
-              <AppText style={styles.datePickerValueText}>
+              <AppText style={[styles.datePickerValueText, { color: theme.colors.textPrimary }]}>
                 {date.toLocaleDateString(i18n.language || undefined, {
                   year: 'numeric',
                   month: 'short',
@@ -582,12 +611,15 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   );
 };
 
-const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <View style={styles.field}>
-    <AppText style={styles.fieldLabel}>{label}</AppText>
-    {children}
-  </View>
-);
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
+  const { theme } = useTheme();
+  return (
+    <View style={styles.field}>
+      <AppText style={[styles.fieldLabel, { color: theme.colors.textSecondary }]}>{label}</AppText>
+      {children}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   modalBody: {
@@ -621,7 +653,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   fieldLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
@@ -636,30 +667,23 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: theme.radii.input,
-    backgroundColor: theme.colors.surfaceRecessed,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   installmentBtnText: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.bold,
   },
   installmentInput: {
     flex: 1,
-    backgroundColor: theme.colors.surfaceRecessed,
     borderRadius: theme.radii.input,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
     paddingVertical: theme.spacing.sm,
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
   installmentHint: {
-    color: theme.colors.accent,
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
   },
@@ -667,10 +691,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.colors.surfaceRecessed,
     borderRadius: theme.radii.input,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
   },
@@ -680,7 +702,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   datePickerValueText: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
   },

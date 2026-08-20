@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { BankItem } from '../../types';
 import { AppModal, AppText } from '../../components/ui';
 import { Building2 } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 interface BankEditModalProps {
   visible: boolean;
@@ -28,6 +28,7 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
   onSave,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   return (
     <AppModal
@@ -38,9 +39,16 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
     >
       <View style={styles.modalBody}>
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.bankName')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.bankName')}</AppText>
           <TextInput
-            style={styles.textInput}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
             placeholder={t('management.bankNamePlaceholder')}
             placeholderTextColor={theme.colors.textTertiary}
             value={bankNameInput}
@@ -50,18 +58,28 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={styles.formLabel}>{t('management.preview')}</AppText>
-          <View style={styles.previewBox}>
-            <View style={[styles.iconBadge, { backgroundColor: `${theme.colors.accent}25`, borderColor: theme.colors.accent }]}>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.preview')}</AppText>
+          <View
+            style={[
+              styles.previewBox,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
+            <View style={[styles.iconBadge, { backgroundColor: theme.colors.accentBg, borderColor: theme.colors.borderAccent }]}>
               <Building2 size={22} color={theme.colors.accent} />
             </View>
-            <AppText style={styles.previewName}>{bankNameInput.trim() || t('management.bankNameFallback')}</AppText>
+            <AppText style={[styles.previewName, { color: theme.colors.textPrimary }]}>
+              {bankNameInput.trim() || t('management.bankNameFallback')}
+            </AppText>
           </View>
         </View>
 
         {bankErrorMsg && (
-          <View style={styles.errorBox}>
-            <AppText style={styles.errorText}>{bankErrorMsg}</AppText>
+          <View style={[styles.errorBox, { backgroundColor: theme.colors.dangerBg, borderColor: theme.colors.danger }]}>
+            <AppText style={[styles.errorText, { color: theme.colors.danger }]}>{bankErrorMsg}</AppText>
           </View>
         )}
 
@@ -75,9 +93,9 @@ export const BankEditModal: React.FC<BankEditModalProps> = ({
           disabled={bankSaving}
         >
           {bankSaving ? (
-            <ActivityIndicator color={theme.colors.background} />
+            <ActivityIndicator color={theme.colors.white} />
           ) : (
-            <AppText style={styles.saveSubmitText}>
+            <AppText style={[styles.saveSubmitText, { color: theme.colors.white }]}>
               {editingBank ? t('management.saveChanges') : t('management.createBank')}
             </AppText>
           )}
@@ -96,31 +114,25 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   formLabel: {
-    color: theme.colors.textSecondary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.bold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   textInput: {
-    backgroundColor: theme.colors.background,
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     borderRadius: theme.radii.lg,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   previewBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.lg,
-    backgroundColor: theme.colors.background,
     padding: theme.spacing.lg,
     borderRadius: theme.radii.xl,
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   iconBadge: {
     width: 44,
@@ -132,19 +144,15 @@ const styles = StyleSheet.create({
   },
   previewName: {
     flex: 1,
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
   errorBox: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
     borderRadius: theme.radii.base,
     padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.danger,
   },
   errorText: {
-    color: theme.colors.danger,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.medium,
   },
@@ -155,7 +163,6 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   saveSubmitText: {
-    color: theme.colors.white,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.extrabold,
   },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppIconBadgeProps {
   icon: React.ReactNode;
@@ -17,33 +17,35 @@ export const AppIconBadge: React.FC<AppIconBadgeProps> = ({
   rounded = false,
   style,
 }) => {
+  const { theme } = useTheme();
+
   const getVariantStyles = () => {
     switch (variant) {
       case 'success':
         return {
           bg: theme.colors.successBg,
-          border: 'rgba(16, 185, 129, 0.25)',
+          border: theme.colors.successBgStrong,
         };
       case 'danger':
         return {
           bg: theme.colors.dangerBg,
-          border: 'rgba(244, 63, 94, 0.25)',
+          border: theme.colors.dangerBgStrong,
         };
       case 'warning':
         return {
           bg: theme.colors.warningBg,
-          border: 'rgba(245, 158, 11, 0.25)',
+          border: theme.colors.warningLight,
         };
       case 'neutral':
         return {
-          bg: 'rgba(255, 255, 255, 0.06)',
-          border: 'rgba(255, 255, 255, 0.1)',
+          bg: theme.colors.surfaceMuted,
+          border: theme.colors.borderLight,
         };
       case 'accent':
       default:
         return {
           bg: theme.colors.accentBg,
-          border: 'rgba(56, 189, 248, 0.25)',
+          border: theme.colors.borderAccent,
         };
     }
   };

@@ -28,7 +28,7 @@ import {
   FeedbackMessage,
 } from '../ui';
 import { Building2, CreditCard } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface SubscriptionEditModalProps {
   visible: boolean;
@@ -44,6 +44,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
   onSaved,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currencyId, setCurrencyId] = useState('BRL');
@@ -550,37 +551,12 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   label: {
-    color: theme.colors.textPrimary,
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
   },
   fieldHint: {
-    color: theme.colors.textMuted,
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
-  },
-  activeToggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.surfaceSubtle,
-    borderRadius: theme.radii.md,
-    padding: theme.spacing.md,
-    marginVertical: theme.spacing.xs,
-  },
-  activeToggleInfo: {
-    flex: 1,
-    paddingRight: theme.spacing.sm,
-  },
-  activeToggleTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.bold,
-  },
-  activeToggleSub: {
-    color: theme.colors.textMuted,
-    fontSize: theme.fontSize.xs,
-    marginTop: 2,
   },
   actions: {
     flexDirection: 'row',

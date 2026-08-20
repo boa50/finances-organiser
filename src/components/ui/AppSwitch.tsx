@@ -7,7 +7,7 @@ import {
   ViewStyle,
   Platform,
 } from 'react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppSwitchProps {
   value: boolean;
@@ -27,11 +27,16 @@ export const AppSwitch: React.FC<AppSwitchProps> = ({
   disabled = false,
   size = 'md',
   accessibilityLabel,
-  trackActiveColor = theme.colors.accent,
-  trackInactiveColor = 'rgba(255, 255, 255, 0.16)',
-  thumbColor = theme.palette.white,
+  trackActiveColor,
+  trackInactiveColor,
+  thumbColor,
   style,
 }) => {
+  const { theme } = useTheme();
+  const activeColor = trackActiveColor ?? theme.colors.accent;
+  const inactiveColor = trackInactiveColor ?? theme.colors.surfaceMuted;
+  const resolvedThumbColor = thumbColor ?? theme.colors.white;
+
   const animValue = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   useEffect(() => {
@@ -56,12 +61,12 @@ export const AppSwitch: React.FC<AppSwitchProps> = ({
 
   const backgroundColor = animValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [trackInactiveColor, trackActiveColor],
+    outputRange: [inactiveColor, activeColor],
   });
 
   const borderColor = animValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [theme.colors.borderLight, 'rgba(56, 189, 248, 0.4)'],
+    outputRange: [theme.colors.borderLight, theme.colors.borderAccent],
   });
 
   const handlePress = () => {

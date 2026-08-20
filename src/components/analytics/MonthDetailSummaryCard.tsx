@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { MonthlyAggregate } from '../../types';
 import { formatMoney } from '../../utils/currencies';
 import { AppText } from '../ui';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface MonthDetailSummaryCardProps {
   activeMonth: MonthlyAggregate;
@@ -16,9 +16,18 @@ export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
   targetCurrency,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   return (
-    <View style={styles.monthDetailCard}>
+    <View
+      style={[
+        styles.monthDetailCard,
+        {
+          backgroundColor: theme.colors.surfaceSubtle,
+          borderColor: theme.colors.borderSubtle,
+        },
+      ]}
+    >
       <AppText style={styles.detailTitle}>
         {t('analytics.monthSummaryTitle', { month: activeMonth.monthLabel })}
       </AppText>
@@ -30,7 +39,7 @@ export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
           </AppText>
         </View>
 
-        <View style={styles.detailDivider} />
+        <View style={[styles.detailDivider, { backgroundColor: theme.colors.borderLight }]} />
 
         <View style={styles.detailMetric}>
           <AppText style={styles.detailLabel}>{t('common.expense')}</AppText>
@@ -39,7 +48,7 @@ export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
           </AppText>
         </View>
 
-        <View style={styles.detailDivider} />
+        <View style={[styles.detailDivider, { backgroundColor: theme.colors.borderLight }]} />
 
         <View style={styles.detailMetric}>
           <AppText style={styles.detailLabel}>{t('analytics.netBalance')}</AppText>

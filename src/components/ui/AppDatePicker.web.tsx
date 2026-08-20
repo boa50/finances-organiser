@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 import { formatDateToYMD, parseTransactionDate } from '../../utils/financials';
 
 export interface AppDatePickerProps {
@@ -19,6 +19,7 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
 
   const handleChange = (event: any) => {
     const val = event.target?.value;
@@ -28,11 +29,34 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
     }
   };
 
+  const browserDateInputStyle = {
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    backgroundColor: theme.colors.surfaceElevated,
+    color: theme.colors.textPrimary,
+    border: `1px solid ${theme.colors.borderLight}`,
+    borderRadius: theme.radii.base,
+    padding: theme.spacing.lg,
+    fontSize: theme.fontSize.sm,
+    fontFamily: theme.fontFamily.sans,
+    colorScheme: theme.isDark ? 'dark' : 'light',
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <AppText style={styles.title}>{t('common.selectDate')}</AppText>
+      <View style={[styles.overlay, { backgroundColor: theme.colors.overlay }]}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.borderLight,
+            },
+          ]}
+        >
+          <AppText style={[styles.title, { color: theme.colors.textPrimary }]}>
+            {t('common.selectDate')}
+          </AppText>
           {React.createElement('input', {
             type: 'date',
             value: formatDateToYMD(value),
@@ -43,7 +67,9 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
             style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
             onPress={onClose}
           >
-            <AppText style={styles.doneText}>{t('common.done')}</AppText>
+            <AppText style={[styles.doneText, { color: theme.colors.accent }]}>
+              {t('common.done')}
+            </AppText>
           </Pressable>
         </View>
       </View>

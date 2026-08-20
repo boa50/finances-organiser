@@ -7,7 +7,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import theme from '../../theme';
+import { AppText } from './AppText';
+import theme, { useTheme } from '../../theme';
 
 export interface AppBadgeProps {
   label: string;
@@ -30,6 +31,8 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
   onPress,
   style,
 }) => {
+  const { theme } = useTheme();
+
   const getColors = () => {
     switch (variant) {
       case 'success':
@@ -55,8 +58,8 @@ export const AppBadge: React.FC<AppBadgeProps> = ({
         };
       case 'neutral':
         return {
-          bg: 'rgba(255, 255, 255, 0.06)',
-          border: 'rgba(255, 255, 255, 0.12)',
+          bg: theme.colors.surfaceMuted,
+          border: theme.colors.borderLight,
           text: theme.colors.textSecondary,
           dot: theme.colors.textSecondary,
         };

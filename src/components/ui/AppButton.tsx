@@ -3,10 +3,10 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
-import theme from '../../theme';
+import { AppText } from './AppText';
+import theme, { useTheme } from '../../theme';
 
 export interface AppButtonProps {
   title: string;
@@ -33,6 +33,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { theme } = useTheme();
   const isInteractive = !disabled && !loading;
 
   const getVariantStyles = () => {
@@ -67,7 +68,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
             backgroundColor: theme.colors.success,
             borderColor: 'transparent',
             borderWidth: 0,
-            boxShadow: '0px 4px 14px rgba(16, 185, 129, 0.3)',
+            boxShadow: theme.colors.cardShadow,
           },
           text: {
             color: theme.colors.white,
@@ -105,7 +106,7 @@ export const AppButton: React.FC<AppButtonProps> = ({
             backgroundColor: theme.colors.accent,
             borderColor: 'transparent',
             borderWidth: 0,
-            boxShadow: '0px 4px 14px rgba(56, 189, 248, 0.3)',
+            boxShadow: theme.colors.fabShadow,
           },
           text: {
             color: theme.colors.white,
@@ -176,9 +177,9 @@ export const AppButton: React.FC<AppButtonProps> = ({
       ) : (
         <View style={styles.contentContainer}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <Text style={[styles.text, sizeStyles.text, variantStyles.text, textStyle]}>
+          <AppText style={[styles.text, sizeStyles.text, variantStyles.text, textStyle]}>
             {title}
-          </Text>
+          </AppText>
         </View>
       )}
     </Pressable>

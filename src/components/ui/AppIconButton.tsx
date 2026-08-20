@@ -6,7 +6,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Copy, Pencil, Trash2 } from 'lucide-react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export type AppIconButtonVariant = 'edit' | 'delete' | 'duplicate' | 'custom';
 
@@ -39,6 +39,8 @@ export const AppIconButton: React.FC<AppIconButtonProps> = ({
   accessibilityLabel,
   style,
 }) => {
+  const { theme } = useTheme();
+
   const resolvedIconSize =
     iconSize !== undefined
       ? iconSize
@@ -105,6 +107,10 @@ export const AppIconButton: React.FC<AppIconButtonProps> = ({
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.button,
+        {
+          backgroundColor: theme.colors.surfaceRecessed,
+          borderColor: theme.colors.borderSubtle,
+        },
         getSizeStyle(),
         disabled && styles.disabled,
         pressed && !disabled && styles.pressed,

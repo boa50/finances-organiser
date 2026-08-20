@@ -2,9 +2,9 @@
   "expo": {
     "name": "finances-organiser",
     "slug": "finances-organiser",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-v2.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -19,14 +19,14 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon-v2.png"
     },
     "plugins": [
       [
         "expo-splash-screen",
         {
           "backgroundColor": "#083a3e",
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/splash-icon-v2.png",
           "imageWidth": 200
         }
       ]

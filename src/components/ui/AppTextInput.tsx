@@ -9,7 +9,7 @@ import {
   ViewStyle,
   ReturnKeyTypeOptions,
 } from 'react-native';
-import theme from '../../theme';
+import theme, { useTheme } from '../../theme';
 
 export interface AppTextInputProps {
   value: string;
@@ -46,6 +46,7 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
   onSubmitEditing,
   returnKeyType = 'done',
 }) => {
+  const { theme } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
 
   const getBorderColor = () => {
@@ -84,10 +85,10 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
           borderColor: getBorderColor(),
           opacity: editable ? 1 : 0.6,
           backgroundColor: isFocused
-            ? 'rgba(0, 0, 0, 0.4)'
+            ? theme.colors.surfaceHighlight
             : theme.colors.surfaceRecessed,
         },
-        isFocused && styles.containerFocused,
+        isFocused && [styles.containerFocused, { borderColor: theme.colors.accent, boxShadow: `0px 0px 8px ${theme.colors.borderGlow}` }],
         style,
       ]}
     >
@@ -95,6 +96,10 @@ export const AppTextInput: React.FC<AppTextInputProps> = ({
       <TextInput
         style={[
           styles.input,
+          {
+            color: theme.colors.textPrimary,
+            fontFamily: theme.fontFamily.sans,
+          },
           size === 'sm' && styles.inputSm,
           size === 'lg' && styles.inputLg,
           inputStyle,
@@ -127,8 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radii.input,
   },
   containerFocused: {
-    boxShadow: '0px 0px 8px rgba(56, 189, 248, 0.2)',
-    borderColor: theme.colors.accent,
+    borderWidth: 1,
   },
   iconContainer: {
     marginRight: theme.spacing.md,
