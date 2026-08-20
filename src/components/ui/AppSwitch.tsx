@@ -18,6 +18,8 @@ export interface AppSwitchProps {
   trackActiveColor?: string;
   trackInactiveColor?: string;
   thumbColor?: string;
+  thumbActiveColor?: string;
+  thumbInactiveColor?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -30,27 +32,41 @@ export const AppSwitch: React.FC<AppSwitchProps> = ({
   trackActiveColor,
   trackInactiveColor,
   thumbColor,
+  thumbActiveColor,
+  thumbInactiveColor,
   style,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
+
+  // Active track uses the vibrant theme accent color
   const activeColor = trackActiveColor ?? theme.colors.accent;
-  const inactiveColor = trackInactiveColor ?? theme.colors.surfaceMuted;
-  const resolvedThumbColor = thumbColor ?? theme.colors.white;
+
+  // Inactive track uses a clean, well-defined surface token matching cards and recessed controls
+  const inactiveColor =
+    trackInactiveColor ?? theme.colors.surfaceRecessed;
+
+  const activeBorder = theme.colors.borderAccent;
+  const inactiveBorder = theme.colors.borderLight;
+
+  // Thumb colors: pure white when active for high contrast against accent; crisp neutral when inactive
+  const resolvedThumbActiveColor = thumbActiveColor ?? thumbColor ?? theme.colors.white;
+  const resolvedThumbInactiveColor =
+    thumbInactiveColor ?? thumbColor ?? (isDark ? theme.colors.textSecondary : theme.colors.white);
 
   const animValue = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   useEffect(() => {
     Animated.timing(animValue, {
       toValue: value ? 1 : 0,
-      duration: 160,
+      duration: 180,
       useNativeDriver: false,
     }).start();
   }, [value, animValue]);
 
   const isSmall = size === 'sm';
-  const trackWidth = isSmall ? 36 : 44;
-  const trackHeight = isSmall ? 20 : 24;
-  const thumbSize = isSmall ? 16 : 20;
+  const trackWidth = isSmall ? 38 : 46;
+  const trackHeight = isSmall ? 22 : 26;
+  const thumbSize = isSmall ? 18 : 22;
   const padding = 2;
   const travelDistance = trackWidth - thumbSize - padding * 2;
 
@@ -66,7 +82,12 @@ export const AppSwitch: React.FC<AppSwitchProps> = ({
 
   const borderColor = animValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [theme.colors.borderLight, theme.colors.borderAccent],
+    outputRange: [inactiveBorder, activeBorder],
+  });
+
+  const currentThumbColor = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [resolvedThumbInactiveColor, resolvedThumbActiveColor],
   });
 
   const handlePress = () => {
@@ -86,7 +107,7 @@ export const AppSwitch: React.FC<AppSwitchProps> = ({
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.container,
-        { opacity: disabled ? 0.5 : pressed ? 0.85 : 1 },
+        { opacity: disabled ? 0.45 : pressed ? 0.85 : 1 },
         Platform.OS === 'web' && ({ cursor: disabled ? 'not-allowed' : 'pointer' } as any),
         style,
       ]}
@@ -110,7 +131,7 @@ export const AppSwitch: React.FC<AppSwitchProps> = ({
               width: thumbSize,
               height: thumbSize,
               borderRadius: thumbSize / 2,
-              backgroundColor: thumbColor,
+              backgroundColor: currentThumbColor,
               transform: [{ translateX }],
             },
           ]}
@@ -131,10 +152,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   thumb: {
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.25,
     shadowRadius: 2,
-    elevation: 2,
+    elevation: 3,
   },
 });
