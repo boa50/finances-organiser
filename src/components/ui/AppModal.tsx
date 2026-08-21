@@ -20,7 +20,7 @@ export const AppModal: React.FC<AppModalProps> = ({
   title,
   subtitle,
   cardStyle,
-  maxWidth = 560,
+  maxWidth = 540,
   children,
   ...rest
 }) => {
@@ -76,6 +76,7 @@ export const AppModal: React.FC<AppModalProps> = ({
                   pressed && { opacity: 0.7 },
                 ]}
                 onPress={onClose}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityLabel="Close modal"
               >
                 <X color={theme.colors.textMuted} size={18} />

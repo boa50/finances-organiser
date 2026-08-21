@@ -252,7 +252,7 @@ finances-organiser/
 | **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; transactions and subscriptions store ID foreign keys (`category_id`, `payment_method_id`, `bank_id`) to custom entities with `ON DELETE SET NULL` reference cascade; no hardcoded defaults. |
 | **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography and reactive theme colors. |
 | **List Virtualization** | High-performance recycling via `@shopify/flash-list` with screen-bounded split layouts (pinned headers & search bars, independent list scrolling). |
-| **Unit testing** | Jest + ts-jest test runner covering pure utility functions, auth services, entity CRUD, localized currencies, theme tokens/modes/persistence, and i18n key parity & codebase scan (152 passing unit tests across 16 suites). |
+| **Unit testing** | Jest + ts-jest test runner covering UI primitives, pure utility functions, auth services, entity CRUD, localized currencies, theme tokens/modes/persistence, and i18n key parity & codebase scan (170 passing unit tests across 21 suites). |
 | **Internationalization (i18n)** | `i18next` + `react-i18next` with `pt-BR` and `en-AU` catalogs; reactive `useTranslation` hooks; language selector on header; persistence in `localStorage` (`financecloud_language`). |
 | **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |
 | **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60s TTL). |

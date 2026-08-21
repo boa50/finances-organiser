@@ -43,6 +43,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
       visible={visible}
       onClose={onClose}
       title={t('management.addAvailableCurrency')}
+      subtitle={t('management.currencyModalSubtitle', { defaultValue: 'Select a currency to enable' })}
     >
       <View style={styles.content}>
         {errorMsg && (
@@ -52,7 +53,7 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
         )}
 
         {availableOptions.length === 0 ? (
-          <AppText style={styles.noOptionsText}>
+          <AppText style={[styles.noOptionsText, { color: theme.colors.textSecondary }]}>
             {t('management.allCurrenciesEnabled')}
           </AppText>
         ) : (
@@ -66,20 +67,25 @@ export const CurrencyAddModal: React.FC<CurrencyAddModalProps> = ({
                   style={({ pressed }) => [
                     styles.optionCard,
                     {
-                      backgroundColor: isSelected ? theme.colors.surfaceSubtle : theme.colors.surface,
+                      backgroundColor: isSelected ? theme.colors.accentBgStrong : theme.colors.surfaceRecessed,
                       borderColor: isSelected ? theme.colors.accent : theme.colors.borderLight,
                     },
                     pressed && { opacity: 0.8 },
                   ]}
+                  accessibilityLabel={`Select currency ${item.code}`}
                 >
                   <AppText style={styles.flag}>{item.flag}</AppText>
                   <View style={styles.optionDetails}>
-                    <AppText style={[styles.code, { color: theme.colors.textPrimary }]}>{item.code}</AppText>
-                    <AppText style={[styles.name, { color: theme.colors.textMuted }]}>
+                    <AppText style={[styles.code, { color: theme.colors.textPrimary }]}>
+                      {item.code}
+                    </AppText>
+                    <AppText style={[styles.name, { color: theme.colors.textSecondary }]}>
                       {t(`currencies.${item.code}`, { defaultValue: item.name })}
                     </AppText>
                   </View>
-                  <AppText style={[styles.symbol, { color: theme.colors.accent }]}>{item.symbol}</AppText>
+                  <AppText style={[styles.symbol, { color: theme.colors.accent }]}>
+                    {item.symbol}
+                  </AppText>
                   {isSelected && <Check size={18} color={theme.colors.accent} />}
                 </Pressable>
               );
@@ -122,44 +128,45 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xl,
   },
   optionsList: {
-    maxHeight: 280,
+    maxHeight: 300,
   },
   optionsContainer: {
-    gap: theme.spacing.xs,
+    gap: theme.spacing.sm,
   },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.md,
-    borderRadius: theme.radii.md,
+    padding: theme.spacing.xl,
+    borderRadius: theme.radii.input,
     borderWidth: 1,
     gap: theme.spacing.md,
   },
   flag: {
-    fontSize: theme.fontSize.xl,
+    fontSize: theme.fontSize['2xl'],
   },
   optionDetails: {
     flex: 1,
+    gap: theme.spacing.xxs,
   },
   code: {
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
   name: {
     fontSize: theme.fontSize.xs,
   },
   symbol: {
-    fontSize: theme.fontSize.xs,
+    fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
     marginRight: theme.spacing.xs,
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
     marginTop: theme.spacing.md,
   },
   btnWrapper: {
-    minWidth: 100,
+    minWidth: 110,
   },
 });

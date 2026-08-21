@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { PaymentMethodItem } from '../../types';
-import { AppModal, AppText, AppSwitch } from '../../components/ui';
+import { AppBadge, AppButton, AppModal, AppSwitch, AppText, AppTextInput, FeedbackMessage } from '../../components/ui';
 import { CreditCard } from 'lucide-react-native';
 import theme, { useTheme } from '../../theme';
 
@@ -42,54 +42,60 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
       subtitle={editingPm ? t('management.editPmSubtitle') : t('management.newPmSubtitle')}
     >
       <View style={styles.modalBody}>
+        {pmErrorMsg && (
+          <View style={styles.errorContainer}>
+            <FeedbackMessage type="error" message={pmErrorMsg} />
+          </View>
+        )}
+
         <View style={styles.formGroup}>
-          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.pmName')}</AppText>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: theme.colors.surfaceRecessed,
-                color: theme.colors.textPrimary,
-                borderColor: theme.colors.borderLight,
-              },
-            ]}
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>
+            {t('management.pmName')}
+          </AppText>
+          <AppTextInput
             placeholder={t('management.pmNamePlaceholder')}
-            placeholderTextColor={theme.colors.textTertiary}
             value={pmNameInput}
             onChangeText={setPmNameInput}
             autoCapitalize="words"
           />
         </View>
 
+        {/* Allow Installments Toggle Card */}
         <View style={styles.formGroup}>
-          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.allowInstallments')}</AppText>
-          <Pressable
-            style={({ pressed }) => [
-              styles.toggleRow,
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>
+            {t('management.allowInstallments')}
+          </AppText>
+          <View
+            style={[
+              styles.toggleCard,
               {
-                backgroundColor: pmAllowInstallments ? theme.colors.accentBg : theme.colors.surfaceRecessed,
-                borderColor: pmAllowInstallments ? theme.colors.accent : theme.colors.borderLight,
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderLight,
               },
-              pressed && { opacity: 0.85 },
             ]}
-            onPress={() => setPmAllowInstallments(!pmAllowInstallments)}
           >
-            <View pointerEvents="none">
-              <AppSwitch
-                value={pmAllowInstallments}
-                onValueChange={setPmAllowInstallments}
-              />
+            <View style={styles.toggleCardText}>
+              <AppText style={[styles.toggleTitle, { color: theme.colors.textPrimary }]}>
+                {t('management.allowInstallments')}
+              </AppText>
+              <AppText style={[styles.toggleSubtitle, { color: theme.colors.textSecondary }]}>
+                {pmAllowInstallments
+                  ? t('management.allowInstallmentsEnabled')
+                  : t('management.allowInstallmentsDisabled')}
+              </AppText>
             </View>
-            <AppText style={[styles.toggleLabel, { color: theme.colors.textSecondary }]}>
-              {pmAllowInstallments
-                ? t('management.allowInstallmentsEnabled')
-                : t('management.allowInstallmentsDisabled')}
-            </AppText>
-          </Pressable>
+            <AppSwitch
+              value={pmAllowInstallments}
+              onValueChange={setPmAllowInstallments}
+            />
+          </View>
         </View>
 
+        {/* Live Preview Card */}
         <View style={styles.formGroup}>
-          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.preview')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>
+            {t('management.preview')}
+          </AppText>
           <View
             style={[
               styles.previewBox,
@@ -99,38 +105,50 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
               },
             ]}
           >
-            <View style={[styles.iconBadge, { backgroundColor: theme.colors.accentBg, borderColor: theme.colors.borderAccent }]}>
+            <View
+              style={[
+                styles.iconBadge,
+                {
+                  backgroundColor: theme.colors.accentBg,
+                  borderColor: theme.colors.borderAccent,
+                },
+              ]}
+            >
               <CreditCard size={22} color={theme.colors.accent} />
             </View>
             <AppText style={[styles.previewName, { color: theme.colors.textPrimary }]}>
               {pmNameInput.trim() || t('management.pmNameFallback')}
             </AppText>
+            {pmAllowInstallments && (
+              <AppBadge
+                variant="accent"
+                label={t('management.allowInstallmentsEnabled')}
+              />
+            )}
           </View>
         </View>
 
-        {pmErrorMsg && (
-          <View style={[styles.errorBox, { backgroundColor: theme.colors.dangerBg, borderColor: theme.colors.danger }]}>
-            <AppText style={[styles.errorText, { color: theme.colors.danger }]}>{pmErrorMsg}</AppText>
+        <View style={styles.actions}>
+          <View style={styles.actionBtnWrapper}>
+            <AppButton
+              variant="ghost"
+              title={t('common.cancel')}
+              onPress={onClose}
+              disabled={pmSaving}
+              fullWidth={false}
+            />
           </View>
-        )}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.saveSubmitBtn,
-            { backgroundColor: theme.colors.accent },
-            pressed && !pmSaving && { opacity: 0.85 },
-          ]}
-          onPress={onSave}
-          disabled={pmSaving}
-        >
-          {pmSaving ? (
-            <ActivityIndicator color={theme.colors.white} />
-          ) : (
-            <AppText style={[styles.saveSubmitText, { color: theme.colors.white }]}>
-              {editingPm ? t('management.saveChanges') : t('management.createPm')}
-            </AppText>
-          )}
-        </Pressable>
+          <View style={styles.actionBtnWrapper}>
+            <AppButton
+              variant="primary"
+              title={editingPm ? t('management.saveChanges') : t('management.createPm')}
+              onPress={onSave}
+              disabled={pmSaving}
+              loading={pmSaving}
+              fullWidth={false}
+            />
+          </View>
+        </View>
       </View>
     </AppModal>
   );
@@ -139,34 +157,38 @@ export const PaymentMethodEditModal: React.FC<PaymentMethodEditModalProps> = ({
 const styles = StyleSheet.create({
   modalBody: {
     gap: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  errorContainer: {
+    marginBottom: theme.spacing.xs,
   },
   formGroup: {
     gap: theme.spacing.xs,
   },
   formLabel: {
     fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
+    fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  textInput: {
-    fontSize: theme.fontSize.base,
-    borderRadius: theme.radii.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderWidth: 1,
-  },
-  toggleRow: {
+  toggleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
-    padding: theme.spacing.md,
-    borderRadius: theme.radii.lg,
+    justifyContent: 'space-between',
+    padding: theme.spacing.xl,
+    borderRadius: theme.radii.input,
     borderWidth: 1,
+    gap: theme.spacing.md,
   },
-  toggleLabel: {
+  toggleCardText: {
     flex: 1,
+    gap: theme.spacing.xxs,
+  },
+  toggleTitle: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.bold,
+  },
+  toggleSubtitle: {
     fontSize: theme.fontSize.xs,
   },
   previewBox: {
@@ -190,23 +212,13 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.bold,
   },
-  errorBox: {
-    borderRadius: theme.radii.base,
-    padding: theme.spacing.md,
-    borderWidth: 1,
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.md,
   },
-  errorText: {
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.medium,
-  },
-  saveSubmitBtn: {
-    borderRadius: theme.radii.lg,
-    paddingVertical: theme.spacing.lg,
-    alignItems: 'center',
-    marginTop: theme.spacing.sm,
-  },
-  saveSubmitText: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.extrabold,
+  actionBtnWrapper: {
+    minWidth: 110,
   },
 });

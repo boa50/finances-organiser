@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { AppText } from './AppText';
 import theme, { useTheme } from '../../theme';
 
@@ -12,6 +12,9 @@ export interface AppChipSelectorProps<T> {
   renderIcon?: (item: T, active: boolean) => React.ReactNode;
   getItemColor?: (item: T) => string;
   isSelected?: (item: T) => boolean;
+  wrap?: boolean;
+  style?: StyleProp<ViewStyle>;
+  contentContainerStyle?: StyleProp<ViewStyle>;
 }
 
 export function AppChipSelector<T>({
@@ -23,6 +26,9 @@ export function AppChipSelector<T>({
   renderIcon,
   getItemColor,
   isSelected,
+  wrap = false,
+  style,
+  contentContainerStyle,
 }: AppChipSelectorProps<T>) {
   const { theme } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -42,75 +48,86 @@ export function AppChipSelector<T>({
     }
   };
 
+  const renderChipList = () =>
+    items.map((item) => {
+      const key = keyExtractor(item);
+      const label = labelExtractor(item);
+      const active = isSelected
+        ? isSelected(item)
+        : key === String(selectedId) || label === String(selectedId);
+      const itemColor = getItemColor ? getItemColor(item) : undefined;
+
+      let activeChipStyle: any = {};
+      let activeTextStyle: any = {};
+
+      if (active) {
+        if (itemColor) {
+          activeChipStyle = {
+            borderColor: itemColor,
+            backgroundColor: `${itemColor}25`,
+          };
+          activeTextStyle = {
+            color: itemColor,
+            fontWeight: theme.fontWeight.bold,
+          };
+        } else {
+          activeChipStyle = {
+            backgroundColor: theme.colors.accentBgStrong,
+            borderColor: theme.colors.accent,
+          };
+          activeTextStyle = {
+            color: theme.colors.accent,
+            fontWeight: theme.fontWeight.bold,
+          };
+        }
+      }
+
+      return (
+        <Pressable
+          key={key}
+          style={({ pressed }) => [
+            styles.chip,
+            {
+              backgroundColor: theme.colors.surfaceRecessed,
+              borderColor: theme.colors.borderSubtle,
+            },
+            active && activeChipStyle,
+            pressed && { opacity: 0.75 },
+          ]}
+          onPress={() => onSelect(item)}
+        >
+          {renderIcon && <View style={styles.iconWrapper}>{renderIcon(item, active)}</View>}
+          <AppText
+            style={[
+              styles.chipText,
+              { color: theme.colors.textSecondary },
+              active && activeTextStyle,
+            ]}
+          >
+            {label}
+          </AppText>
+        </Pressable>
+      );
+    });
+
+  if (wrap) {
+    return (
+      <View style={[styles.wrapContainer, contentContainerStyle, style]}>
+        {renderChipList()}
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       ref={scrollViewRef}
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.chipList}
-      style={styles.scrollView}
+      contentContainerStyle={[styles.chipList, contentContainerStyle]}
+      style={[styles.scrollView, style]}
       {...(Platform.OS === 'web' ? { onWheel: handleWheel } : {})}
     >
-      {items.map((item) => {
-        const key = keyExtractor(item);
-        const label = labelExtractor(item);
-        const active = isSelected
-          ? isSelected(item)
-          : key === String(selectedId) || label === String(selectedId);
-        const itemColor = getItemColor ? getItemColor(item) : undefined;
-
-        let activeChipStyle: any = {};
-        let activeTextStyle: any = {};
-
-        if (active) {
-          if (itemColor) {
-            activeChipStyle = {
-              borderColor: itemColor,
-              backgroundColor: itemColor + '22',
-            };
-            activeTextStyle = {
-              color: itemColor,
-              fontWeight: theme.fontWeight.bold,
-            };
-          } else {
-            activeChipStyle = {
-              backgroundColor: theme.colors.accentBgStrong,
-              borderColor: theme.colors.accent,
-            };
-            activeTextStyle = {
-              color: theme.colors.accent,
-              fontWeight: theme.fontWeight.bold,
-            };
-          }
-        }
-
-        return (
-          <Pressable
-            key={key}
-            style={({ pressed }) => [
-              styles.chip,
-              {
-                backgroundColor: theme.colors.surface,
-                borderColor: theme.colors.borderSubtle,
-              },
-              active && activeChipStyle,
-              pressed && { opacity: 0.75 },
-            ]}
-            onPress={() => onSelect(item)}
-          >
-            {renderIcon && <View style={styles.iconWrapper}>{renderIcon(item, active)}</View>}
-            <AppText
-              style={[
-                styles.chipText,
-                { color: theme.colors.textSecondary },
-                active && activeTextStyle,
-              ]}
-            >
-              {label}
-            </AppText>
-          </Pressable>
-        );
-      })}
+      {renderChipList()}
     </ScrollView>
   );
 }
@@ -128,20 +145,24 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     paddingVertical: theme.spacing.xxs,
   },
+  wrapContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.xxs,
+  },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
+    minHeight: 38,
+    paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.sm,
-    borderRadius: theme.radii['4xl'],
-    backgroundColor: theme.colors.background,
+    borderRadius: theme.radii.lg,
+    backgroundColor: theme.colors.surfaceRecessed,
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
     gap: theme.spacing.xs,
-  },
-  chipActiveDefault: {
-    backgroundColor: `${theme.colors.accent}20`,
-    borderColor: theme.colors.accent,
   },
   iconWrapper: {
     alignItems: 'center',
@@ -151,9 +172,5 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.medium,
-  },
-  chipTextActiveDefault: {
-    color: theme.colors.accent,
-    fontWeight: theme.fontWeight.bold,
   },
 });

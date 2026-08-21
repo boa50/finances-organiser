@@ -326,6 +326,11 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       visible={visible}
       onClose={onClose}
       title={transaction ? t('transactionModal.editTransaction') : t('transactionModal.addTransaction')}
+      subtitle={
+        transaction
+          ? t('transactionModal.editSubtitle', { defaultValue: 'Update existing transaction details' })
+          : t('transactionModal.addSubtitle', { defaultValue: 'Record a new income or expense' })
+      }
     >
       <View style={styles.modalBody}>
         {loading && (
@@ -345,267 +350,270 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             </View>
           )}
 
-        {/* Type selector */}
-        <AppSegmentedControl<TransactionType>
-          options={[
-            {
-              label: t('common.income'),
-              value: 'income',
-              selectedBackgroundColor: theme.colors.successBg,
-              selectedBorderColor: theme.colors.success,
-              selectedTextColor: theme.colors.success,
-            },
-            {
-              label: t('common.expense'),
-              value: 'expense',
-              selectedBackgroundColor: theme.colors.dangerBg,
-              selectedBorderColor: theme.colors.danger,
-              selectedTextColor: theme.colors.danger,
-            },
-          ]}
-          selectedValue={type}
-          onSelect={(nextType) => changeType(nextType)}
-        />
-
-        {/* Title */}
-        <Field label={t('transactionModal.titleField')}>
-          <AppTextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder={t('transactionModal.titlePlaceholder')}
+          {/* Type selector */}
+          <AppSegmentedControl<TransactionType>
+            options={[
+              {
+                label: t('common.income'),
+                value: 'income',
+                selectedBackgroundColor: theme.colors.successBg,
+                selectedBorderColor: theme.colors.success,
+                selectedTextColor: theme.colors.success,
+              },
+              {
+                label: t('common.expense'),
+                value: 'expense',
+                selectedBackgroundColor: theme.colors.dangerBg,
+                selectedBorderColor: theme.colors.danger,
+                selectedTextColor: theme.colors.danger,
+              },
+            ]}
+            selectedValue={type}
+            onSelect={(nextType) => changeType(nextType)}
           />
-        </Field>
 
-        {/* Amount */}
-        <Field label={t('transactionModal.amountField')}>
-          <AppTextInput
-            value={amount}
-            onChangeText={setAmount}
-            placeholder="0.00"
-          />
-        </Field>
-
-        {/* Currency */}
-        {availableCurrencies.length > 0 && (
-          <Field label={t('transactionModal.currencyField')}>
-            <AppChipSelector
-              items={availableCurrencies}
-              selectedId={currencyId}
-              onSelect={(item) => setCurrencyId(item.code)}
-              keyExtractor={(item) => item.code}
-              labelExtractor={(item) => `${item.flag} ${item.code}`}
+          {/* Title */}
+          <Field label={t('transactionModal.titleField')}>
+            <AppTextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder={t('transactionModal.titlePlaceholder')}
             />
           </Field>
-        )}
 
-        {/* Category */}
-        {availableCategories.length > 0 && (
-          <Field label={t('transactionModal.categoryField')}>
-            <AppChipSelector
-              items={availableCategories}
-              selectedId={categoryId}
-              onSelect={(item) => setCategoryId(item.id)}
-              keyExtractor={(item) => item.id}
-              labelExtractor={(item) => item.name}
-              getItemColor={(item) => item.color}
-              renderIcon={(item) => (
-                <CategoryIcon
-                  iconName={item.icon}
-                  color={item.color}
-                  size={14}
-                />
-              )}
+          {/* Amount */}
+          <Field label={t('transactionModal.amountField')}>
+            <AppTextInput
+              size="lg"
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+              inputStyle={styles.amountInputText}
             />
           </Field>
-        )}
 
-        {/* Payment Method & Bank */}
-        {type === 'expense' && (
-          <>
-            {availablePaymentMethods.length > 0 && (
-              <Field label={t('transactionModal.paymentMethodField')}>
-                <AppChipSelector
-                  items={availablePaymentMethods}
-                  selectedId={paymentMethodId}
-                  onSelect={(item) => selectPaymentMethod(item)}
-                  keyExtractor={(item) => item.id}
-                  labelExtractor={(item) => item.name}
-                  renderIcon={(_item, active) => (
-                    <CreditCard
-                      size={14}
-                      color={active ? theme.colors.accent : theme.colors.textSecondary}
-                    />
-                  )}
-                />
-              </Field>
-            )}
-
-            {pmSupportsInstallments && (
-              <Field label={t('transactionModal.installmentsField')}>
-                <View style={styles.installmentRow}>
-                  <Pressable
-                    onPress={() => {
-                      const n = Math.max(1, (installments || 1) - 1);
-                      setInstallments(n);
-                      setInstallmentInputText(String(n));
-                    }}
-                    style={({ pressed }) => [
-                      styles.installmentBtn,
-                      {
-                        backgroundColor: theme.colors.surfaceRecessed,
-                        borderColor: theme.colors.borderLight,
-                      },
-                      pressed && { opacity: 0.7 },
-                    ]}
-                  >
-                    <AppText style={[styles.installmentBtnText, { color: theme.colors.textPrimary }]}>−</AppText>
-                  </Pressable>
-
-                  <TextInput
-                    style={[
-                      styles.installmentInput,
-                      {
-                        backgroundColor: theme.colors.surfaceRecessed,
-                        borderColor: theme.colors.borderLight,
-                        color: theme.colors.textPrimary,
-                      },
-                    ]}
-                    value={installmentInputText}
-                    onChangeText={(text) => {
-                      setInstallmentInputText(text);
-                      const parsed = parseInt(text, 10);
-                      if (!isNaN(parsed) && parsed >= 1) {
-                        setInstallments(parsed);
-                      }
-                    }}
-                    keyboardType="number-pad"
-                    textAlign="center"
-                  />
-
-                  <Pressable
-                    onPress={() => {
-                      const n = (installments || 1) + 1;
-                      setInstallments(n);
-                      setInstallmentInputText(String(n));
-                    }}
-                    style={({ pressed }) => [
-                      styles.installmentBtn,
-                      {
-                        backgroundColor: theme.colors.surfaceRecessed,
-                        borderColor: theme.colors.borderLight,
-                      },
-                      pressed && { opacity: 0.7 },
-                    ]}
-                  >
-                    <AppText style={[styles.installmentBtnText, { color: theme.colors.textPrimary }]}>+</AppText>
-                  </Pressable>
-                </View>
-
-                {installments > 1 && parsedAmountNum > 0 && (
-                  <AppText style={[styles.installmentHint, { color: theme.colors.accent }]}>
-                    {t('transactionModal.installmentHint', {
-                      count: installments,
-                      currency: currencyId,
-                      amount: (parsedAmountNum / installments).toFixed(2),
-                    })}
-                  </AppText>
-                )}
-              </Field>
-            )}
-
-            {availableBanks.length > 0 && (
-              <Field label={t('transactionModal.bankField')}>
-                <AppChipSelector
-                  items={availableBanks}
-                  selectedId={bankId}
-                  onSelect={(item) => setBankId(item.id === bankId ? '' : item.id)}
-                  keyExtractor={(item) => item.id}
-                  labelExtractor={(item) => item.name}
-                  renderIcon={(_item, active) => (
-                    <Building2
-                      size={14}
-                      color={active ? theme.colors.accent : theme.colors.textSecondary}
-                    />
-                  )}
-                />
-              </Field>
-            )}
-
-            <Field label={t('transactionModal.storeField')}>
-              <AppTextInput
-                value={store}
-                onChangeText={setStore}
-                placeholder={t('transactionModal.storePlaceholder')}
+          {/* Currency */}
+          {availableCurrencies.length > 0 && (
+            <Field label={t('transactionModal.currencyField')}>
+              <AppChipSelector
+                items={availableCurrencies}
+                selectedId={currencyId}
+                onSelect={(item) => setCurrencyId(item.code)}
+                keyExtractor={(item) => item.code}
+                labelExtractor={(item) => `${item.flag} ${item.code}`}
               />
             </Field>
-          </>
-        )}
+          )}
 
-        {/* Date Picker Button */}
-        <Field label={t('transactionModal.dateField')}>
-          <Pressable
-            onPress={() => setDatePickerVisible(true)}
-            style={({ pressed }) => [
-              styles.datePickerBtn,
-              {
-                backgroundColor: theme.colors.surfaceRecessed,
-                borderColor: theme.colors.borderLight,
-              },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <View style={styles.datePickerBtnLeft}>
-              <Calendar size={16} color={theme.colors.accent} />
-              <AppText style={[styles.datePickerValueText, { color: theme.colors.textPrimary }]}>
-                {date.toLocaleDateString(i18n.language || undefined, {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                })}
-              </AppText>
+          {/* Category */}
+          {availableCategories.length > 0 && (
+            <Field label={t('transactionModal.categoryField')}>
+              <AppChipSelector
+                items={availableCategories}
+                selectedId={categoryId}
+                onSelect={(item) => setCategoryId(item.id)}
+                keyExtractor={(item) => item.id}
+                labelExtractor={(item) => item.name}
+                getItemColor={(item) => item.color}
+                renderIcon={(item) => (
+                  <CategoryIcon
+                    iconName={item.icon}
+                    color={item.color}
+                    size={14}
+                  />
+                )}
+              />
+            </Field>
+          )}
+
+          {/* Payment Method & Bank */}
+          {type === 'expense' && (
+            <>
+              {availablePaymentMethods.length > 0 && (
+                <Field label={t('transactionModal.paymentMethodField')}>
+                  <AppChipSelector
+                    items={availablePaymentMethods}
+                    selectedId={paymentMethodId}
+                    onSelect={(item) => selectPaymentMethod(item)}
+                    keyExtractor={(item) => item.id}
+                    labelExtractor={(item) => item.name}
+                    renderIcon={(_item, active) => (
+                      <CreditCard
+                        size={14}
+                        color={active ? theme.colors.accent : theme.colors.textSecondary}
+                      />
+                    )}
+                  />
+                </Field>
+              )}
+
+              {pmSupportsInstallments && (
+                <Field label={t('transactionModal.installmentsField')}>
+                  <View style={styles.installmentRow}>
+                    <Pressable
+                      onPress={() => {
+                        const n = Math.max(1, (installments || 1) - 1);
+                        setInstallments(n);
+                        setInstallmentInputText(String(n));
+                      }}
+                      style={({ pressed }) => [
+                        styles.installmentBtn,
+                        {
+                          backgroundColor: theme.colors.surfaceRecessed,
+                          borderColor: theme.colors.borderLight,
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      accessibilityLabel="Decrease installments"
+                    >
+                      <AppText style={[styles.installmentBtnText, { color: theme.colors.textPrimary }]}>−</AppText>
+                    </Pressable>
+
+                    <AppTextInput
+                      style={styles.installmentInputBox}
+                      inputStyle={styles.installmentInputText}
+                      value={installmentInputText}
+                      onChangeText={(text) => {
+                        setInstallmentInputText(text);
+                        const parsed = parseInt(text, 10);
+                        if (!isNaN(parsed) && parsed >= 1) {
+                          setInstallments(parsed);
+                        }
+                      }}
+                      keyboardType="number-pad"
+                      textAlign="center"
+                    />
+
+                    <Pressable
+                      onPress={() => {
+                        const n = (installments || 1) + 1;
+                        setInstallments(n);
+                        setInstallmentInputText(String(n));
+                      }}
+                      style={({ pressed }) => [
+                        styles.installmentBtn,
+                        {
+                          backgroundColor: theme.colors.surfaceRecessed,
+                          borderColor: theme.colors.borderLight,
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      accessibilityLabel="Increase installments"
+                    >
+                      <AppText style={[styles.installmentBtnText, { color: theme.colors.textPrimary }]}>+</AppText>
+                    </Pressable>
+                  </View>
+
+                  {installments > 1 && parsedAmountNum > 0 && (
+                    <AppText style={[styles.installmentHint, { color: theme.colors.accent }]}>
+                      {t('transactionModal.installmentHint', {
+                        count: installments,
+                        currency: currencyId,
+                        amount: (parsedAmountNum / installments).toFixed(2),
+                      })}
+                    </AppText>
+                  )}
+                </Field>
+              )}
+
+              {availableBanks.length > 0 && (
+                <Field label={t('transactionModal.bankField')}>
+                  <AppChipSelector
+                    items={availableBanks}
+                    selectedId={bankId}
+                    onSelect={(item) => setBankId(item.id === bankId ? '' : item.id)}
+                    keyExtractor={(item) => item.id}
+                    labelExtractor={(item) => item.name}
+                    renderIcon={(_item, active) => (
+                      <Building2
+                        size={14}
+                        color={active ? theme.colors.accent : theme.colors.textSecondary}
+                      />
+                    )}
+                  />
+                </Field>
+              )}
+            </>
+          )}
+
+          {/* Date Picker Button */}
+          <Field label={t('transactionModal.dateField')}>
+            <Pressable
+              onPress={() => setDatePickerVisible(true)}
+              style={({ pressed }) => [
+                styles.datePickerBtn,
+                {
+                  backgroundColor: theme.colors.surfaceRecessed,
+                  borderColor: theme.colors.borderLight,
+                },
+                pressed && { opacity: 0.7 },
+              ]}
+              accessibilityLabel="Select transaction date"
+            >
+              <View style={styles.datePickerBtnLeft}>
+                <Calendar size={16} color={theme.colors.accent} />
+                <AppText style={[styles.datePickerValueText, { color: theme.colors.textPrimary }]}>
+                  {date.toLocaleDateString(i18n.language || undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </AppText>
+              </View>
+            </Pressable>
+
+            <AppDatePicker
+              visible={datePickerVisible}
+              value={date}
+              onChange={(d) => setDate(d)}
+              onClose={() => setDatePickerVisible(false)}
+            />
+          </Field>
+
+          {/* Store */}
+          {type === 'expense' && (
+              <Field label={t('transactionModal.storeField')}>
+                <AppTextInput
+                  value={store}
+                  onChangeText={setStore}
+                  placeholder={t('transactionModal.storePlaceholder')}
+                />
+              </Field>
+          )}
+
+          {/* Notes */}
+          <Field label={t('transactionModal.notesField')}>
+            <AppTextInput
+              value={notes}
+              onChangeText={setNotes}
+              placeholder={t('transactionModal.notesPlaceholder')}
+            />
+          </Field>
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            <View style={styles.actionBtnWrapper}>
+              <AppButton
+                title={t('common.cancel')}
+                variant="ghost"
+                onPress={onClose}
+                disabled={saving}
+                fullWidth={false}
+              />
             </View>
-          </Pressable>
-
-          <AppDatePicker
-            visible={datePickerVisible}
-            value={date}
-            onChange={(d) => setDate(d)}
-            onClose={() => setDatePickerVisible(false)}
-          />
-        </Field>
-
-        {/* Notes */}
-        <Field label={t('transactionModal.notesField')}>
-          <AppTextInput
-            value={notes}
-            onChangeText={setNotes}
-            placeholder={t('transactionModal.notesPlaceholder')}
-          />
-        </Field>
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <View style={styles.actionBtnWrapper}>
-            <AppButton
-              title={t('common.cancel')}
-              variant="ghost"
-              onPress={onClose}
-              disabled={saving}
-              fullWidth={false}
-            />
+            <View style={styles.actionBtnWrapper}>
+              <AppButton
+                title={saving ? t('transactionModal.saving') : transaction ? t('management.saveChanges') : t('transactionModal.addTransaction')}
+                variant="primary"
+                onPress={handleSave}
+                disabled={saving || loading}
+                loading={saving}
+                fullWidth={false}
+              />
+            </View>
           </View>
-          <View style={styles.actionBtnWrapper}>
-            <AppButton
-              title={saving ? t('transactionModal.saving') : transaction ? t('management.saveChanges') : t('transactionModal.addTransaction')}
-              variant="primary"
-              onPress={handleSave}
-              disabled={saving || loading}
-              loading={saving}
-              fullWidth={false}
-            />
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
       </View>
     </AppModal>
   );
@@ -658,34 +666,38 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  amountInputText: {
+    fontSize: theme.fontSize['3xl'],
+    fontWeight: theme.fontWeight.extrabold,
+  },
   installmentRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
   },
   installmentBtn: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: theme.radii.input,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   installmentBtnText: {
-    fontSize: theme.fontSize.lg,
+    fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.bold,
   },
-  installmentInput: {
+  installmentInputBox: {
     flex: 1,
-    borderRadius: theme.radii.input,
-    borderWidth: 1,
-    paddingVertical: theme.spacing.sm,
-    fontSize: theme.fontSize.base,
+  },
+  installmentInputText: {
+    fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.bold,
   },
   installmentHint: {
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
+    fontWeight: theme.fontWeight.medium,
   },
   datePickerBtn: {
     flexDirection: 'row',
@@ -693,13 +705,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: theme.radii.input,
     borderWidth: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing['2xl'],
+    paddingVertical: theme.spacing.xl,
   },
   datePickerBtnLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
   datePickerValueText: {
     fontSize: theme.fontSize.base,

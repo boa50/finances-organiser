@@ -303,6 +303,11 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
       visible={visible}
       onClose={onClose}
       title={subscription ? t('subscriptionModal.editTitle') : t('subscriptionModal.addTitle')}
+      subtitle={
+        subscription
+          ? t('subscriptionModal.editSubtitle', { defaultValue: 'Update subscription details and billing cadence' })
+          : t('subscriptionModal.addSubtitle', { defaultValue: 'Set up an automated recurring expense' })
+      }
     >
       <View style={styles.modalBody}>
         {loading && (
@@ -322,191 +327,233 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
             </View>
           )}
 
+          {/* Frequency */}
+          <View style={styles.fieldGroup}>
+            <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+              {t('subscriptionModal.frequencyField')}
+            </AppText>
+            <AppSegmentedControl<'monthly' | 'annual'>
+              options={[
+                { label: t('subscriptionModal.frequencyMonthly'), value: 'monthly' },
+                { label: t('subscriptionModal.frequencyAnnual'), value: 'annual' },
+              ]}
+              selectedValue={frequency}
+              onSelect={setFrequency}
+            />
+          </View>
 
-        {/* Frequency */}
-        <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>{t('subscriptionModal.frequencyField')}</AppText>
-          <AppSegmentedControl<'monthly' | 'annual'>
-            options={[
-              { label: t('subscriptionModal.frequencyMonthly'), value: 'monthly' },
-              { label: t('subscriptionModal.frequencyAnnual'), value: 'annual' },
-            ]}
-            selectedValue={frequency}
-            onSelect={setFrequency}
-          />
-        </View>
+          {/* Title */}
+          <View style={styles.fieldGroup}>
+            <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+              {t('transactionModal.titleField')}
+            </AppText>
+            <AppTextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder={t('subscriptionModal.titlePlaceholder')}
+            />
+          </View>
 
-        {/* Title */}
-        <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>{t('transactionModal.titleField')}</AppText>
-          <AppTextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder={t('subscriptionModal.titlePlaceholder')}
-          />
-        </View>
+          
 
-        {/* Amount & Currency */}
-        <View style={styles.row}>
-          <View style={[styles.fieldGroup, styles.flex2]}>
-            <AppText style={styles.label}>
+          {/* Amount */}
+          <View style={styles.fieldGroup}>
+            <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
               {frequency === 'annual'
                 ? t('subscriptionModal.annualAmountLabel')
                 : t('subscriptionModal.monthlyAmountLabel')}
             </AppText>
             <AppTextInput
+              size="lg"
               value={amount}
               onChangeText={setAmount}
               placeholder="0.00"
+              keyboardType="decimal-pad"
+              inputStyle={styles.amountInputText}
             />
           </View>
-        </View>
 
-        {/* Currency selector chips */}
-        {availableCurrencies.length > 0 && (
+          {/* Currency selector chips */}
+          {availableCurrencies.length > 0 && (
+            <View style={styles.fieldGroup}>
+              <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+                {t('transactionModal.currencyField')}
+              </AppText>
+              <AppChipSelector
+                items={availableCurrencies}
+                selectedId={currencyId}
+                onSelect={(item) => setCurrencyId(item.code)}
+                keyExtractor={(item) => item.code}
+                labelExtractor={(item) => `${item.flag} ${item.code}`}
+              />
+            </View>
+          )}
+
+          {/* Billing Month (Annual only) */}
+          {frequency === 'annual' && (
+            <View style={styles.fieldGroup}>
+              <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+                {t('subscriptionModal.billingMonthField')}
+              </AppText>
+              <AppChipSelector
+                items={monthOptions}
+                selectedId={billingMonth}
+                onSelect={(item) => setBillingMonth(item.id)}
+                keyExtractor={(item) => item.id}
+                labelExtractor={(item) => item.label}
+              />
+            </View>
+          )}
+
+          {/* Billing Day */}
           <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>{t('transactionModal.currencyField')}</AppText>
-            <AppChipSelector
-              items={availableCurrencies}
-              selectedId={currencyId}
-              onSelect={(item) => setCurrencyId(item.code)}
-              keyExtractor={(item) => item.code}
-              labelExtractor={(item) => `${item.flag} ${item.code}`}
+            <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+              {frequency === 'annual'
+                ? t('subscriptionModal.billingDayFieldAnnual')
+                : t('subscriptionModal.billingDayField')}
+            </AppText>
+            <AppTextInput
+              value={billingDay}
+              onChangeText={setBillingDay}
+              placeholder="1"
+              keyboardType="number-pad"
             />
+            <AppText style={[styles.fieldHint, { color: theme.colors.textTertiary }]}>
+              {frequency === 'annual'
+                ? t('subscriptionModal.billingDayHintAnnual', {
+                    month: monthOptions.find((m) => m.id === billingMonth)?.label || '',
+                    day: billingDay || '1',
+                  })
+                : t('subscriptionModal.billingDayHint', { day: billingDay || '1' })}
+            </AppText>
           </View>
-        )}
 
-        {/* Billing Month (Annual only) */}
-        {frequency === 'annual' && (
+          {/* Category */}
+          {availableCategories.length > 0 && (
+            <View style={styles.fieldGroup}>
+              <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+                {t('transactionModal.categoryField')}
+              </AppText>
+              <AppChipSelector
+                items={availableCategories}
+                selectedId={categoryId}
+                onSelect={(cat) => setCategoryId(cat.id)}
+                keyExtractor={(cat) => cat.id}
+                labelExtractor={(cat) => cat.name}
+                getItemColor={(cat) => cat.color}
+                renderIcon={(cat) => (
+                  <CategoryIcon
+                    iconName={cat.icon}
+                    size={16}
+                    color={cat.color}
+                  />
+                )}
+              />
+            </View>
+          )}
+
+          {/* Payment Method */}
+          {availablePaymentMethods.length > 0 && (
+            <View style={styles.fieldGroup}>
+              <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+                {t('transactionModal.paymentMethodField')}
+              </AppText>
+              <AppChipSelector
+                items={availablePaymentMethods}
+                selectedId={paymentMethodId}
+                onSelect={(pm) => setPaymentMethodId(pm.id === paymentMethodId ? '' : pm.id)}
+                keyExtractor={(pm) => pm.id}
+                labelExtractor={(pm) => pm.name}
+                renderIcon={(_item, active) => (
+                  <CreditCard
+                    size={14}
+                    color={active ? theme.colors.accent : theme.colors.textSecondary}
+                  />
+                )}
+              />
+            </View>
+          )}
+
+          {/* Bank */}
+          {availableBanks.length > 0 && (
+            <View style={styles.fieldGroup}>
+              <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+                {t('transactionModal.bankField')}
+              </AppText>
+              <AppChipSelector
+                items={availableBanks}
+                selectedId={bankId}
+                onSelect={(bank) => setBankId(bank.id === bankId ? '' : bank.id)}
+                keyExtractor={(bank) => bank.id}
+                labelExtractor={(bank) => bank.name}
+                renderIcon={(_item, activeColor) => (
+                  <Building2
+                    size={14}
+                    color={activeColor ? theme.colors.accent : theme.colors.textSecondary}
+                  />
+                )}
+              />
+            </View>
+          )}
+
+          {/* Active Status Switch Card */}
+          <View
+            style={[
+              styles.activeCard,
+              {
+                backgroundColor: theme.colors.surfaceRecessed,
+                borderColor: theme.colors.borderLight,
+              },
+            ]}
+          >
+            <View style={styles.activeCardTextContainer}>
+              <AppText style={[styles.activeCardTitle, { color: theme.colors.textPrimary }]}>
+                {t('subscriptionModal.activeSubscription', { defaultValue: 'Active Subscription' })}
+              </AppText>
+              <AppText style={[styles.activeCardSubtitle, { color: theme.colors.textSecondary }]}>
+                {t('subscriptionModal.activeSubscriptionHint', {
+                  defaultValue: 'Automatically generates recurring transactions',
+                })}
+              </AppText>
+            </View>
+            <AppSwitch value={active} onValueChange={setActive} />
+          </View>
+
+          {/* Notes */}
           <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>{t('subscriptionModal.billingMonthField')}</AppText>
-            <AppChipSelector
-              items={monthOptions}
-              selectedId={billingMonth}
-              onSelect={(item) => setBillingMonth(item.id)}
-              keyExtractor={(item) => item.id}
-              labelExtractor={(item) => item.label}
+            <AppText style={[styles.label, { color: theme.colors.textSecondary }]}>
+              {t('transactionModal.notesField')}
+            </AppText>
+            <AppTextInput
+              value={notes}
+              onChangeText={setNotes}
+              placeholder={t('subscriptionModal.notesPlaceholder')}
             />
           </View>
-        )}
 
-        {/* Billing Day */}
-        <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>
-            {frequency === 'annual'
-              ? t('subscriptionModal.billingDayFieldAnnual')
-              : t('subscriptionModal.billingDayField')}
-          </AppText>
-          <AppTextInput
-            value={billingDay}
-            onChangeText={setBillingDay}
-            placeholder="1"
-          />
-          <AppText style={styles.fieldHint}>
-            {frequency === 'annual'
-              ? t('subscriptionModal.billingDayHintAnnual', {
-                  month: monthOptions.find((m) => m.id === billingMonth)?.label || '',
-                  day: billingDay || '1',
-                })
-              : t('subscriptionModal.billingDayHint', { day: billingDay || '1' })}
-          </AppText>
-        </View>
-
-        {/* Category */}
-        {availableCategories.length > 0 && (
-          <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>{t('transactionModal.categoryField')}</AppText>
-            <AppChipSelector
-              items={availableCategories}
-              selectedId={categoryId}
-              onSelect={(cat) => setCategoryId(cat.id)}
-              keyExtractor={(cat) => cat.id}
-              labelExtractor={(cat) => cat.name}
-              getItemColor={(cat) => cat.color}
-              renderIcon={(cat) => (
-                <CategoryIcon
-                  iconName={cat.icon}
-                  size={16}
-                  color={cat.color}
-                />
-              )}
-            />
+          {/* Actions */}
+          <View style={styles.actions}>
+            <View style={styles.actionBtnWrapper}>
+              <AppButton
+                title={t('common.cancel')}
+                variant="ghost"
+                onPress={onClose}
+                disabled={saving}
+                fullWidth={false}
+              />
+            </View>
+            <View style={styles.actionBtnWrapper}>
+              <AppButton
+                title={saving ? t('transactionModal.saving') : subscription ? t('management.saveChanges') : t('subscriptionModal.addSubscription')}
+                variant="primary"
+                onPress={handleSave}
+                disabled={saving || loading}
+                loading={saving}
+                fullWidth={false}
+              />
+            </View>
           </View>
-        )}
-
-        {/* Payment Method */}
-        {availablePaymentMethods.length > 0 && (
-          <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>{t('transactionModal.paymentMethodField')}</AppText>
-            <AppChipSelector
-              items={availablePaymentMethods}
-              selectedId={paymentMethodId}
-              onSelect={(pm) => setPaymentMethodId(pm.id === paymentMethodId ? '' : pm.id)}
-              keyExtractor={(pm) => pm.id}
-              labelExtractor={(pm) => pm.name}
-              renderIcon={(_item, active) => (
-                <CreditCard
-                  size={14}
-                  color={active ? theme.colors.accent : theme.colors.textSecondary}
-                />
-              )}
-            />
-          </View>
-        )}
-
-        {/* Bank */}
-        {availableBanks.length > 0 && (
-          <View style={styles.fieldGroup}>
-            <AppText style={styles.label}>{t('transactionModal.bankField')}</AppText>
-            <AppChipSelector
-              items={availableBanks}
-              selectedId={bankId}
-              onSelect={(bank) => setBankId(bank.id === bankId ? '' : bank.id)}
-              keyExtractor={(bank) => bank.id}
-              labelExtractor={(bank) => bank.name}
-              renderIcon={(_item, activeColor) => (
-                <Building2
-                  size={14}
-                  color={activeColor ? theme.colors.accent : theme.colors.textSecondary}
-                />
-              )}
-            />
-          </View>
-        )}
-
-        {/* Notes */}
-        <View style={styles.fieldGroup}>
-          <AppText style={styles.label}>{t('transactionModal.notesField')}</AppText>
-          <AppTextInput
-            value={notes}
-            onChangeText={setNotes}
-            placeholder={t('subscriptionModal.notesPlaceholder')}
-          />
-        </View>
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <View style={styles.actionBtnWrapper}>
-            <AppButton
-              title={t('common.cancel')}
-              variant="ghost"
-              onPress={onClose}
-              disabled={saving}
-              fullWidth={false}
-            />
-          </View>
-          <View style={styles.actionBtnWrapper}>
-            <AppButton
-              title={saving ? t('transactionModal.saving') : subscription ? t('management.saveChanges') : t('subscriptionModal.addSubscription')}
-              variant="primary"
-              onPress={handleSave}
-              disabled={saving || loading}
-              loading={saving}
-              fullWidth={false}
-            />
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
       </View>
     </AppModal>
   );
@@ -543,20 +590,39 @@ const styles = StyleSheet.create({
   fieldGroup: {
     gap: theme.spacing.xs,
   },
-  row: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  flex2: {
-    flex: 2,
-  },
   label: {
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  amountInputText: {
+    fontSize: theme.fontSize['3xl'],
+    fontWeight: theme.fontWeight.extrabold,
   },
   fieldHint: {
     fontSize: theme.fontSize.xs,
     marginTop: theme.spacing.xxs,
+  },
+  activeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.xl,
+    borderRadius: theme.radii.input,
+    borderWidth: 1,
+    gap: theme.spacing.md,
+  },
+  activeCardTextContainer: {
+    flex: 1,
+    gap: theme.spacing.xxs,
+  },
+  activeCardTitle: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.bold,
+  },
+  activeCardSubtitle: {
+    fontSize: theme.fontSize.xs,
   },
   actions: {
     flexDirection: 'row',

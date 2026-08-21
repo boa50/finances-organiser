@@ -1,7 +1,8 @@
 import React from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
+import { AppButton } from './AppButton';
 import theme, { useTheme } from '../../theme';
 import { formatDateToYMD, parseTransactionDate } from '../../utils/financials';
 
@@ -32,12 +33,12 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
   const browserDateInputStyle = {
     width: '100%',
     boxSizing: 'border-box' as const,
-    backgroundColor: theme.colors.surfaceElevated,
+    backgroundColor: theme.colors.surfaceRecessed,
     color: theme.colors.textPrimary,
     border: `1px solid ${theme.colors.borderLight}`,
-    borderRadius: theme.radii.base,
-    padding: theme.spacing.lg,
-    fontSize: theme.fontSize.sm,
+    borderRadius: theme.radii.input,
+    padding: theme.spacing.xl,
+    fontSize: theme.fontSize.base,
     fontFamily: theme.fontFamily.sans,
     colorScheme: theme.isDark ? 'dark' : 'light',
   };
@@ -49,8 +50,9 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
           style={[
             styles.card,
             {
-              backgroundColor: theme.colors.surface,
+              backgroundColor: theme.colors.surfaceElevated,
               borderColor: theme.colors.borderLight,
+              boxShadow: theme.colors.cardShadow,
             },
           ]}
         >
@@ -63,14 +65,14 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
             onChange: handleChange,
             style: browserDateInputStyle,
           })}
-          <Pressable
-            style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
-            onPress={onClose}
-          >
-            <AppText style={[styles.doneText, { color: theme.colors.accent }]}>
-              {t('common.done')}
-            </AppText>
-          </Pressable>
+          <View style={styles.actions}>
+            <AppButton
+              variant="primary"
+              title={t('common.done')}
+              onPress={onClose}
+              fullWidth={false}
+            />
+          </View>
         </View>
       </View>
     </Modal>
@@ -85,43 +87,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: theme.spacing['4xl'],
-    backgroundColor: theme.colors.overlay,
   },
   card: {
     width: '100%',
     maxWidth: 360,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['3xl'],
+    borderRadius: theme.radii.modal,
     padding: theme.spacing['4xl'],
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   title: {
-    color: theme.colors.textPrimary,
-    fontSize: theme.fontSize.base,
+    fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.extrabold,
     marginBottom: theme.spacing.xl,
   },
-  doneButton: {
-    alignSelf: 'flex-end',
+  actions: {
     marginTop: theme.spacing.xl,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-  },
-  doneText: {
-    color: theme.colors.accent,
-    fontWeight: theme.fontWeight.bold,
+    alignItems: 'flex-end',
   },
 });
-
-const browserDateInputStyle = {
-  width: '100%',
-  boxSizing: 'border-box',
-  backgroundColor: theme.colors.background,
-  color: theme.colors.textPrimary,
-  border: `1px solid ${theme.colors.borderLight}`,
-  borderRadius: theme.radii.base,
-  padding: theme.spacing.lg,
-  fontSize: theme.fontSize.sm,
-  fontFamily: theme.fontFamily.sans,
-};

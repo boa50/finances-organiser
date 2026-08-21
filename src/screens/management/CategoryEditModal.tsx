@@ -2,9 +2,7 @@ import React from 'react';
 import {
   View,
   ScrollView,
-  TextInput,
   Pressable,
-  ActivityIndicator,
   StyleSheet,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +12,7 @@ import {
   PRESET_CATEGORY_COLORS,
 } from '../../services/categoryService';
 import { CategoryIcon } from '../../components/CategoryIcon';
-import { AppChipSelector, AppModal, AppText } from '../../components/ui';
+import { AppButton, AppChipSelector, AppModal, AppText, AppTextInput, FeedbackMessage } from '../../components/ui';
 import theme, { useTheme } from '../../theme';
 
 interface CategoryEditModalProps {
@@ -64,19 +62,18 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
       subtitle={t('management.categoryModalSubtitle')}
     >
       <ScrollView contentContainerStyle={styles.modalBody} keyboardShouldPersistTaps="handled">
+        {errorMsg && (
+          <View style={styles.errorContainer}>
+            <FeedbackMessage type="error" message={errorMsg} />
+          </View>
+        )}
+
         <View style={styles.formGroup}>
-          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.categoryName')}</AppText>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: theme.colors.surfaceRecessed,
-                color: theme.colors.textPrimary,
-                borderColor: theme.colors.borderLight,
-              },
-            ]}
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>
+            {t('management.categoryName')}
+          </AppText>
+          <AppTextInput
             placeholder={t('management.categoryNamePlaceholder')}
-            placeholderTextColor={theme.colors.textTertiary}
             value={nameInput}
             onChangeText={setNameInput}
             autoCapitalize="words"
@@ -84,25 +81,36 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.colorTheme')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>
+            {t('management.colorTheme')}
+          </AppText>
           <View style={styles.colorGrid}>
-            {PRESET_CATEGORY_COLORS.map((c) => (
-              <Pressable
-                key={c}
-                style={({ pressed }) => [
-                  styles.colorDot,
-                  { backgroundColor: c },
-                  colorInput === c && [styles.colorDotSelected, { borderColor: theme.colors.textPrimary }],
-                  pressed && { opacity: 0.8 },
-                ]}
-                onPress={() => setColorInput(c)}
-              />
-            ))}
+            {PRESET_CATEGORY_COLORS.map((c) => {
+              const isSelected = colorInput === c;
+              return (
+                <Pressable
+                  key={c}
+                  style={({ pressed }) => [
+                    styles.colorDot,
+                    { backgroundColor: c },
+                    isSelected && [
+                      styles.colorDotSelected,
+                      { borderColor: theme.colors.textPrimary },
+                    ],
+                    pressed && { opacity: 0.8 },
+                  ]}
+                  onPress={() => setColorInput(c)}
+                  accessibilityLabel={`Color ${c}`}
+                />
+              );
+            })}
           </View>
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.iconBadge')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>
+            {t('management.iconBadge')}
+          </AppText>
           <AppChipSelector
             items={AVAILABLE_CATEGORY_ICONS}
             selectedId={iconInput}
@@ -120,7 +128,9 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
         </View>
 
         <View style={styles.formGroup}>
-          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>{t('management.preview')}</AppText>
+          <AppText style={[styles.formLabel, { color: theme.colors.textSecondary }]}>
+            {t('management.preview')}
+          </AppText>
           <View
             style={[
               styles.previewBox,
@@ -164,32 +174,27 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
           </View>
         </View>
 
-        {errorMsg && (
-          <View style={[styles.errorBox, { backgroundColor: theme.colors.dangerBg, borderColor: theme.colors.danger }]}>
-            <AppText style={[styles.errorText, { color: theme.colors.danger }]}>{errorMsg}</AppText>
+        <View style={styles.actions}>
+          <View style={styles.actionBtnWrapper}>
+            <AppButton
+              variant="ghost"
+              title={t('common.cancel')}
+              onPress={onClose}
+              disabled={saving}
+              fullWidth={false}
+            />
           </View>
-        )}
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.saveSubmitBtn,
-            {
-              backgroundColor:
-                activeCategoryType === 'income' ? theme.colors.success : theme.colors.accent,
-            },
-            pressed && !saving && { opacity: 0.85 },
-          ]}
-          onPress={onSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color={theme.colors.white} />
-          ) : (
-            <AppText style={[styles.saveSubmitText, { color: theme.colors.white }]}>
-              {editingCategory ? t('management.saveCategory') : t('management.createCategory')}
-            </AppText>
-          )}
-        </Pressable>
+          <View style={styles.actionBtnWrapper}>
+            <AppButton
+              variant="primary"
+              title={editingCategory ? t('management.saveCategory') : t('management.createCategory')}
+              onPress={onSave}
+              disabled={saving}
+              loading={saving}
+              fullWidth={false}
+            />
+          </View>
+        </View>
       </ScrollView>
     </AppModal>
   );
@@ -198,23 +203,19 @@ export const CategoryEditModal: React.FC<CategoryEditModalProps> = ({
 const styles = StyleSheet.create({
   modalBody: {
     gap: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+  },
+  errorContainer: {
+    marginBottom: theme.spacing.xs,
   },
   formGroup: {
     gap: theme.spacing.xs,
   },
   formLabel: {
     fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.bold,
+    fontWeight: theme.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  textInput: {
-    fontSize: theme.fontSize.base,
-    borderRadius: theme.radii.lg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderWidth: 1,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -222,14 +223,15 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   colorDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   colorDotSelected: {
-    transform: [{ scale: 1.1 }],
+    borderWidth: 3,
+    transform: [{ scale: 1.15 }],
   },
   previewBox: {
     flexDirection: 'row',
@@ -257,23 +259,13 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.xs,
     borderRadius: theme.radii.sm,
   },
-  errorBox: {
-    borderRadius: theme.radii.base,
-    padding: theme.spacing.md,
-    borderWidth: 1,
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.md,
   },
-  errorText: {
-    fontSize: theme.fontSize.xs,
-    fontWeight: theme.fontWeight.medium,
-  },
-  saveSubmitBtn: {
-    borderRadius: theme.radii.lg,
-    paddingVertical: theme.spacing.lg,
-    alignItems: 'center',
-    marginTop: theme.spacing.sm,
-  },
-  saveSubmitText: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.extrabold,
+  actionBtnWrapper: {
+    minWidth: 110,
   },
 });

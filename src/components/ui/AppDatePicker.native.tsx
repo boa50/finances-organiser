@@ -1,8 +1,9 @@
 import React from 'react';
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import { AppText } from './AppText';
+import { AppButton } from './AppButton';
 import theme, { useTheme } from '../../theme';
 
 export interface AppDatePickerProps {
@@ -33,8 +34,9 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
           style={[
             styles.card,
             {
-              backgroundColor: theme.colors.surface,
+              backgroundColor: theme.colors.surfaceElevated,
               borderColor: theme.colors.borderLight,
+              boxShadow: theme.colors.cardShadow,
             },
           ]}
         >
@@ -48,14 +50,14 @@ export const AppDatePicker: React.FC<AppDatePickerProps> = ({
             onChange={handleChange}
           />
           {Platform.OS === 'ios' && (
-            <Pressable
-              style={({ pressed }) => [styles.doneButton, pressed && { opacity: 0.7 }]}
-              onPress={onClose}
-            >
-              <AppText style={[styles.doneText, { color: theme.colors.accent }]}>
-                {t('common.done')}
-              </AppText>
-            </Pressable>
+            <View style={styles.actions}>
+              <AppButton
+                variant="primary"
+                title={t('common.done')}
+                onPress={onClose}
+                fullWidth={false}
+              />
+            </View>
           )}
         </View>
       </View>
@@ -71,32 +73,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: theme.spacing['4xl'],
-    backgroundColor: theme.colors.overlay,
   },
   card: {
     width: '100%',
     maxWidth: 360,
     alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii['3xl'],
+    borderRadius: theme.radii.modal,
     padding: theme.spacing['4xl'],
     borderWidth: 1,
-    borderColor: theme.colors.borderLight,
   },
   title: {
-    color: theme.colors.textPrimary,
     alignSelf: 'flex-start',
-    fontSize: theme.fontSize.base,
+    fontSize: theme.fontSize.lg,
     fontWeight: theme.fontWeight.extrabold,
     marginBottom: theme.spacing.base,
   },
-  doneButton: {
+  actions: {
     alignSelf: 'flex-end',
-    paddingHorizontal: theme.spacing.xl,
-    paddingBottom: theme.spacing.md,
-  },
-  doneText: {
-    color: theme.colors.accent,
-    fontWeight: theme.fontWeight.bold,
+    marginTop: theme.spacing.lg,
   },
 });
