@@ -28,13 +28,14 @@ import {
 } from '../ui';
 import { CreditCard, Building2, Calendar } from 'lucide-react-native';
 import theme, { useTheme } from '../../theme';
+import { useToast } from '../../contexts';
 import { calculateInstallmentDate, normalizeTransactionDate, parseTransactionDate } from '../../utils/financials';
 
 export interface TransactionEditModalProps {
   visible: boolean;
   transaction: Transaction | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: () => void | Promise<void>;
 }
 
 function dateFromTransaction(dateStr: string): Date {
@@ -50,6 +51,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [type, setType] = useState<TransactionType>('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -310,8 +312,9 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         }
       }
 
-      onSaved();
+      await onSaved?.();
       onClose();
+      showToast({ type: 'success', message: t('toast.transactionSaved') });
     } catch (e: any) {
       setErrorMessage(e?.message || t('transactionModal.errorSaving'));
     } finally {

@@ -25,10 +25,11 @@ import {
 } from '../components/ui';
 import { Search, Trash2 } from 'lucide-react-native';
 import theme, { useTheme } from '../theme';
+import { useToast } from '../contexts';
 
 interface TransactionsScreenProps {
   transactions: Transaction[];
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 }
 
 export type TransactionListItem =
@@ -79,6 +80,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
+  const { showToast, updateToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -121,15 +123,28 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       return;
     }
 
+    const toastId = showToast({ type: 'loading', message: t('toast.duplicating') });
     try {
       await tursoService.duplicateTransaction(transaction);
-      onRefresh();
+      updateToast(toastId, { type: 'success', message: t('toast.duplicated') });
+      await onRefresh();
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.message || t('transactions.duplicateError'));
+      updateToast(toastId, { type: 'error', message: error?.message || t('toast.duplicateError') });
     }
-  }, [onRefresh, t]);
+  }, [onRefresh, showToast, updateToast, t]);
 
   const handleDelete = useCallback(async (transaction: Transaction) => {
+    const executeDelete = async (deleteFn: () => Promise<unknown>) => {
+      const toastId = showToast({ type: 'loading', message: t('toast.deleting') });
+      try {
+        await deleteFn();
+        updateToast(toastId, { type: 'success', message: t('toast.deleted') });
+        await onRefresh();
+      } catch (err: any) {
+        updateToast(toastId, { type: 'error', message: err?.message || t('toast.deleteError') });
+      }
+    };
+
     if (transaction.installments && transaction.installments > 1) {
       if (Platform.OS === 'web') {
         confirmAction({
@@ -139,13 +154,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             current: transaction.installmentNumber,
             total: transaction.installments,
           }),
-          onConfirm: async () => {
-            await tursoService.deleteTransactionGroup(
-              transaction.installmentGroupId || '',
-              transaction
-            );
-            onRefresh();
-          },
+          onConfirm: () =>
+            executeDelete(() =>
+              tursoService.deleteTransactionGroup(
+                transaction.installmentGroupId || '',
+                transaction
+              )
+            ),
         });
       } else {
         Alert.alert(
@@ -160,21 +175,18 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             {
               text: t('transactions.deleteOnlyThis'),
               style: 'destructive',
-              onPress: async () => {
-                await tursoService.deleteTransaction(transaction.id);
-                onRefresh();
-              },
+              onPress: () => executeDelete(() => tursoService.deleteTransaction(transaction.id)),
             },
             {
               text: t('transactions.deleteAllInstallments'),
               style: 'destructive',
-              onPress: async () => {
-                await tursoService.deleteTransactionGroup(
-                  transaction.installmentGroupId || '',
-                  transaction
-                );
-                onRefresh();
-              },
+              onPress: () =>
+                executeDelete(() =>
+                  tursoService.deleteTransactionGroup(
+                    transaction.installmentGroupId || '',
+                    transaction
+                  )
+                ),
             },
           ]
         );
@@ -184,13 +196,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         title: t('transactions.deleteTransactionTitle'),
         message: t('transactions.deleteTransactionMsg', { title: transaction.title }),
         destructive: true,
-        onConfirm: async () => {
-          await tursoService.deleteTransaction(transaction.id);
-          onRefresh();
-        },
+        onConfirm: () => executeDelete(() => tursoService.deleteTransaction(transaction.id)),
       });
     }
-  }, [onRefresh, t]);
+  }, [onRefresh, showToast, updateToast, t]);
 
   const handleClearAll = useCallback(async () => {
     confirmAction({
@@ -198,11 +207,17 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       message: t('transactions.clearAllMsg'),
       destructive: true,
       onConfirm: async () => {
-        await tursoService.clearAllTransactions();
-        onRefresh();
+        const toastId = showToast({ type: 'loading', message: t('toast.clearingAll') });
+        try {
+          await tursoService.clearAllTransactions();
+          updateToast(toastId, { type: 'success', message: t('toast.clearedAll') });
+          await onRefresh();
+        } catch (err: any) {
+          updateToast(toastId, { type: 'error', message: err?.message || t('toast.deleteError') });
+        }
       },
     });
-  }, [onRefresh, t]);
+  }, [onRefresh, showToast, updateToast, t]);
 
   const renderItem = useCallback(({ item }: { item: TransactionListItem }) => {
     if (item.type === 'header') {

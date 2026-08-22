@@ -291,9 +291,6 @@ class SubscriptionService {
   }
 
   public async deleteSubscription(id: string): Promise<boolean> {
-    this.localMemorySubs = this.localMemorySubs.filter((s) => s.id !== id);
-    this.saveLocalCache();
-
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/subscriptions?id=${encodeURIComponent(id)}`, {
@@ -301,6 +298,8 @@ class SubscriptionService {
           headers: tursoService.getApiHeaders(),
         });
         if (isJsonResponse(res)) {
+          this.localMemorySubs = this.localMemorySubs.filter((s) => s.id !== id);
+          this.saveLocalCache();
           return true;
         }
       }
@@ -319,6 +318,9 @@ class SubscriptionService {
         console.error('Failed to delete subscription from Turso:', err);
       }
     }
+
+    this.localMemorySubs = this.localMemorySubs.filter((s) => s.id !== id);
+    this.saveLocalCache();
 
     return true;
   }

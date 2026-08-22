@@ -353,5 +353,23 @@
     "EUR": "Euro",
     "GBP": "British Pound",
     "COP": "Colombian Peso"
+  },
+  "toast": {
+    "deleting": "Deleting...",
+    "deleted": "Successfully deleted.",
+    "deleteError": "Failed to delete. Please try again.",
+    "duplicating": "Duplicating...",
+    "duplicated": "Transaction duplicated.",
+    "duplicateError": "Failed to duplicate transaction.",
+    "transactionSaved": "Transaction saved.",
+    "subscriptionSaved": "Subscription saved.",
+    "categorySaved": "Category saved.",
+    "paymentMethodSaved": "Payment method saved.",
+    "bankSaved": "Bank saved.",
+    "currencyAdded": "Currency added.",
+    "toggleError": "Failed to update. Reverting change.",
+    "reorderError": "Failed to reorder. Reverting change.",
+    "clearingAll": "Clearing all transactions...",
+    "clearedAll": "All transactions cleared."
   }
 }

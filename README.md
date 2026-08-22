@@ -13,6 +13,7 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **Subscription management** — Dedicated screen for managing monthly and annual recurring subscription expenses with monthly/annual frequency toggle, recurrence day/month scheduling, prorated monthly metric aggregation, and idempotent transaction auto-generation.
 - **Transaction & Installment management** — Full create, edit, duplicate, delete, search, and filter capabilities with monthly grouping and monthly net balance indicators, merchant tracking, BRL monetary conversion display on transaction cards (with converted original values shown alongside), single and multi-month installment support, and quick duplication defaulting to the current date.
 - **Comprehensive management hub, Enable/Disable toggles & Drag-and-drop reordering** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), Banks, and Currencies. Each customizable entity includes an enable/disable toggle switch; disabled items are hidden when creating or editing transactions and subscriptions while remaining preserved for historical reference on older records. All customizable entities can also be freely reordered via cross-platform drag-and-drop (Web & Mobile), with the custom sort order persisted and automatically reflected throughout the application.
+- **Centralized async action feedback & Global toasts** — Non-intrusive floating toast notifications with animated transitions for all async mutations (saving, duplicating, deleting, optimistic toggle/reorder failure alerts) across transactions, subscriptions, and management entities.
 - **Internationalization (i18n)** — Full bilingual support for Brazilian Portuguese (`pt-BR`) and English (Australian) (`en-AU`) using `i18next` and `react-i18next`, with a header language switcher toggle and persistent user preference in `localStorage`.
 - **Design system, Dark/Light modes & Theme switch** — Full Dark and Light theme modes with high-contrast accessibility, modular theme architecture under `src/theme/`, persistent preference in `localStorage` (`financecloud_theme_mode`), dynamic React `useTheme()` hook, and a simple header switch button with `Moon` and `Sun` vector icons.
 - **Unit testing** — Jest test suite covering financial calculations, currency conversion, authentication, categories, transactions, subscriptions, currency management, theme tokens/modes/persistence, and i18n key parity.
@@ -153,6 +154,10 @@ finances-organiser/
     │       ├── en-AU.json           # English (Australian) translation catalog
     │       └── pt-BR.json           # Brazilian Portuguese translation catalog
     │
+    ├── contexts/                    # Global React Contexts & Providers
+    │   ├── ToastContext.tsx         # Centralized toast notification state & useToast hook
+    │   └── index.ts                 # Contexts barrel export
+    │
     ├── types/
     │   └── index.ts                 # Shared TypeScript interfaces (Transaction, CurrencyInfo, etc.)
     │
@@ -208,7 +213,8 @@ finances-organiser/
         │   ├── AppDatePicker.tsx    # Cross-platform date picker barrel
         │   ├── AppDatePicker.native.tsx # iOS/Android date picker
         │   ├── AppDatePicker.web.tsx # HTML5 date picker with theme styles
-        │   ├── FeedbackMessage.tsx  # Banner/toast message component
+        │   ├── FeedbackMessage.tsx  # Banner message component
+        │   ├── GlobalToast.tsx      # Centralized floating toast notification component
         │   └── index.ts             # UI primitive barrel export
         ├── charts/                  # Low-level chart visualization primitives
         │   ├── CategorySpendingBarChart.tsx # Category spending horizontal breakdown bars
@@ -244,15 +250,15 @@ finances-organiser/
 |---|---|
 | **Authentication** | Password-based access control via `APP_PASSWORD` env var; serverless `/api/auth` with timing-safe comparison (`crypto.timingSafeEqual`); `sessionStorage` session persistence; Metro dev server fallback to `EXPO_PUBLIC_APP_PASSWORD`. |
 | **Serverless API Layer** | Vercel Node.js Serverless Functions in `/api` handle database CRUD operations securely using server-side Turso credentials. |
-| **State management** | React `useState` / `useEffect` in the root `App` component; data flows down via props. |
+| **State management** | React `useState` / `useEffect` in root `App` component; data flows down via props; centralized `ToastContext` at root level for global action notifications. |
 | **Navigation** | Manual tab router in `App.tsx` (tabs switch rendered screens). |
-| **Design system & Theming** | Modularized design subsystem (`src/theme/`) supporting Dark and Light modes; persistent user choice in `localStorage` (`financecloud_theme_mode`); reactive `useTheme()` hook; header `Sun`/`Moon` switch button; 16 reusable UI primitive components in `src/components/ui/`. |
+| **Design system & Theming** | Modularized design subsystem (`src/theme/`) supporting Dark and Light modes; persistent user choice in `localStorage` (`financecloud_theme_mode`); reactive `useTheme()` hook; header `Sun`/`Moon` switch button; 17 reusable UI primitive components in `src/components/ui/`. |
 | **Icons & Emojis** | Lucide React Native vector icons mapped via `CategoryIcon.tsx`; no emojis in the UI (country flags only for currency representations). |
 | **Data persistence** | Vercel Functions + Turso SQLite Cloud as primary store; `localStorage` as offline fallback. |
 | **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; transactions and subscriptions store ID foreign keys (`category_id`, `payment_method_id`, `bank_id`) to custom entities with `ON DELETE SET NULL` reference cascade; no hardcoded defaults. |
 | **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography and reactive theme colors. |
 | **List Virtualization** | High-performance recycling via `@shopify/flash-list` with screen-bounded split layouts (pinned headers & search bars, independent list scrolling). |
-| **Unit testing** | Jest + ts-jest test runner covering UI primitives, pure utility functions, auth services, entity CRUD, localized currencies, theme tokens/modes/persistence, and i18n key parity & codebase scan (170 passing unit tests across 21 suites). |
+| **Unit testing** | Jest + ts-jest test runner covering UI primitives, contexts, pure utility functions, auth services, entity CRUD, localized currencies, theme tokens/modes/persistence, and i18n key parity & codebase scan (178 passing unit tests across 23 suites). |
 | **Internationalization (i18n)** | `i18next` + `react-i18next` with `pt-BR` and `en-AU` catalogs; reactive `useTranslation` hooks; language selector on header; persistence in `localStorage` (`financecloud_language`). |
 | **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |
 | **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60s TTL). |

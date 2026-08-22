@@ -285,15 +285,6 @@ class BankService {
   }
 
   public async deleteBank(id: string): Promise<boolean> {
-    const target = this.banks.find((b) => b.id === id);
-    const bankName = target?.name;
-
-    this.banks = this.banks.filter((b) => b.id !== id);
-    this.saveToLocalStorage();
-
-    tursoService.removeBankReferences(id);
-    subscriptionService.removeBankReferences(id);
-
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/banks?id=${encodeURIComponent(id)}`, {
@@ -301,6 +292,10 @@ class BankService {
           headers: tursoService.getApiHeaders(),
         });
         if (isJsonResponse(res)) {
+          this.banks = this.banks.filter((b) => b.id !== id);
+          this.saveToLocalStorage();
+          tursoService.removeBankReferences(id);
+          subscriptionService.removeBankReferences(id);
           return true;
         }
       }
@@ -327,6 +322,11 @@ class BankService {
         console.error('Failed to delete bank from Turso DB:', err);
       }
     }
+
+    this.banks = this.banks.filter((b) => b.id !== id);
+    this.saveToLocalStorage();
+    tursoService.removeBankReferences(id);
+    subscriptionService.removeBankReferences(id);
 
     return true;
   }

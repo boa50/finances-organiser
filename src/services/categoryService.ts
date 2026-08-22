@@ -366,16 +366,6 @@ class CategoryService {
   }
 
   public async deleteCategory(id: string): Promise<boolean> {
-    const target = this.categories.find((c) => c.id === id);
-    const catName = target?.name;
-
-    this.categories = this.categories.filter((c) => c.id !== id);
-    this.saveToCache();
-
-    // Remove references in local memory
-    tursoService.removeCategoryReferences(id);
-    subscriptionService.removeCategoryReferences(id);
-
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/categories?id=${encodeURIComponent(id)}`, {
@@ -383,6 +373,10 @@ class CategoryService {
           headers: tursoService.getApiHeaders(),
         });
         if (isJsonResponse(res)) {
+          this.categories = this.categories.filter((c) => c.id !== id);
+          this.saveToCache();
+          tursoService.removeCategoryReferences(id);
+          subscriptionService.removeCategoryReferences(id);
           return true;
         }
       }
@@ -409,6 +403,11 @@ class CategoryService {
         console.error('Failed to delete category from Turso DB:', err);
       }
     }
+
+    this.categories = this.categories.filter((c) => c.id !== id);
+    this.saveToCache();
+    tursoService.removeCategoryReferences(id);
+    subscriptionService.removeCategoryReferences(id);
 
     return true;
   }

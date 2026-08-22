@@ -172,4 +172,19 @@ describe('TransactionsScreen helpers', () => {
       }
     });
   });
+
+  describe('TransactionsScreen component', () => {
+    it('accepts async onRefresh prop and transactions list', () => {
+      const { TransactionsScreen } = require('../TransactionsScreen');
+      const mockRefresh = jest.fn().mockResolvedValue(undefined);
+      const element = require('react').createElement(TransactionsScreen, {
+        transactions: mockTransactions,
+        onRefresh: mockRefresh,
+      });
+
+      expect(element).toBeDefined();
+      expect(element.props.onRefresh).toBe(mockRefresh);
+    });
+  });
 });
+

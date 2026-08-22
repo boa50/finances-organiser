@@ -297,15 +297,6 @@ class PaymentMethodService {
   }
 
   public async deletePaymentMethod(id: string): Promise<boolean> {
-    const target = this.paymentMethods.find((p) => p.id === id);
-    const pmName = target?.name;
-
-    this.paymentMethods = this.paymentMethods.filter((pm) => pm.id !== id);
-    this.saveToLocalStorage();
-
-    tursoService.removePaymentMethodReferences(id);
-    subscriptionService.removePaymentMethodReferences(id);
-
     try {
       if (typeof window !== 'undefined') {
         const res = await fetch(`/api/payment-methods?id=${encodeURIComponent(id)}`, {
@@ -313,6 +304,10 @@ class PaymentMethodService {
           headers: tursoService.getApiHeaders(),
         });
         if (isJsonResponse(res)) {
+          this.paymentMethods = this.paymentMethods.filter((pm) => pm.id !== id);
+          this.saveToLocalStorage();
+          tursoService.removePaymentMethodReferences(id);
+          subscriptionService.removePaymentMethodReferences(id);
           return true;
         }
       }
@@ -339,6 +334,11 @@ class PaymentMethodService {
         console.error('Failed to delete payment method from Turso DB:', err);
       }
     }
+
+    this.paymentMethods = this.paymentMethods.filter((pm) => pm.id !== id);
+    this.saveToLocalStorage();
+    tursoService.removePaymentMethodReferences(id);
+    subscriptionService.removePaymentMethodReferences(id);
 
     return true;
   }

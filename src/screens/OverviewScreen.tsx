@@ -16,7 +16,7 @@ interface OverviewScreenProps {
   transactions: Transaction[];
   tursoConfig: TursoConfig;
   onNavigateTransactions: () => void;
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 }
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({

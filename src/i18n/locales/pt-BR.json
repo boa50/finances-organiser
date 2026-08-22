@@ -353,5 +353,23 @@
     "EUR": "Euro",
     "GBP": "Libra Esterlina",
     "COP": "Peso Colombiano"
+  },
+  "toast": {
+    "deleting": "Excluindo...",
+    "deleted": "Excluído com sucesso.",
+    "deleteError": "Falha ao excluir. Tente novamente.",
+    "duplicating": "Duplicando...",
+    "duplicated": "Transação duplicada.",
+    "duplicateError": "Falha ao duplicar transação.",
+    "transactionSaved": "Transação salva.",
+    "subscriptionSaved": "Assinatura salva.",
+    "categorySaved": "Categoria salva.",
+    "paymentMethodSaved": "Forma de pagamento salva.",
+    "bankSaved": "Banco salvo.",
+    "currencyAdded": "Moeda adicionada.",
+    "toggleError": "Falha ao atualizar. Revertendo alteração.",
+    "reorderError": "Falha ao reordenar. Revertendo alteração.",
+    "clearingAll": "Limpando todas as transações...",
+    "clearedAll": "Todas as transações foram removidas."
   }
 }

@@ -29,12 +29,13 @@ import {
 } from '../ui';
 import { Building2, CreditCard } from 'lucide-react-native';
 import theme, { useTheme } from '../../theme';
+import { useToast } from '../../contexts';
 
 export interface SubscriptionEditModalProps {
   visible: boolean;
   subscription?: Subscription | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: () => void | Promise<void>;
 }
 
 export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
@@ -45,6 +46,7 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [currencyId, setCurrencyId] = useState('BRL');
@@ -289,8 +291,9 @@ export const SubscriptionEditModal: React.FC<SubscriptionEditModalProps> = ({
         }
       }
 
-      onSaved();
+      await onSaved?.();
       onClose();
+      showToast({ type: 'success', message: t('toast.subscriptionSaved') });
     } catch (e: any) {
       setErrorMessage(e?.message || t('subscriptionModal.errorSaving'));
     } finally {

@@ -17,10 +17,12 @@ import {
   LoginScreen,
 } from './src/screens';
 import { AppHeader, AppTabBar, TabName, TransactionEditModal } from './src/components';
+import { GlobalToast } from './src/components/ui';
 import { useAuth } from './src/hooks/useAuth';
 import { useAppData } from './src/hooks/useAppData';
 import { Plus } from 'lucide-react-native';
 import { ThemeProvider, useTheme } from './src/theme';
+import { ToastProvider } from './src/contexts';
 
 function MainApp() {
   const { isAuthenticated, authenticate, logout } = useAuth();
@@ -98,6 +100,8 @@ function MainApp() {
         onClose={() => setAddTransactionModalVisible(false)}
         onSaved={loadData}
       />
+
+      <GlobalToast />
     </SafeAreaView>
   );
 }
@@ -105,7 +109,9 @@ function MainApp() {
 export default function App() {
   return (
     <ThemeProvider>
-      <MainApp />
+      <ToastProvider>
+        <MainApp />
+      </ToastProvider>
     </ThemeProvider>
   );
 }

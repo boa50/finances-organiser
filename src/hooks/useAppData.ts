@@ -9,9 +9,12 @@ import { bankService } from '../services/bankService';
 import { processSubscriptionAutoGeneration } from '../services/subscriptionAutoGenerator';
 import { refreshCurrencyRates } from '../utils/currencies';
 import { confirmAction } from '../utils/dialogs';
+import { useToast } from '../contexts';
+import i18n from '../i18n';
 
 export function useAppData(enabled: boolean = true) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { showToast, updateToast } = useToast();
   const [tursoConfig, setTursoConfig] = useState<TursoConfig>({
     url: '',
     authToken: '',
@@ -56,8 +59,14 @@ export function useAppData(enabled: boolean = true) {
         'Are you sure you want to clear ALL transactions? This will permanently delete all expense and income records from your local storage and Turso Cloud database.',
       destructive: true,
       onConfirm: async () => {
-        const empty = await tursoService.clearAllTransactions();
-        setTransactions(empty);
+        const toastId = showToast({ type: 'loading', message: i18n.t('toast.clearingAll') });
+        try {
+          const empty = await tursoService.clearAllTransactions();
+          updateToast(toastId, { type: 'success', message: i18n.t('toast.clearedAll') });
+          setTransactions(empty);
+        } catch (err: any) {
+          updateToast(toastId, { type: 'error', message: err?.message || i18n.t('toast.deleteError') });
+        }
       },
     });
   };

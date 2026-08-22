@@ -29,9 +29,10 @@ import {
 } from '../components/ui';
 import { Calendar, CreditCard } from 'lucide-react-native';
 import theme, { useTheme } from '../theme';
+import { useToast } from '../contexts';
 
 interface SubscriptionsScreenProps {
-  onSubscriptionsUpdated?: () => void;
+  onSubscriptionsUpdated?: () => void | Promise<void>;
 }
 
 export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
@@ -39,6 +40,7 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { showToast, updateToast } = useToast();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [categoriesMap, setCategoriesMap] = useState<Record<string, { name: string; icon: string; color: string }>>({});
   const [loading, setLoading] = useState(true);
@@ -72,9 +74,9 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
     loadData();
   }, [loadData]);
 
-  const handleRefresh = useCallback(() => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    loadData();
+    await loadData();
   }, [loadData]);
 
   const handleToggleActive = useCallback(async (sub: Subscription) => {
@@ -85,12 +87,13 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
     );
     try {
       await subscriptionService.toggleSubscriptionActive(sub.id, newActiveState);
-      if (onSubscriptionsUpdated) onSubscriptionsUpdated();
+      if (onSubscriptionsUpdated) await onSubscriptionsUpdated();
     } catch (e) {
       console.error('Failed to toggle subscription active status:', e);
-      loadData(); // Revert on failure
+      showToast({ type: 'error', message: t('toast.toggleError') });
+      await loadData(); // Revert on failure
     }
-  }, [loadData, onSubscriptionsUpdated]);
+  }, [loadData, onSubscriptionsUpdated, showToast, t]);
 
   const handleDelete = useCallback((sub: Subscription) => {
     confirmAction({
@@ -98,17 +101,20 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
       message: t('subscriptions.deleteMsg', { title: sub.title }),
       destructive: true,
       onConfirm: async () => {
-        setSubscriptions((prev) => prev.filter((item) => item.id !== sub.id));
+        const toastId = showToast({ type: 'loading', message: t('toast.deleting') });
         try {
           await subscriptionService.deleteSubscription(sub.id);
-          if (onSubscriptionsUpdated) onSubscriptionsUpdated();
-        } catch (e) {
+          updateToast(toastId, { type: 'success', message: t('toast.deleted') });
+          await loadData();
+          if (onSubscriptionsUpdated) await onSubscriptionsUpdated();
+        } catch (e: any) {
           console.error('Failed to delete subscription:', e);
-          loadData();
+          updateToast(toastId, { type: 'error', message: e?.message || t('toast.deleteError') });
+          await loadData();
         }
       },
     });
-  }, [loadData, onSubscriptionsUpdated, t]);
+  }, [loadData, onSubscriptionsUpdated, showToast, updateToast, t]);
 
   const handleOpenAddModal = useCallback(() => {
     setSelectedSubscription(null);
@@ -120,9 +126,9 @@ export const SubscriptionsScreen: React.FC<SubscriptionsScreenProps> = ({
     setModalVisible(true);
   }, []);
 
-  const handleSaved = useCallback(() => {
-    loadData();
-    if (onSubscriptionsUpdated) onSubscriptionsUpdated();
+  const handleSaved = useCallback(async () => {
+    await loadData();
+    if (onSubscriptionsUpdated) await onSubscriptionsUpdated();
   }, [loadData, onSubscriptionsUpdated]);
 
   // Filter subscriptions

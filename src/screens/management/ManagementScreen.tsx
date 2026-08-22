@@ -13,6 +13,7 @@ import { currencyService } from '../../services/currencyService';
 import { confirmAction } from '../../utils/dialogs';
 import { AppLoadingView, AppSectionHeader, AppSegmentedControl } from '../../components/ui';
 import theme, { useTheme } from '../../theme';
+import { useToast } from '../../contexts';
 
 import { CategoryManagementTab } from './CategoryManagementTab';
 import { PaymentMethodManagementTab } from './PaymentMethodManagementTab';
@@ -27,8 +28,8 @@ import { CurrencyAddModal } from './CurrencyAddModal';
 export type ManagementSectionId = 'categories' | 'payment_methods' | 'banks' | 'currencies';
 
 interface ManagementScreenProps {
-  onCategoriesUpdated?: () => void;
-  onCurrenciesUpdated?: () => void;
+  onCategoriesUpdated?: () => void | Promise<void>;
+  onCurrenciesUpdated?: () => void | Promise<void>;
   initialSection?: ManagementSectionId;
 }
 
@@ -39,6 +40,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { showToast, updateToast } = useToast();
   const [activeSection, setActiveSection] = useState<ManagementSectionId>(initialSection);
   const [activeCategoryType, setActiveCategoryType] = useState<TransactionType>('expense');
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,8 +192,9 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       }
 
       await loadCategoriesData();
-      onCategoriesUpdated?.();
+      if (onCategoriesUpdated) await onCategoriesUpdated();
       setModalVisible(false);
+      showToast({ type: 'success', message: t('toast.categorySaved') });
     } catch (err: any) {
       setErrorMsg(err?.message || t('management.saveCategoryError'));
     } finally {
@@ -205,12 +208,15 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       message: t('management.deleteCategoryMsg', { name: cat.name }),
       destructive: true,
       onConfirm: async () => {
+        const toastId = showToast({ type: 'loading', message: t('toast.deleting') });
         try {
           await categoryService.deleteCategory(cat.id);
+          updateToast(toastId, { type: 'success', message: t('toast.deleted') });
           await loadCategoriesData();
-          onCategoriesUpdated?.();
+          if (onCategoriesUpdated) await onCategoriesUpdated();
         } catch (err: any) {
           console.error('Failed to delete category:', err);
+          updateToast(toastId, { type: 'error', message: err?.message || t('toast.deleteError') });
         }
       },
     });
@@ -258,6 +264,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
       await loadPaymentMethodsData();
       setPmModalVisible(false);
+      showToast({ type: 'success', message: t('toast.paymentMethodSaved') });
     } catch (err: any) {
       setPmErrorMsg(err?.message || t('management.savePmError'));
     } finally {
@@ -271,11 +278,14 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       message: t('management.deletePmMsg', { name: pm.name }),
       destructive: true,
       onConfirm: async () => {
+        const toastId = showToast({ type: 'loading', message: t('toast.deleting') });
         try {
           await paymentMethodService.deletePaymentMethod(pm.id);
+          updateToast(toastId, { type: 'success', message: t('toast.deleted') });
           await loadPaymentMethodsData();
         } catch (err: any) {
           console.error('Failed to delete payment method:', err);
+          updateToast(toastId, { type: 'error', message: err?.message || t('toast.deleteError') });
         }
       },
     });
@@ -314,6 +324,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
 
       await loadBanksData();
       setBankModalVisible(false);
+      showToast({ type: 'success', message: t('toast.bankSaved') });
     } catch (err: any) {
       setBankErrorMsg(err?.message || t('management.saveBankError'));
     } finally {
@@ -327,11 +338,14 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       message: t('management.deleteBankMsg', { name: bank.name }),
       destructive: true,
       onConfirm: async () => {
+        const toastId = showToast({ type: 'loading', message: t('toast.deleting') });
         try {
           await bankService.deleteBank(bank.id);
+          updateToast(toastId, { type: 'success', message: t('toast.deleted') });
           await loadBanksData();
         } catch (err: any) {
           console.error('Failed to delete bank:', err);
+          updateToast(toastId, { type: 'error', message: err?.message || t('toast.deleteError') });
         }
       },
     });
@@ -350,8 +364,9 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     try {
       await currencyService.addCurrency(code);
       await loadCurrenciesData();
-      onCurrenciesUpdated?.();
+      if (onCurrenciesUpdated) await onCurrenciesUpdated();
       setCurrencyModalVisible(false);
+      showToast({ type: 'success', message: t('toast.currencyAdded') });
     } catch (err: any) {
       setCurrencyErrorMsg(err?.message || t('management.addCurrencyError'));
     } finally {
@@ -366,17 +381,14 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       message: t('management.removeCurrencyMsg', { code: currency.code, name: localizedName }),
       destructive: true,
       onConfirm: async () => {
+        const toastId = showToast({ type: 'loading', message: t('toast.deleting') });
         try {
           await currencyService.removeCurrency(currency.code);
+          updateToast(toastId, { type: 'success', message: t('toast.deleted') });
           await loadCurrenciesData();
-          onCurrenciesUpdated?.();
+          if (onCurrenciesUpdated) await onCurrenciesUpdated();
         } catch (err: any) {
-          confirmAction({
-            title: t('management.cannotRemoveCurrencyTitle'),
-            message: err?.message || t('management.removeCurrencyError'),
-            destructive: false,
-            onConfirm: () => {},
-          });
+          updateToast(toastId, { type: 'error', message: err?.message || t('toast.deleteError') });
         }
       },
     });
@@ -391,9 +403,10 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       const ids = reordered.map((c) => c.id);
       await categoryService.reorderCategories(ids, activeCategoryType);
       setCategories(categoryService.getCategoriesSync());
-      onCategoriesUpdated?.();
+      if (onCategoriesUpdated) await onCategoriesUpdated();
     } catch (err) {
       console.error('Failed to reorder categories:', err);
+      showToast({ type: 'error', message: t('toast.reorderError') });
       await loadCategoriesData();
     }
   };
@@ -406,6 +419,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       setPaymentMethods(paymentMethodService.getPaymentMethodsSync());
     } catch (err) {
       console.error('Failed to reorder payment methods:', err);
+      showToast({ type: 'error', message: t('toast.reorderError') });
       await loadPaymentMethodsData();
     }
   };
@@ -418,6 +432,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       setBanks(bankService.getBanksSync());
     } catch (err) {
       console.error('Failed to reorder banks:', err);
+      showToast({ type: 'error', message: t('toast.reorderError') });
       await loadBanksData();
     }
   };
@@ -428,9 +443,10 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       const codes = reordered.map((c) => c.code);
       await currencyService.reorderCurrencies(codes);
       setCurrencies(currencyService.getCurrenciesSync());
-      onCurrenciesUpdated?.();
+      if (onCurrenciesUpdated) await onCurrenciesUpdated();
     } catch (err) {
       console.error('Failed to reorder currencies:', err);
+      showToast({ type: 'error', message: t('toast.reorderError') });
       await loadCurrenciesData();
     }
   };
@@ -443,9 +459,10 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     try {
       await categoryService.toggleCategoryEnabled(cat.id, enabled);
       setCategories(categoryService.getCategoriesSync());
-      onCategoriesUpdated?.();
+      if (onCategoriesUpdated) await onCategoriesUpdated();
     } catch (err: any) {
       console.error('Failed to toggle category enabled state:', err);
+      showToast({ type: 'error', message: t('toast.toggleError') });
       await loadCategoriesData();
     }
   };
@@ -460,6 +477,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       setPaymentMethods(paymentMethodService.getPaymentMethodsSync());
     } catch (err: any) {
       console.error('Failed to toggle payment method enabled state:', err);
+      showToast({ type: 'error', message: t('toast.toggleError') });
       await loadPaymentMethodsData();
     }
   };
@@ -474,6 +492,7 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
       setBanks(bankService.getBanksSync());
     } catch (err: any) {
       console.error('Failed to toggle bank enabled state:', err);
+      showToast({ type: 'error', message: t('toast.toggleError') });
       await loadBanksData();
     }
   };
@@ -499,15 +518,10 @@ export const ManagementScreen: React.FC<ManagementScreenProps> = ({
     try {
       await currencyService.toggleCurrencyEnabled(currency.code, enabled);
       setCurrencies(currencyService.getCurrenciesSync());
-      onCurrenciesUpdated?.();
+      if (onCurrenciesUpdated) await onCurrenciesUpdated();
     } catch (err: any) {
       await loadCurrenciesData();
-      confirmAction({
-        title: t('management.cannotDisableCurrencyTitle', { defaultValue: 'Cannot Disable Currency' }),
-        message: err?.message || t('management.cannotDisableCurrencyMsg', { defaultValue: 'At least one currency must remain enabled.' }),
-        destructive: false,
-        onConfirm: () => {},
-      });
+      showToast({ type: 'error', message: t('toast.toggleError') });
     }
   };
 
