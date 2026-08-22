@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   Pressable,
   StyleSheet,
@@ -194,51 +193,22 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     };
 
     if (transaction.installments && transaction.installments > 1) {
-      if (Platform.OS === 'web') {
-        confirmAction({
-          title: t('transactions.deleteInstallmentsTitle'),
-          message: t('transactions.deleteInstallmentsWebMsg', {
-            title: transaction.title,
-            current: transaction.installmentNumber,
-            total: transaction.installments,
-          }),
-          onConfirm: () =>
-            executeDelete(() =>
-              tursoService.deleteTransactionGroup(
-                transaction.installmentGroupId || '',
-                transaction
-              )
-            ),
-        });
-      } else {
-        Alert.alert(
-          t('transactions.deleteInstallmentsTitle'),
-          t('transactions.deleteInstallmentsNativeMsg', {
-            title: transaction.title,
-            current: transaction.installmentNumber,
-            total: transaction.installments,
-          }),
-          [
-            { text: t('common.cancel'), style: 'cancel' },
-            {
-              text: t('transactions.deleteOnlyThis'),
-              style: 'destructive',
-              onPress: () => executeDelete(() => tursoService.deleteTransaction(transaction.id)),
-            },
-            {
-              text: t('transactions.deleteAllInstallments'),
-              style: 'destructive',
-              onPress: () =>
-                executeDelete(() =>
-                  tursoService.deleteTransactionGroup(
-                    transaction.installmentGroupId || '',
-                    transaction
-                  )
-                ),
-            },
-          ]
-        );
-      }
+      confirmAction({
+        title: t('transactions.deleteInstallmentsTitle'),
+        message: t('transactions.deleteInstallmentsMsg', {
+          title: transaction.title,
+          current: transaction.installmentNumber,
+          total: transaction.installments,
+        }),
+        destructive: true,
+        onConfirm: () =>
+          executeDelete(() =>
+            tursoService.deleteTransactionGroup(
+              transaction.installmentGroupId || '',
+              transaction
+            )
+          ),
+      });
     } else {
       confirmAction({
         title: t('transactions.deleteTransactionTitle'),

@@ -1189,9 +1189,9 @@ All 83 automated tests across 13 test suites were verified passing via `npm test
 
 ---
 
-### TC-058 — Installment delete offers single vs group deletion
+### TC-058 — Installment delete prompts to delete all installments or cancel
 
-**Status:** 🟡 Implemented but not automated
+**Status:** ✅ Automated
 
 **Priority:** High
 
@@ -1203,7 +1203,9 @@ All 83 automated tests across 13 test suites were verified passing via `npm test
 
 **When** The user deletes it.
 
-**Then** The user is offered a choice to delete only this installment or all installments.
+**Then** The user is prompted with a confirmation dialog to delete all installments in the group or cancel the deletion.
+
+**Automation:** `src/screens/__tests__/TransactionsScreen.test.ts` — `prompts to delete all installments in group on installment deletion`
 
 ---
 

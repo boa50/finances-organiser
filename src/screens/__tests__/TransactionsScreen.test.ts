@@ -6,8 +6,65 @@ jest.mock('react-native', () => ({
   Alert: { alert: jest.fn() },
 }));
 
+const mockConfirmAction = jest.fn();
+jest.mock('../../utils/dialogs', () => ({
+  confirmAction: (options: any) => mockConfirmAction(options),
+}));
+
+const mockDeleteTransaction = jest.fn();
+const mockDeleteTransactionGroup = jest.fn();
+jest.mock('../../services/tursoService', () => ({
+  tursoService: {
+    deleteTransaction: (...args: any[]) => mockDeleteTransaction(...args),
+    deleteTransactionGroup: (...args: any[]) => mockDeleteTransactionGroup(...args),
+    duplicateTransaction: jest.fn(),
+    clearAllTransactions: jest.fn(),
+  },
+}));
+
+const mockShowToast = jest.fn().mockReturnValue('toast-1');
+const mockUpdateToast = jest.fn();
+jest.mock('../../contexts', () => ({
+  useToast: () => ({
+    showToast: mockShowToast,
+    updateToast: mockUpdateToast,
+  }),
+}));
+
+jest.mock('../../theme', () => {
+  const actual = jest.requireActual('../../theme');
+  return {
+    __esModule: true,
+    default: actual.default,
+    useTheme: () => ({
+      theme: actual.darkTheme,
+      isDark: true,
+      mode: 'dark',
+    }),
+  };
+});
+
+import React from 'react';
+(jest.spyOn(React, 'useState') as any).mockImplementation((init: any) => [typeof init === 'function' ? init() : init, jest.fn()]);
+(jest.spyOn(React, 'useCallback') as any).mockImplementation((fn: any) => fn);
+(jest.spyOn(React, 'useMemo') as any).mockImplementation((fn: any) => fn());
+(jest.spyOn(React, 'useEffect') as any).mockImplementation(() => {});
+
+let capturedItemCardProps: any = null;
+jest.mock('../../components/transactions', () => ({
+  TransactionItemCard: (props: any) => {
+    capturedItemCardProps = props;
+    return null;
+  },
+  TransactionEditModal: 'TransactionEditModal',
+}));
+
+let capturedFlashListProps: any = null;
 jest.mock('@shopify/flash-list', () => ({
-  FlashList: 'FlashList',
+  FlashList: (props: any) => {
+    capturedFlashListProps = props;
+    return null;
+  },
 }));
 
 jest.mock('react-i18next', () => ({
@@ -22,11 +79,6 @@ jest.mock('@react-native-community/datetimepicker', () => 'DateTimePicker');
 jest.mock('lucide-react-native', () => ({
   Search: 'Search',
   Trash2: 'Trash2',
-}));
-
-jest.mock('../../components/transactions', () => ({
-  TransactionItemCard: 'TransactionItemCard',
-  TransactionEditModal: 'TransactionEditModal',
 }));
 
 jest.mock('../../components/ui', () => ({
@@ -204,6 +256,144 @@ describe('TransactionsScreen helpers', () => {
       expect(element.props.isLoadingMore).toBe(true);
       expect(element.props.isFullyLoaded).toBe(false);
       expect(element.props.totalCount).toBe(100);
+    });
+
+    describe('Transaction deletion handling', () => {
+      beforeEach(() => {
+        jest.clearAllMocks();
+      });
+
+      it('prompts confirmation and deletes single transaction when confirmed', async () => {
+        const { TransactionsScreen } = require('../TransactionsScreen');
+        const mockRefresh = jest.fn().mockResolvedValue(undefined);
+        mockDeleteTransaction.mockResolvedValue(true);
+
+        const tree = TransactionsScreen({
+          transactions: mockTransactions,
+          onRefresh: mockRefresh,
+        }) as any;
+
+        const flashListElement = tree.props.children[0].props.children[1].props.children;
+        expect(flashListElement).toBeDefined();
+
+        const itemCardWrapper = flashListElement.props.renderItem({
+          item: {
+            type: 'transaction',
+            id: 'tx-2',
+            transaction: mockTransactions[1],
+          },
+        });
+
+        const itemCard = itemCardWrapper.props.children;
+        expect(typeof itemCard.props.onDelete).toBe('function');
+
+        // Trigger delete
+        itemCard.props.onDelete(mockTransactions[1]);
+
+        expect(mockConfirmAction).toHaveBeenCalledTimes(1);
+        const confirmCall = mockConfirmAction.mock.calls[0][0];
+        expect(confirmCall.title).toBe('transactions.deleteTransactionTitle');
+        expect(confirmCall.destructive).toBe(true);
+
+        // Confirm deletion
+        await confirmCall.onConfirm();
+
+        expect(mockDeleteTransaction).toHaveBeenCalledWith('tx-2');
+        expect(mockDeleteTransactionGroup).not.toHaveBeenCalled();
+        expect(mockRefresh).toHaveBeenCalledTimes(1);
+      });
+
+      it('prompts to delete all installments in group on installment deletion', async () => {
+        const { TransactionsScreen } = require('../TransactionsScreen');
+        const mockRefresh = jest.fn().mockResolvedValue(undefined);
+        mockDeleteTransactionGroup.mockResolvedValue(true);
+
+        const installmentTx: Transaction = {
+          id: 'tx-inst-1',
+          type: 'expense',
+          title: 'Smartphone',
+          amount: 500,
+          currencyId: 'BRL',
+          date: '2026-08-01T10:00:00.000Z',
+          createdAt: '2026-08-01T10:00:00.000Z',
+          installments: 3,
+          installmentNumber: 1,
+          installmentGroupId: 'grp-smart-123',
+        };
+
+        const tree = TransactionsScreen({
+          transactions: [installmentTx],
+          onRefresh: mockRefresh,
+        }) as any;
+
+        const flashListElement = tree.props.children[0].props.children[1].props.children;
+        const itemCardWrapper = flashListElement.props.renderItem({
+          item: {
+            type: 'transaction',
+            id: installmentTx.id,
+            transaction: installmentTx,
+          },
+        });
+
+        const itemCard = itemCardWrapper.props.children;
+
+        // Trigger delete on installment transaction
+        itemCard.props.onDelete(installmentTx);
+
+        expect(mockConfirmAction).toHaveBeenCalledTimes(1);
+        const confirmCall = mockConfirmAction.mock.calls[0][0];
+        expect(confirmCall.title).toBe('transactions.deleteInstallmentsTitle');
+        expect(confirmCall.destructive).toBe(true);
+
+        // Confirm deletion
+        await confirmCall.onConfirm();
+
+        expect(mockDeleteTransactionGroup).toHaveBeenCalledWith('grp-smart-123', installmentTx);
+        expect(mockDeleteTransaction).not.toHaveBeenCalled();
+        expect(mockRefresh).toHaveBeenCalledTimes(1);
+      });
+
+      it('cancels deletion when confirmation is dismissed/cancelled', () => {
+        const { TransactionsScreen } = require('../TransactionsScreen');
+        const mockRefresh = jest.fn().mockResolvedValue(undefined);
+
+        const installmentTx: Transaction = {
+          id: 'tx-inst-2',
+          type: 'expense',
+          title: 'Laptop',
+          amount: 1000,
+          currencyId: 'BRL',
+          date: '2026-08-01T10:00:00.000Z',
+          createdAt: '2026-08-01T10:00:00.000Z',
+          installments: 5,
+          installmentNumber: 2,
+          installmentGroupId: 'grp-laptop-456',
+        };
+
+        const tree = TransactionsScreen({
+          transactions: [installmentTx],
+          onRefresh: mockRefresh,
+        }) as any;
+
+        const flashListElement = tree.props.children[0].props.children[1].props.children;
+        const itemCardWrapper = flashListElement.props.renderItem({
+          item: {
+            type: 'transaction',
+            id: installmentTx.id,
+            transaction: installmentTx,
+          },
+        });
+
+        const itemCard = itemCardWrapper.props.children;
+        itemCard.props.onDelete(installmentTx);
+
+        expect(mockConfirmAction).toHaveBeenCalledTimes(1);
+        // Do not invoke onConfirm (simulates user clicking Cancel)
+
+        expect(mockDeleteTransactionGroup).not.toHaveBeenCalled();
+        expect(mockDeleteTransaction).not.toHaveBeenCalled();
+        expect(mockRefresh).not.toHaveBeenCalled();
+      });
     });
   });
 });

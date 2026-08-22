@@ -73,7 +73,7 @@ Vector icons:
 
 - Expense transactions support multi-month installment plans (`installments > 1`).
 - Each installment item includes `installmentNumber`, `installments`, and a unique `installmentGroupId`.
-- Deleting an installment item prompts the user with options to delete only that specific installment or delete all installments in the group.
+- Deleting an installment item prompts the user to confirm deleting all installments in the group or cancel the deletion.
 - The `store` field records the merchant/store name associated with a transaction.
 
 ### Offline fallback
