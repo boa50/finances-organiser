@@ -19,7 +19,12 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon-v2.png"
+      "favicon": "./assets/favicon-v2.png",
+      "name": "FinancesOrganiser",
+      "shortName": "FinancesOrganiser",
+      "lang": "en",
+      "scope": "/",
+      "themeColor": "#083a3e"
     },
     "plugins": [
       [
