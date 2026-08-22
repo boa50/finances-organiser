@@ -35,6 +35,7 @@
   },
   "scripts": {
     "generate-icons": "node scripts/generate-web-icons.js",
+    "watch-icons": "node scripts/generate-web-icons.js --watch",
     "prebuild": "npm run generate-icons",
     "build": "expo export -p web",
     "prestart": "npm run generate-icons",

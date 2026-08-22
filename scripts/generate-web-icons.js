@@ -5,10 +5,12 @@
  * Automatically generates PWA icons, favicons, Apple touch icons,
  * Open Graph preview image, manifest.json, and index.html based on
  * the source icon defined in app.json or assets/.
+ * Includes content-hash cache-busting so browsers and WebAPK update immediately.
  */
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { generateImageAsync, generateFaviconAsync } = require('@expo/image-utils');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
@@ -60,6 +62,15 @@ function resolveFaviconSource(expoConfig, fallbackIcon) {
   return fallbackIcon;
 }
 
+function getFileHash(filePath) {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    return crypto.createHash('md5').update(fileBuffer).digest('hex').slice(0, 8);
+  } catch {
+    return Date.now().toString(36);
+  }
+}
+
 async function generateAssets() {
   console.log('🔄 [generate-web-icons] Generating Web, PWA, and OpenGraph icons from source assets...');
 
@@ -70,8 +81,9 @@ async function generateAssets() {
   const expoConfig = getAppConfig();
   const sourceIcon = resolveSourceIcon(expoConfig);
   const faviconSource = resolveFaviconSource(expoConfig, sourceIcon);
+  const iconHash = getFileHash(sourceIcon);
 
-  console.log(`📌 Source Icon: ${path.relative(PROJECT_ROOT, sourceIcon)}`);
+  console.log(`📌 Source Icon: ${path.relative(PROJECT_ROOT, sourceIcon)} (hash: ${iconHash})`);
   console.log(`📌 Favicon Source: ${path.relative(PROJECT_ROOT, faviconSource)}`);
 
   const themeColor = (expoConfig.web && expoConfig.web.themeColor) || '#083a3e';
@@ -126,7 +138,7 @@ async function generateAssets() {
     fs.writeFileSync(path.join(PUBLIC_DIR, 'favicon.ico'), fallbackFavicon);
   }
 
-  // Generate / update manifest.json
+  // Generate / update manifest.json with cache-busting query strings
   const manifest = {
     id: '/',
     name: appName,
@@ -141,19 +153,19 @@ async function generateAssets() {
     background_color: themeColor,
     icons: [
       {
-        src: '/icon-192.png',
+        src: `/icon-192.png?v=${iconHash}`,
         sizes: '192x192',
         type: 'image/png',
         purpose: 'any',
       },
       {
-        src: '/icon-512.png',
+        src: `/icon-512.png?v=${iconHash}`,
         sizes: '512x512',
         type: 'image/png',
         purpose: 'any',
       },
       {
-        src: '/icon-maskable-512.png',
+        src: `/icon-maskable-512.png?v=${iconHash}`,
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
@@ -161,9 +173,9 @@ async function generateAssets() {
     ],
   };
   fs.writeFileSync(path.join(PUBLIC_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-  console.log('  ✓ Updated manifest.json');
+  console.log('  ✓ Updated manifest.json (with version hash)');
 
-  // Generate / update index.html template
+  // Generate / update index.html template with cache-busting query strings
   const indexHtml = `<!DOCTYPE html>
 <html lang="%LANG_ISO_CODE%">
   <head>
@@ -177,23 +189,23 @@ async function generateAssets() {
     <meta name="msapplication-TileColor" content="${themeColor}" />
 
     <!-- Web App & PWA Capabilities -->
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/manifest.json?v=${iconHash}" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="${shortName}" />
 
-    <!-- Favicons & Icons -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <!-- Favicons & Icons (cache-busted with source content hash) -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=${iconHash}" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=${iconHash}" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=${iconHash}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=${iconHash}" />
 
     <!-- Open Graph / Vercel Preview / Social Media -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="FinanceCloud — Personal Finance Tracker" />
     <meta property="og:description" content="Cross-platform personal finance tracker with cloud sync, multi-currency support, and offline-first persistence." />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image" content="/og-image.png?v=${iconHash}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
@@ -201,7 +213,7 @@ async function generateAssets() {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="FinanceCloud — Personal Finance Tracker" />
     <meta name="twitter:description" content="Cross-platform personal finance tracker with cloud sync, multi-currency support, and offline-first persistence." />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image" content="/og-image.png?v=${iconHash}" />
 
     <!-- The \`react-native-web\` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
@@ -234,16 +246,43 @@ async function generateAssets() {
 </html>
 `;
   fs.writeFileSync(path.join(PUBLIC_DIR, 'index.html'), indexHtml);
-  console.log('  ✓ Updated index.html');
+  console.log('  ✓ Updated index.html (with version hash)');
 
   console.log('✅ [generate-web-icons] All Web, PWA, and OpenGraph assets generated successfully!\n');
 }
 
-if (require.main === module) {
-  generateAssets().catch((err) => {
-    console.error('❌ [generate-web-icons] Error generating assets:', err);
-    process.exit(1);
-  });
+function startWatch() {
+  generateAssets().catch(console.error);
+
+  const assetsDir = path.join(PROJECT_ROOT, 'assets');
+  console.log(`👀 [generate-web-icons] Watching ${assetsDir} and app.json for changes...`);
+
+  let debounceTimer = null;
+  const onChange = (filename) => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      console.log(`\n🔔 Detected change in ${filename}, regenerating web icons...`);
+      generateAssets().catch(console.error);
+    }, 400);
+  };
+
+  if (fs.existsSync(assetsDir)) {
+    fs.watch(assetsDir, { recursive: false }, (_, filename) => onChange(`assets/${filename}`));
+  }
+  if (fs.existsSync(APP_JSON_PATH)) {
+    fs.watch(APP_JSON_PATH, () => onChange('app.json'));
+  }
 }
 
-module.exports = { generateAssets };
+if (require.main === module) {
+  if (process.argv.includes('--watch')) {
+    startWatch();
+  } else {
+    generateAssets().catch((err) => {
+      console.error('❌ [generate-web-icons] Error generating assets:', err);
+      process.exit(1);
+    });
+  }
+}
+
+module.exports = { generateAssets, getFileHash };

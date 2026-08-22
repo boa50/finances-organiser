@@ -33,16 +33,16 @@ describe('generateWebIcons script', () => {
     expect(manifestContent.display).toBe('standalone');
     expect(manifestContent.icons).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ src: '/icon-192.png', sizes: '192x192' }),
-        expect.objectContaining({ src: '/icon-512.png', sizes: '512x512' }),
-        expect.objectContaining({ src: '/icon-maskable-512.png', sizes: '512x512', purpose: 'maskable' }),
+        expect.objectContaining({ src: expect.stringMatching(/^\/icon-192\.png\?v=/), sizes: '192x192' }),
+        expect.objectContaining({ src: expect.stringMatching(/^\/icon-512\.png\?v=/), sizes: '512x512' }),
+        expect.objectContaining({ src: expect.stringMatching(/^\/icon-maskable-512\.png\?v=/), sizes: '512x512', purpose: 'maskable' }),
       ])
     );
 
     const indexHtml = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf-8');
-    expect(indexHtml).toContain('<link rel="manifest" href="/manifest.json" />');
-    expect(indexHtml).toContain('<link rel="icon" type="image/x-icon" href="/favicon.ico" />');
-    expect(indexHtml).toContain('<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />');
-    expect(indexHtml).toContain('<meta property="og:image" content="/og-image.png" />');
+    expect(indexHtml).toContain('<link rel="manifest" href="/manifest.json?v=');
+    expect(indexHtml).toContain('<link rel="icon" type="image/x-icon" href="/favicon.ico?v=');
+    expect(indexHtml).toContain('<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=');
+    expect(indexHtml).toContain('<meta property="og:image" content="/og-image.png?v=');
   }, 60000);
 });
