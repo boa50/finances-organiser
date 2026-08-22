@@ -185,6 +185,26 @@ describe('TransactionsScreen helpers', () => {
       expect(element).toBeDefined();
       expect(element.props.onRefresh).toBe(mockRefresh);
     });
+
+    it('accepts pagination props (onLoadMore, isLoadingMore, isFullyLoaded, totalCount)', () => {
+      const { TransactionsScreen } = require('../TransactionsScreen');
+      const mockRefresh = jest.fn().mockResolvedValue(undefined);
+      const mockLoadMore = jest.fn().mockResolvedValue(undefined);
+      const element = require('react').createElement(TransactionsScreen, {
+        transactions: mockTransactions,
+        onRefresh: mockRefresh,
+        onLoadMore: mockLoadMore,
+        isLoadingMore: true,
+        isFullyLoaded: false,
+        totalCount: 100,
+      });
+
+      expect(element).toBeDefined();
+      expect(element.props.onLoadMore).toBe(mockLoadMore);
+      expect(element.props.isLoadingMore).toBe(true);
+      expect(element.props.isFullyLoaded).toBe(false);
+      expect(element.props.totalCount).toBe(100);
+    });
   });
 });
 

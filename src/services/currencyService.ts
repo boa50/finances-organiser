@@ -27,6 +27,13 @@ class CurrencyService {
     setLocalStorageItem(CURRENCIES_STORAGE_KEY, this.currencies);
   }
 
+  public setCurrenciesFromBootstrap(items: CurrencyInfo[]): void {
+    if (Array.isArray(items) && items.length > 0) {
+      this.currencies = items;
+      this.saveToLocalStorage();
+    }
+  }
+
   public async getCurrencies(): Promise<CurrencyInfo[]> {
     try {
       if (typeof window !== 'undefined') {

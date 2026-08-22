@@ -26,6 +26,13 @@ class PaymentMethodService {
     setLocalStorageItem(PAYMENT_METHODS_STORAGE_KEY, this.paymentMethods);
   }
 
+  public setPaymentMethodsFromBootstrap(items: PaymentMethodItem[]): void {
+    if (Array.isArray(items)) {
+      this.paymentMethods = items;
+      this.saveToLocalStorage();
+    }
+  }
+
   public async getPaymentMethods(): Promise<PaymentMethodItem[]> {
     try {
       if (typeof window !== 'undefined') {

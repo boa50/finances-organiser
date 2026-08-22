@@ -19,6 +19,27 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface PaginatedTransactionResult {
+  transactions: Transaction[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface BootstrapAppDataResult {
+  currencies?: CurrencyInfo[];
+  categories?: CategoryItem[];
+  paymentMethods?: PaymentMethodItem[];
+  banks?: BankItem[];
+  recentTransactions: Transaction[];
+  totalCount: number;
+}
+
+export interface TransactionTotalsResponse {
+  byCurrency: {
+    [currencyId: string]: { income: number; expense: number };
+  };
+}
+
 export interface Subscription {
   id: string;
   title: string;

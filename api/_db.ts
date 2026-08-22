@@ -40,7 +40,36 @@ export function getTursoClient(req?: VercelRequest): Client | null {
   }
 }
 
-export async function ensureTablesExist(client: Client): Promise<void> {
+let tablesEnsured = false;
+
+export function resetTablesEnsuredCache(): void {
+  tablesEnsured = false;
+}
+
+export async function ensureTablesExist(client: Client, force = false): Promise<void> {
+  if (tablesEnsured && !force) {
+    return;
+  }
+
+  // Fast-path: Check if the required tables and modern columns exist using a single lightweight check
+  try {
+    await client.batch(
+      [
+        'SELECT id, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, created_at FROM transactions LIMIT 0',
+        'SELECT id, currency_id, category_id, payment_method_id, bank_id, store, frequency, billing_day, billing_month, active, created_at, updated_at FROM subscriptions LIMIT 0',
+        'SELECT id, name, icon, color, type, display_order, enabled FROM categories LIMIT 0',
+        'SELECT id, name, allow_installments, display_order, enabled FROM payment_methods LIMIT 0',
+        'SELECT id, name, display_order, enabled FROM banks LIMIT 0',
+        'SELECT id, symbol, name, flag, display_order, enabled FROM currencies LIMIT 0',
+      ],
+      'read'
+    );
+    tablesEnsured = true;
+    return;
+  } catch (e) {
+    // Fast path failed, tables or columns missing; proceed to run full schema creation & migrations
+  }
+
   await client.execute(`
     CREATE TABLE IF NOT EXISTS transactions (
       id TEXT PRIMARY KEY,
@@ -272,4 +301,6 @@ export async function ensureTablesExist(client: Client): Promise<void> {
   } catch (e) {
     // Ignore seed errors
   }
+
+  tablesEnsured = true;
 }

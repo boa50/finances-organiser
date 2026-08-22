@@ -15,6 +15,7 @@ import theme, { useTheme } from '../theme';
 interface OverviewScreenProps {
   transactions: Transaction[];
   tursoConfig: TursoConfig;
+  totalCount?: number;
   onNavigateTransactions: () => void;
   onRefresh: () => void | Promise<void>;
 }
@@ -22,6 +23,7 @@ interface OverviewScreenProps {
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   transactions,
   tursoConfig,
+  totalCount,
   onNavigateTransactions,
   onRefresh,
 }) => {
@@ -37,6 +39,11 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   const nonSubscriptionTransactions = useMemo(() => {
     return transactions.filter((tx) => !tx.subscriptionId);
   }, [transactions]);
+
+  const displayedCount =
+    totalCount !== undefined && totalCount > 0
+      ? totalCount
+      : nonSubscriptionTransactions.length;
 
   const recentItems = useMemo(() => {
     return groupRecentTransactions(nonSubscriptionTransactions, 7);
@@ -97,7 +104,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
           {/* Recent Activity Section Header */}
           <AppSectionHeader
             title={t('overview.recentActivity')}
-            actionLabel={t('overview.seeAll', { count: nonSubscriptionTransactions.length })}
+            actionLabel={t('overview.seeAll', { count: displayedCount })}
             onActionPress={onNavigateTransactions}
           />
         </View>

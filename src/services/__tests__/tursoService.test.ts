@@ -256,4 +256,228 @@ describe('tursoService', () => {
       })
     ).rejects.toThrow('Transaction not found');
   });
+
+  it('fetches recent transactions within given days window', async () => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 100);
+    const oldStr = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}-${String(oldDate.getDate()).padStart(2, '0')}`;
+
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Recent Lunch',
+      amount: 45,
+      currencyId: 'BRL',
+      date: todayStr,
+    });
+
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Old Purchase',
+      amount: 200,
+      currencyId: 'BRL',
+      date: oldStr,
+    });
+
+    const recent = await tursoService.getRecentTransactions(60);
+    expect(recent.some((t) => t.title === 'Recent Lunch')).toBe(true);
+    expect(recent.some((t) => t.title === 'Old Purchase')).toBe(false);
+  });
+
+  it('fetches paginated transactions with limit and offset', async () => {
+    for (let i = 1; i <= 5; i++) {
+      await tursoService.addTransaction({
+        type: 'expense',
+        title: `Item ${i}`,
+        amount: i * 10,
+        currencyId: 'BRL',
+        date: `2026-08-0${i}`,
+      });
+    }
+
+    const page1 = await tursoService.getTransactionsPaginated(2, 0);
+    expect(page1.transactions.length).toBe(2);
+    expect(page1.total).toBe(5);
+    expect(page1.hasMore).toBe(true);
+
+    const page2 = await tursoService.getTransactionsPaginated(2, 2);
+    expect(page2.transactions.length).toBe(2);
+    expect(page2.total).toBe(5);
+    expect(page2.hasMore).toBe(true);
+
+    const page3 = await tursoService.getTransactionsPaginated(2, 4);
+    expect(page3.transactions.length).toBe(1);
+    expect(page3.total).toBe(5);
+    expect(page3.hasMore).toBe(false);
+  });
+
+  it('searches remote transactions by query and type', async () => {
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Coffee at Starbucks',
+      amount: 15,
+      currencyId: 'BRL',
+      store: 'Starbucks',
+      date: '2026-08-01',
+    });
+
+    await tursoService.addTransaction({
+      type: 'income',
+      title: 'Coffee Shop Dividend',
+      amount: 500,
+      currencyId: 'BRL',
+      date: '2026-08-02',
+    });
+
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Grocery Store',
+      amount: 120,
+      currencyId: 'BRL',
+      date: '2026-08-03',
+    });
+
+    const allCoffee = await tursoService.searchTransactionsRemote('Coffee', 'all');
+    expect(allCoffee.transactions.length).toBe(2);
+
+    const expenseCoffee = await tursoService.searchTransactionsRemote('Coffee', 'expense');
+    expect(expenseCoffee.transactions.length).toBe(1);
+    expect(expenseCoffee.transactions[0].title).toBe('Coffee at Starbucks');
+  });
+
+  it('returns total count of transactions', async () => {
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Item A',
+      amount: 10,
+      currencyId: 'BRL',
+      date: '2026-08-01',
+    });
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Item B',
+      amount: 20,
+      currencyId: 'BRL',
+      date: '2026-08-02',
+    });
+
+    const count = await tursoService.getTransactionCount();
+    expect(count).toBe(2);
+  });
+
+  it('returns lifetime aggregated totals grouped by currency', async () => {
+    await tursoService.addTransaction({
+      type: 'income',
+      title: 'Salary BRL',
+      amount: 5000,
+      currencyId: 'BRL',
+      date: '2026-08-01',
+    });
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Rent BRL',
+      amount: 1500,
+      currencyId: 'BRL',
+      date: '2026-08-02',
+    });
+    await tursoService.addTransaction({
+      type: 'income',
+      title: 'Consulting USD',
+      amount: 1000,
+      currencyId: 'USD',
+      date: '2026-08-03',
+    });
+
+    const totals = await tursoService.getTransactionTotals();
+    expect(totals.byCurrency['BRL']).toEqual({ income: 5000, expense: 1500 });
+    expect(totals.byCurrency['USD']).toEqual({ income: 1000, expense: 0 });
+  });
+
+  it('retrieves synchronous local recent transactions and local count', async () => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Local Item',
+      amount: 30,
+      currencyId: 'BRL',
+      date: todayStr,
+    });
+
+    const localRecent = tursoService.getLocalRecentTransactions(60);
+    expect(localRecent.length).toBe(1);
+    expect(localRecent[0].title).toBe('Local Item');
+
+    const count = tursoService.getLocalTransactionCount();
+    expect(count).toBe(1);
+  });
+
+  it('bootstraps app data via bootstrapAppData fallback', async () => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    await tursoService.addTransaction({
+      type: 'income',
+      title: 'Bootstrap Salary',
+      amount: 4000,
+      currencyId: 'BRL',
+      date: todayStr,
+    });
+
+    const result = await tursoService.bootstrapAppData(60);
+    expect(result.recentTransactions.length).toBe(1);
+    expect(result.recentTransactions[0].title).toBe('Bootstrap Salary');
+    expect(result.totalCount).toBe(1);
+  });
+
+  it('prunes deleted transactions in the 60-day window upon syncing recent items', async () => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 100);
+    const oldDateStr = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, '0')}-${String(oldDate.getDate()).padStart(2, '0')}`;
+
+    // Add old item outside 60-day window
+    await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Old Historical Item',
+      amount: 100,
+      currencyId: 'BRL',
+      date: oldDateStr,
+    });
+
+    // Add recent item inside 60-day window
+    const recentTx = await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Recent Stale Item',
+      amount: 50,
+      currencyId: 'BRL',
+      date: todayStr,
+    });
+
+    expect(tursoService.getLocalTransactionCount()).toBe(2);
+
+    // Call internal sync with a new recent list that does NOT contain the stale item
+    const newRecentTx = {
+      id: 'fresh-123',
+      type: 'income' as const,
+      title: 'Fresh Salary',
+      amount: 5000,
+      currencyId: 'BRL',
+      date: todayStr,
+    };
+
+    (tursoService as any).syncRecentIntoLocalCache([newRecentTx], 60);
+
+    const localRecent = tursoService.getLocalRecentTransactions(60);
+    expect(localRecent.length).toBe(1);
+    expect(localRecent[0].title).toBe('Fresh Salary');
+
+    // Older item outside 60-day window is preserved
+    expect(tursoService.getLocalTransactionCount()).toBe(2);
+  });
 });

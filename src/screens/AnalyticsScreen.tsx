@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
+import { tursoService } from '../services/tursoService';
 import { MonthlyBreakdownCharts } from '../components/analytics';
 import { EvolutionTrendChart } from '../components/charts';
 import { DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
@@ -20,19 +21,47 @@ interface AnalyticsScreenProps {
 export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const [lifetimeTotals, setLifetimeTotals] = useState<{ income: number; expense: number } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    tursoService
+      .getTransactionTotals()
+      .then((res) => {
+        if (!isMounted) return;
+        let totalIncome = 0;
+        let totalExpense = 0;
+        for (const [currId, totals] of Object.entries(res.byCurrency)) {
+          totalIncome += convertCurrency(totals.income, currId, DEFAULT_CURRENCY);
+          totalExpense += convertCurrency(totals.expense, currId, DEFAULT_CURRENCY);
+        }
+        setLifetimeTotals({ income: totalIncome, expense: totalExpense });
+      })
+      .catch(() => {
+        // Fallback to in-memory transaction reduction
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [transactions]);
 
   // Compute total statistics across all recorded transactions
   let totalIncomeConverted = 0;
   let totalExpenseConverted = 0;
 
-  transactions.forEach((tx) => {
-    const val = convertCurrency(tx.amount, tx.currencyId, DEFAULT_CURRENCY);
-    if (tx.type === 'income') {
-      totalIncomeConverted += val;
-    } else {
-      totalExpenseConverted += val;
-    }
-  });
+  if (lifetimeTotals) {
+    totalIncomeConverted = lifetimeTotals.income;
+    totalExpenseConverted = lifetimeTotals.expense;
+  } else {
+    transactions.forEach((tx) => {
+      const val = convertCurrency(tx.amount, tx.currencyId, DEFAULT_CURRENCY);
+      if (tx.type === 'income') {
+        totalIncomeConverted += val;
+      } else {
+        totalExpenseConverted += val;
+      }
+    });
+  }
 
   const netOverall = totalIncomeConverted - totalExpenseConverted;
 

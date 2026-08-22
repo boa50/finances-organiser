@@ -26,6 +26,13 @@ class BankService {
     setLocalStorageItem(BANKS_STORAGE_KEY, this.banks);
   }
 
+  public setBanksFromBootstrap(items: BankItem[]): void {
+    if (Array.isArray(items)) {
+      this.banks = items;
+      this.saveToLocalStorage();
+    }
+  }
+
   public async getBanks(): Promise<BankItem[]> {
     try {
       if (typeof window !== 'undefined') {

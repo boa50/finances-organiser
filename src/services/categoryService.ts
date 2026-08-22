@@ -56,6 +56,13 @@ class CategoryService {
     setLocalStorageItem(CATEGORIES_STORAGE_KEY, this.categories);
   }
 
+  public setCategoriesFromBootstrap(items: CategoryItem[]): void {
+    if (Array.isArray(items)) {
+      this.categories = items;
+      this.saveToCache();
+    }
+  }
+
   public async getCategories(type?: TransactionType): Promise<CategoryItem[]> {
     try {
       if (typeof window !== 'undefined') {

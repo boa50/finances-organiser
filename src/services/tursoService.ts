@@ -1,7 +1,7 @@
 import { createClient, Client } from '@libsql/client/web';
-import { Transaction, TursoConfig } from '../types';
+import { BootstrapAppDataResult, PaginatedTransactionResult, Transaction, TransactionTotalsResponse, TursoConfig } from '../types';
 import { generateId } from '../utils/idGenerator';
-import { calculateInstallmentDate, normalizeTransactionDate, parseInstallmentTitle } from '../utils/financials';
+import { calculateInstallmentDate, filterTransactions, formatDateToYMD, normalizeTransactionDate, parseInstallmentTitle, parseTransactionDate } from '../utils/financials';
 import { isJsonResponse } from './apiResponseUtils';
 
 const LOCAL_TX_KEY = 'finances_local_transactions';
@@ -116,7 +116,6 @@ class TursoDatabaseService {
           if (data.isConnected) {
             this.config.isConnected = true;
             this.config.lastSyncedAt = new Date().toISOString();
-            await this.fetchFromTurso();
             return true;
           }
         }
@@ -257,14 +256,73 @@ class TursoDatabaseService {
 
       this.config.isConnected = true;
       this.config.lastSyncedAt = new Date().toISOString();
-
-      await this.fetchFromTurso();
       return true;
     } catch (err) {
       console.error('Turso init error:', err);
       this.config.isConnected = false;
       return false;
     }
+  }
+
+  private mapRowToTransaction(row: any): Transaction {
+    return {
+      id: String(row.id),
+      type: row.type as any,
+      title: String(row.title),
+      amount: Number(row.amount),
+      currencyId: String(row.currency_id || row.currency || 'BRL'),
+      categoryId: row.category_id ? String(row.category_id) : undefined,
+      paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
+      bankId: row.bank_id ? String(row.bank_id) : undefined,
+      store: row.store ? String(row.store) : undefined,
+      installments: Number(row.installments) || 0,
+      installmentNumber: Number(row.installment_number) || 0,
+      installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
+      subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
+      date: normalizeTransactionDate(String(row.date)),
+      notes: row.notes ? String(row.notes) : undefined,
+      createdAt: String(row.created_at || row.date),
+    };
+  }
+
+  private mergeIntoLocalCache(items: Transaction[]): void {
+    const map = new Map<string, Transaction>();
+    for (const tx of this.localMemoryTx) {
+      map.set(tx.id, tx);
+    }
+    for (const tx of items) {
+      map.set(tx.id, tx);
+    }
+    this.localMemoryTx = Array.from(map.values()).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    this.saveLocalCache();
+  }
+
+  private syncRecentIntoLocalCache(items: Transaction[], sinceDays: number = 60): void {
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - sinceDays);
+    const sinceStr = formatDateToYMD(sinceDate);
+    const sinceTimestamp = parseTransactionDate(sinceStr).getTime();
+
+    // Retain only older items strictly outside the recent window
+    const olderItems = this.localMemoryTx.filter((t) => {
+      const tTime = parseTransactionDate(t.date).getTime();
+      return !isNaN(tTime) && tTime < sinceTimestamp;
+    });
+
+    const map = new Map<string, Transaction>();
+    for (const tx of olderItems) {
+      map.set(tx.id, tx);
+    }
+    for (const tx of items) {
+      map.set(tx.id, tx);
+    }
+
+    this.localMemoryTx = Array.from(map.values()).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    this.saveLocalCache();
   }
 
   private async fetchFromTurso(): Promise<Transaction[]> {
@@ -275,7 +333,8 @@ class TursoDatabaseService {
           headers: this.getApiHeaders(),
         });
         if (isJsonResponse(res)) {
-          const items: Transaction[] = await res.json();
+          const data = await res.json();
+          const items: Transaction[] = Array.isArray(data) ? data : data.transactions || [];
           this.localMemoryTx = items;
           this.saveLocalCache();
           this.config.isConnected = true;
@@ -289,25 +348,8 @@ class TursoDatabaseService {
     if (!this.client) return this.localMemoryTx;
 
     try {
-      const res = await this.client.execute('SELECT * FROM transactions ORDER BY date DESC');
-      const items: Transaction[] = res.rows.map((row: any) => ({
-        id: String(row.id),
-        type: row.type as any,
-        title: String(row.title),
-        amount: Number(row.amount),
-        currencyId: String(row.currency_id || row.currency || 'BRL'),
-        categoryId: row.category_id ? String(row.category_id) : undefined,
-        paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
-        bankId: row.bank_id ? String(row.bank_id) : undefined,
-        store: row.store ? String(row.store) : undefined,
-        installments: Number(row.installments) || 0,
-        installmentNumber: Number(row.installment_number) || 0,
-        installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
-        subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
-        date: normalizeTransactionDate(String(row.date)),
-        notes: row.notes ? String(row.notes) : undefined,
-        createdAt: String(row.created_at || row.date),
-      }));
+      const res = await this.client.execute('SELECT * FROM transactions ORDER BY date DESC, created_at DESC');
+      const items: Transaction[] = res.rows.map((row: any) => this.mapRowToTransaction(row));
 
       this.localMemoryTx = items;
       this.saveLocalCache();
@@ -322,6 +364,403 @@ class TursoDatabaseService {
 
   public async getTransactions(): Promise<Transaction[]> {
     return await this.fetchFromTurso();
+  }
+
+  public async getRecentTransactions(sinceDays: number = 60): Promise<Transaction[]> {
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - sinceDays);
+    const sinceStr = formatDateToYMD(sinceDate);
+    const sinceDateStr = sinceStr.slice(0, 10);
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch(`/api/transactions?since=${encodeURIComponent(sinceDateStr)}`, {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (isJsonResponse(res)) {
+          const data = await res.json();
+          const items: Transaction[] = Array.isArray(data) ? data : data.transactions || [];
+          this.syncRecentIntoLocalCache(items, sinceDays);
+          this.config.isConnected = true;
+          return items;
+        }
+      }
+    } catch (e) {
+      // Fallback below
+    }
+
+    if (this.client) {
+      try {
+        const res = await this.client.execute({
+          sql: 'SELECT * FROM transactions WHERE substr(date, 1, 10) >= ? ORDER BY date DESC, created_at DESC',
+          args: [sinceDateStr],
+        });
+        const items = res.rows.map((row: any) => this.mapRowToTransaction(row));
+        this.syncRecentIntoLocalCache(items, sinceDays);
+        this.config.isConnected = true;
+        return items;
+      } catch (err) {
+        console.warn('Error fetching recent from Turso:', err);
+        this.config.isConnected = false;
+      }
+    }
+
+    const sinceTimestamp = parseTransactionDate(sinceDateStr).getTime();
+    return this.localMemoryTx.filter((t) => {
+      const tTime = parseTransactionDate(t.date).getTime();
+      return !isNaN(tTime) && tTime >= sinceTimestamp;
+    });
+  }
+
+  public getLocalRecentTransactions(sinceDays: number = 60): Transaction[] {
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - sinceDays);
+    const sinceStr = formatDateToYMD(sinceDate);
+    const sinceTimestamp = parseTransactionDate(sinceStr).getTime();
+    return this.localMemoryTx.filter((t) => {
+      const tTime = parseTransactionDate(t.date).getTime();
+      return !isNaN(tTime) && tTime >= sinceTimestamp;
+    });
+  }
+
+  public getLocalTransactionCount(): number {
+    return this.localMemoryTx.length;
+  }
+
+  public async bootstrapAppData(sinceDays: number = 60): Promise<BootstrapAppDataResult> {
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - sinceDays);
+    const sinceStr = formatDateToYMD(sinceDate);
+    const sinceDateStr = sinceStr.slice(0, 10);
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch(`/api/bootstrap?since=${encodeURIComponent(sinceDateStr)}`, {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (isJsonResponse(res)) {
+          const data: BootstrapAppDataResult = await res.json();
+          if (data && Array.isArray(data.recentTransactions)) {
+            this.syncRecentIntoLocalCache(data.recentTransactions, sinceDays);
+            this.config.isConnected = true;
+            this.config.lastSyncedAt = new Date().toISOString();
+            return {
+              currencies: data.currencies,
+              categories: data.categories,
+              paymentMethods: data.paymentMethods,
+              banks: data.banks,
+              recentTransactions: data.recentTransactions,
+              totalCount: typeof data.totalCount === 'number' ? data.totalCount : data.recentTransactions.length,
+            };
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback below
+    }
+
+    if (this.client) {
+      try {
+        const [currenciesRes, categoriesRes, paymentMethodsRes, banksRes, countRes, txRes] = await Promise.all([
+          this.client.execute('SELECT * FROM currencies ORDER BY display_order ASC'),
+          this.client.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC'),
+          this.client.execute('SELECT * FROM payment_methods ORDER BY display_order ASC, name ASC'),
+          this.client.execute('SELECT * FROM banks ORDER BY display_order ASC, name ASC'),
+          this.client.execute('SELECT COUNT(*) as total FROM transactions'),
+          this.client.execute({
+            sql: 'SELECT * FROM transactions WHERE substr(date, 1, 10) >= ? ORDER BY date DESC, created_at DESC',
+            args: [sinceDateStr],
+          }),
+        ]);
+
+        const currencies = (currenciesRes.rows || []).map((row: any) => ({
+          code: String(row.id),
+          symbol: String(row.symbol),
+          name: String(row.name),
+          flag: String(row.flag),
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+
+        const categories = (categoriesRes.rows || []).map((row: any) => ({
+          id: String(row.id),
+          name: String(row.name),
+          icon: String(row.icon),
+          color: String(row.color),
+          type: row.type as any,
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+
+        const paymentMethods = (paymentMethodsRes.rows || []).map((row: any) => ({
+          id: String(row.id),
+          name: String(row.name),
+          allowInstallments: Boolean(row.allow_installments),
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+
+        const banks = (banksRes.rows || []).map((row: any) => ({
+          id: String(row.id),
+          name: String(row.name),
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+
+        const recent = (txRes.rows || []).map((row: any) => this.mapRowToTransaction(row));
+        const total = Number(countRes.rows[0]?.total || 0);
+
+        this.syncRecentIntoLocalCache(recent, sinceDays);
+        this.config.isConnected = true;
+        this.config.lastSyncedAt = new Date().toISOString();
+
+        return {
+          currencies,
+          categories,
+          paymentMethods,
+          banks,
+          recentTransactions: recent,
+          totalCount: total,
+        };
+      } catch (err) {
+        console.warn('Error fetching bootstrap data from direct Turso client:', err);
+        this.config.isConnected = false;
+      }
+    }
+
+    const localRecent = this.getLocalRecentTransactions(sinceDays);
+    return {
+      recentTransactions: localRecent,
+      totalCount: this.localMemoryTx.length,
+    };
+  }
+
+  public async getTransactionsPaginated(
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<PaginatedTransactionResult> {
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch(`/api/transactions?limit=${limit}&offset=${offset}`, {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (isJsonResponse(res)) {
+          const data: PaginatedTransactionResult = await res.json();
+          this.mergeIntoLocalCache(data.transactions || []);
+          this.config.isConnected = true;
+          return data;
+        }
+      }
+    } catch (e) {
+      // Fallback below
+    }
+
+    if (this.client) {
+      try {
+        const countRes = await this.client.execute('SELECT COUNT(*) as total FROM transactions');
+        const total = Number(countRes.rows[0]?.total || 0);
+
+        const res = await this.client.execute({
+          sql: 'SELECT * FROM transactions ORDER BY date DESC, created_at DESC LIMIT ? OFFSET ?',
+          args: [limit, offset],
+        });
+        const items = res.rows.map((row: any) => this.mapRowToTransaction(row));
+        this.mergeIntoLocalCache(items);
+        this.config.isConnected = true;
+        return {
+          transactions: items,
+          total,
+          hasMore: offset + items.length < total,
+        };
+      } catch (err) {
+        console.warn('Error fetching paginated transactions from Turso:', err);
+        this.config.isConnected = false;
+      }
+    }
+
+    const total = this.localMemoryTx.length;
+    const slice = this.localMemoryTx.slice(offset, offset + limit);
+    return {
+      transactions: slice,
+      total,
+      hasMore: offset + slice.length < total,
+    };
+  }
+
+  public async searchTransactionsRemote(
+    query: string,
+    type: 'all' | 'income' | 'expense' = 'all',
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<PaginatedTransactionResult> {
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams({
+          search: query,
+          type,
+          limit: String(limit),
+          offset: String(offset),
+        });
+        const res = await fetch(`/api/transactions?${params.toString()}`, {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (isJsonResponse(res)) {
+          const data: PaginatedTransactionResult = await res.json();
+          this.mergeIntoLocalCache(data.transactions || []);
+          this.config.isConnected = true;
+          return data;
+        }
+      }
+    } catch (e) {
+      // Fallback below
+    }
+
+    if (this.client) {
+      try {
+        const s = `%${query.trim()}%`;
+        const whereClauses = ['(transactions.title LIKE ? OR transactions.store LIKE ? OR transactions.notes LIKE ? OR categories.name LIKE ?)'];
+        const args: any[] = [s, s, s, s];
+
+        if (type !== 'all') {
+          whereClauses.push('transactions.type = ?');
+          args.push(type);
+        }
+
+        const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
+
+        const countRes = await this.client.execute({
+          sql: `SELECT COUNT(*) as total FROM transactions LEFT JOIN categories ON transactions.category_id = categories.id ${whereSql}`,
+          args: [...args],
+        });
+        const total = Number(countRes.rows[0]?.total || 0);
+
+        const res = await this.client.execute({
+          sql: `SELECT transactions.* FROM transactions LEFT JOIN categories ON transactions.category_id = categories.id ${whereSql} ORDER BY transactions.date DESC, transactions.created_at DESC LIMIT ? OFFSET ?`,
+          args: [...args, limit, offset],
+        });
+        const items = res.rows.map((row: any) => this.mapRowToTransaction(row));
+        this.mergeIntoLocalCache(items);
+        this.config.isConnected = true;
+        return {
+          transactions: items,
+          total,
+          hasMore: offset + items.length < total,
+        };
+      } catch (err) {
+        console.warn('Error searching remote transactions:', err);
+        this.config.isConnected = false;
+      }
+    }
+
+    const filtered = filterTransactions(this.localMemoryTx, {
+      searchQuery: query,
+      type,
+    });
+    const total = filtered.length;
+    const slice = filtered.slice(offset, offset + limit);
+    return {
+      transactions: slice,
+      total,
+      hasMore: offset + slice.length < total,
+    };
+  }
+
+  public async getTransactionCount(): Promise<number> {
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/transactions?count=true', {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (isJsonResponse(res)) {
+          const data = await res.json();
+          if (typeof data.total === 'number') {
+            return data.total;
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback below
+    }
+
+    if (this.client) {
+      try {
+        const res = await this.client.execute('SELECT COUNT(*) as total FROM transactions');
+        return Number(res.rows[0]?.total || 0);
+      } catch (err) {
+        // Fallback
+      }
+    }
+
+    return this.localMemoryTx.length;
+  }
+
+  public async getTransactionTotals(): Promise<TransactionTotalsResponse> {
+    try {
+      if (typeof window !== 'undefined') {
+        let res = await fetch('/api/transactions-totals', {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (!isJsonResponse(res)) {
+          res = await fetch('/api/transactions?totals=true', {
+            method: 'GET',
+            headers: this.getApiHeaders(),
+          });
+        }
+        if (isJsonResponse(res)) {
+          const data: TransactionTotalsResponse = await res.json();
+          return data;
+        }
+      }
+    } catch (e) {
+      // Fallback below
+    }
+
+    if (this.client) {
+      try {
+        const res = await this.client.execute(`
+          SELECT currency_id, type, SUM(amount) as total
+          FROM transactions
+          GROUP BY currency_id, type
+        `);
+        const byCurrency: Record<string, { income: number; expense: number }> = {};
+        for (const row of res.rows) {
+          const curr = String(row.currency_id || 'BRL');
+          const type = String(row.type);
+          const total = Number(row.total || 0);
+          if (!byCurrency[curr]) {
+            byCurrency[curr] = { income: 0, expense: 0 };
+          }
+          if (type === 'income') {
+            byCurrency[curr].income += total;
+          } else if (type === 'expense') {
+            byCurrency[curr].expense += total;
+          }
+        }
+        return { byCurrency };
+      } catch (err) {
+        // Fallback below
+      }
+    }
+
+    const byCurrency: Record<string, { income: number; expense: number }> = {};
+    for (const tx of this.localMemoryTx) {
+      const curr = tx.currencyId || 'BRL';
+      if (!byCurrency[curr]) {
+        byCurrency[curr] = { income: 0, expense: 0 };
+      }
+      if (tx.type === 'income') {
+        byCurrency[curr].income += tx.amount;
+      } else if (tx.type === 'expense') {
+        byCurrency[curr].expense += tx.amount;
+      }
+    }
+    return { byCurrency };
   }
 
   public async addTransaction(

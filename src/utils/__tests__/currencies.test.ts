@@ -97,6 +97,11 @@ describe('Currency Utilities', () => {
       expect(result).toBe(100);
     });
 
+    it('should convert USD to BRL using baseline rates or loaded rates', () => {
+      const converted = convertCurrency(100, 'USD', 'BRL');
+      expect(converted).toBeGreaterThan(100);
+    });
+
     it('should convert AUD to BRL when exchange rate is loaded', async () => {
       const mockQuotes = {
         AUDBRL: {

@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -30,6 +31,10 @@ import { useToast } from '../contexts';
 interface TransactionsScreenProps {
   transactions: Transaction[];
   onRefresh: () => void | Promise<void>;
+  onLoadMore?: (offset?: number) => void | Promise<void>;
+  isLoadingMore?: boolean;
+  isFullyLoaded?: boolean;
+  totalCount?: number;
 }
 
 export type TransactionListItem =
@@ -77,6 +82,10 @@ export function buildFlattenedTransactions(
 export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   transactions,
   onRefresh,
+  onLoadMore,
+  isLoadingMore = false,
+  isFullyLoaded = false,
+  totalCount,
 }) => {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
@@ -84,14 +93,53 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [serverSearchResults, setServerSearchResults] = useState<Transaction[] | null>(null);
+  const [serverSearchTotal, setServerSearchTotal] = useState<number | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Debounced server-side search when not all transactions are loaded locally
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query) {
+      setServerSearchResults(null);
+      setServerSearchTotal(null);
+      setIsSearching(false);
+      return;
+    }
+
+    if (isFullyLoaded) {
+      setServerSearchResults(null);
+      setServerSearchTotal(null);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await tursoService.searchTransactionsRemote(query, filterType, 100);
+        setServerSearchResults(res.transactions);
+        setServerSearchTotal(res.total);
+      } catch (err) {
+        console.warn('Error during server transaction search:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, filterType, isFullyLoaded]);
 
   const filteredTransactions = useMemo(() => {
+    if (serverSearchResults !== null) {
+      return serverSearchResults;
+    }
     return filterTransactions(transactions, {
       type: filterType,
       searchQuery,
       categories: categoryService.getCategoriesSync(),
     });
-  }, [transactions, filterType, searchQuery]);
+  }, [serverSearchResults, transactions, filterType, searchQuery]);
 
   const flattenedList = useMemo(() => {
     return buildFlattenedTransactions(
@@ -219,6 +267,21 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     });
   }, [onRefresh, showToast, updateToast, t]);
 
+  const handleEndReached = useCallback(() => {
+    if (!isLoadingMore && !isFullyLoaded && onLoadMore && !searchQuery.trim()) {
+      onLoadMore(transactions.length);
+    }
+  }, [isLoadingMore, isFullyLoaded, onLoadMore, searchQuery, transactions.length]);
+
+  const renderFooter = useCallback(() => {
+    if (!isLoadingMore && !isSearching) return null;
+    return (
+      <View style={styles.loadingFooter}>
+        <ActivityIndicator size="small" color={theme.colors.textTertiary} />
+      </View>
+    );
+  }, [isLoadingMore, isSearching, theme.colors.textTertiary]);
+
   const renderItem = useCallback(({ item }: { item: TransactionListItem }) => {
     if (item.type === 'header') {
       const isPositive = item.netBalance > 0;
@@ -255,6 +318,15 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     );
   }, [handleEdit, handleDuplicate, handleDelete, theme.colors]);
 
+  const displayedCount =
+    serverSearchTotal !== null
+      ? serverSearchTotal
+      : searchQuery.trim() || filterType !== 'all'
+      ? filteredTransactions.length
+      : totalCount !== undefined && totalCount > transactions.length
+      ? totalCount
+      : filteredTransactions.length;
+
   return (
     <>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -262,7 +334,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <View style={styles.fixedHeader}>
           <AppSectionHeader
             title={t('transactions.title')}
-            subtitle={t('transactions.recordedEntries', { count: filteredTransactions.length })}
+            subtitle={t('transactions.recordedEntries', { count: displayedCount })}
             rightElement={
               transactions.length > 0 ? (
                 <Pressable
@@ -326,6 +398,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
             getItemType={(item) => item.type}
             keyExtractor={(item) => item.id}
             drawDistance={Platform.OS === 'web' ? 500 : 300}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={renderFooter}
             ListEmptyComponent={
               <AppEmptyState
                 title={t('transactions.noTransactionsFound')}
@@ -411,5 +486,10 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.bold,
     letterSpacing: -0.2,
+  },
+  loadingFooter: {
+    paddingVertical: theme.spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

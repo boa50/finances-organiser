@@ -26,7 +26,16 @@ import { ToastProvider } from './src/contexts';
 
 function MainApp() {
   const { isAuthenticated, authenticate, logout } = useAuth();
-  const { transactions, tursoConfig, loadData, clearAllTransactions } = useAppData(isAuthenticated);
+  const {
+    transactions,
+    tursoConfig,
+    loadData,
+    clearAllTransactions,
+    isFullyLoaded,
+    isLoadingMore,
+    totalCount,
+    loadMoreTransactions,
+  } = useAppData(isAuthenticated);
   const [activeTab, setActiveTab] = useState<TabName>('overview');
   const [addTransactionModalVisible, setAddTransactionModalVisible] = useState(false);
   const { theme, isDark } = useTheme();
@@ -54,6 +63,7 @@ function MainApp() {
           <OverviewScreen
             transactions={transactions}
             tursoConfig={tursoConfig}
+            totalCount={totalCount}
             onNavigateTransactions={() => setActiveTab('transactions')}
             onRefresh={loadData}
           />
@@ -64,7 +74,14 @@ function MainApp() {
         )}
 
         {activeTab === 'transactions' && (
-          <TransactionsScreen transactions={transactions} onRefresh={loadData} />
+          <TransactionsScreen
+            transactions={transactions}
+            onRefresh={loadData}
+            onLoadMore={loadMoreTransactions}
+            isLoadingMore={isLoadingMore}
+            isFullyLoaded={isFullyLoaded}
+            totalCount={totalCount}
+          />
         )}
 
         {activeTab === 'subscriptions' && (

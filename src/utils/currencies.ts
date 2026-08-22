@@ -19,6 +19,45 @@ export const DEFAULT_CURRENCY = 'BRL';
 
 const AWESOME_API_URL = 'https://economia.awesomeapi.com.br/json/last';
 const RATE_CACHE_DURATION_MS = 60_000;
+const RATES_STORAGE_KEY = 'finances_cached_exchange_rates';
+
+export const BASELINE_RATES_TO_BRL: Record<string, number> = {
+  BRL: 1,
+  USD: 5.5,
+  EUR: 6.0,
+  GBP: 7.0,
+  CAD: 4.0,
+  AUD: 3.6,
+  JPY: 0.036,
+  KRW: 0.004,
+  THB: 0.16,
+  COP: 0.0013,
+};
+
+interface CachedRatesPayload {
+  rates: Record<string, number>;
+  fetchedAt: number;
+}
+
+function loadInitialRates(): { rates: Record<string, number>; fetchedAt: number } {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const saved = localStorage.getItem(RATES_STORAGE_KEY);
+      if (saved) {
+        const parsed: CachedRatesPayload = JSON.parse(saved);
+        if (parsed && typeof parsed.rates === 'object' && parsed.rates.BRL === 1) {
+          return {
+            rates: { ...BASELINE_RATES_TO_BRL, ...parsed.rates },
+            fetchedAt: typeof parsed.fetchedAt === 'number' ? parsed.fetchedAt : 0,
+          };
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore error
+  }
+  return { rates: { ...BASELINE_RATES_TO_BRL }, fetchedAt: 0 };
+}
 
 interface AwesomeApiQuote {
   code: string;
@@ -26,10 +65,9 @@ interface AwesomeApiQuote {
   bid: string;
 }
 
-// Each rate is the number of BRL for one unit of the currency. BRL is the
-// common base, which also lets us convert between any two supported currencies.
-let ratesToBRL: Record<string, number> = { BRL: 1 };
-let ratesFetchedAt = 0;
+const initialCached = loadInitialRates();
+let ratesToBRL: Record<string, number> = initialCached.rates;
+let ratesFetchedAt = initialCached.fetchedAt;
 let pendingRateRequest: Promise<boolean> | null = null;
 
 export function getCurrencyInfo(code: string): CurrencyInfo {
@@ -135,8 +173,18 @@ export async function refreshCurrencyRates(force = false): Promise<boolean> {
         throw new Error('AwesomeAPI returned no usable currency quotes');
       }
 
-      ratesToBRL = nextRates;
+      ratesToBRL = { ...ratesToBRL, ...nextRates };
       ratesFetchedAt = Date.now();
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem(
+            RATES_STORAGE_KEY,
+            JSON.stringify({ rates: ratesToBRL, fetchedAt: ratesFetchedAt })
+          );
+        }
+      } catch (e) {
+        // Ignore error
+      }
       return true;
     } catch (error) {
       console.warn('Unable to refresh currency rates from AwesomeAPI:', error);
@@ -158,12 +206,9 @@ export function convertCurrency(
   const toCode = toCurrency.toUpperCase();
   if (fromCode === toCode) return amount;
 
-  const fromRate = ratesToBRL[fromCode];
-  const toRate = ratesToBRL[toCode];
+  const fromRate = ratesToBRL[fromCode] || BASELINE_RATES_TO_BRL[fromCode];
+  const toRate = ratesToBRL[toCode] || BASELINE_RATES_TO_BRL[toCode];
   if (!fromRate || !toRate) {
-    // This only occurs before the first successful fetch or for an unsupported
-    // currency. Keeping the original amount is safer than using stale hardcoded
-    // exchange rates; a later refresh will re-render the correct conversion.
     return amount;
   }
 

@@ -9,7 +9,7 @@ A cross-platform personal finance tracker built with **React Native** and **Expo
 - **D3.js analytics** — Interactive donut charts, category breakdown bars, and period-filtered (5 years, 1 year, 6 months) monthly trend line/area charts rendered with `react-native-svg`.
 - **Vercel Serverless API** — Node.js Serverless Functions in `/api` to securely manage Turso database connections and handle authentication, transactions, categories, payment methods, and banks.
 - **Multi-currency & Currency management** — Dynamic currency management supporting BRL, USD, CAD, AUD, THB, JPY, KRW (WON), EUR, GBP, and COP (COL) with 2-step live exchange rate conversion (direct X-BRL or X-USD * USD-BRL fallback) and minimum 1 currency constraint.
-- **High-performance FlashList & Screen-bounded scrolling** — List virtualization via `@shopify/flash-list` across all data screens (`TransactionsScreen`, `SubscriptionsScreen`, `ManagementScreen`, and `OverviewScreen`) with split-layout pinned headers/filters and independent list scrolling.
+- **High-performance FlashList, Infinite Scroll & Unified Bootstrap Loading** — List virtualization via `@shopify/flash-list` across all data screens with screen-bounded pinned headers/filters and independent list scrolling; instant local cache rendering on mount (0ms first paint) for Overview, unified `/api/bootstrap` endpoint loading reference data (currencies, categories, payment methods, banks) and 60-day recent transactions in a single HTTP request with fast-path schema validation, background non-blocking subscription processing, automatic infinite scroll batch loading (50 transactions/page) on TransactionsScreen with minimalist activity indicator, and debounced (300ms) server-side search when partial data is loaded.
 - **Subscription management** — Dedicated screen for managing monthly and annual recurring subscription expenses with monthly/annual frequency toggle, recurrence day/month scheduling, prorated monthly metric aggregation, and idempotent transaction auto-generation.
 - **Transaction & Installment management** — Full create, edit, duplicate, delete, search, and filter capabilities with monthly grouping and monthly net balance indicators, merchant tracking, BRL monetary conversion display on transaction cards (with converted original values shown alongside), single and multi-month installment support, and quick duplication defaulting to the current date.
 - **Comprehensive management hub, Enable/Disable toggles & Drag-and-drop reordering** — Centralized tabbed screen for Categories (custom icons & colors), Payment Methods (with installment toggles), Banks, and Currencies. Each customizable entity includes an enable/disable toggle switch; disabled items are hidden when creating or editing transactions and subscriptions while remaining preserved for historical reference on older records. All customizable entities can also be freely reordered via cross-platform drag-and-drop (Web & Mobile), with the custom sort order persisted and automatically reflected throughout the application.
@@ -119,8 +119,10 @@ finances-organiser/
 ├── api/                             # Vercel Serverless Functions (Node.js)
 │   ├── _db.ts                       # Server-side LibSQL client helper & table auto-migration
 │   ├── auth.ts                      # POST /api/auth — timing-safe password verification
+│   ├── bootstrap.ts                 # GET /api/bootstrap — unified single-request app initialization
 │   ├── health.ts                    # GET /api/health — database ping & status check
-│   ├── transactions.ts              # CRUD /api/transactions — fetch, create, edit, delete
+│   ├── transactions.ts              # CRUD /api/transactions — fetch, create, edit, delete, paginate, search
+│   ├── transactions-totals.ts       # GET /api/transactions-totals — currency-grouped lifetime aggregates
 │   ├── categories.ts                # CRUD /api/categories — fetch, create, edit, delete
 │   ├── payment-methods.ts           # CRUD /api/payment-methods — fetch, create, edit, delete
 │   ├── banks.ts                     # CRUD /api/banks — fetch, create, edit, delete
@@ -258,7 +260,7 @@ finances-organiser/
 | **Management domain** | Separate CRUD services and API routes for Categories, Payment Methods, and Banks; transactions and subscriptions store ID foreign keys (`category_id`, `payment_method_id`, `bank_id`) to custom entities with `ON DELETE SET NULL` reference cascade; no hardcoded defaults. |
 | **Charting** | D3.js for data computation (`d3.pie`, `d3.arc`, `d3.curveMonotoneX`) rendered via `react-native-svg` paths using theme typography and reactive theme colors. |
 | **List Virtualization** | High-performance recycling via `@shopify/flash-list` with screen-bounded split layouts (pinned headers & search bars, independent list scrolling). |
-| **Unit testing** | Jest + ts-jest test runner covering UI primitives, contexts, pure utility functions, auth services, entity CRUD, localized currencies, theme tokens/modes/persistence, and i18n key parity & codebase scan (178 passing unit tests across 23 suites). |
+| **Unit testing** | Jest + ts-jest test runner covering UI primitives, contexts, pure utility functions, auth services, entity CRUD, pagination, localized currencies, theme tokens/modes/persistence, and i18n key parity & codebase scan (190 passing unit tests across 24 suites). |
 | **Internationalization (i18n)** | `i18next` + `react-i18next` with `pt-BR` and `en-AU` catalogs; reactive `useTranslation` hooks; language selector on header; persistence in `localStorage` (`financecloud_language`). |
 | **Platform splits** | `.native.tsx` / `.web.tsx` file extensions for platform-specific behavior (e.g. date pickers). |
 | **Currency conversion** | Pivot-based conversion through BRL using cached exchange rates (60s TTL). |
