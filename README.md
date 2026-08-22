@@ -82,6 +82,13 @@ To run unit tests:
 npm test
 ```
 
+To regenerate Web, PWA, and OpenGraph icons:
+
+```sh
+npm run generate-icons
+```
+*(Icons are also regenerated automatically before every `npm start`, `npm run web`, and `npm run build`)*
+
 ## 🧪 Running Tests
 
 Run the unit test suite using Jest and ts-jest:
@@ -138,6 +145,8 @@ finances-organiser/
 ├── .env.example                     # Environment variable template
 │
 ├── assets/                          # App icons, splash screen, favicon
+├── public/                          # Static Web & PWA assets (auto-generated from assets/ and app.json)
+├── scripts/                         # Build & automation scripts (generate-web-icons.js)
 │
 └── src/
     ├── theme.ts                     # Root theme backward-compatibility re-export

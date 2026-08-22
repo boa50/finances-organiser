@@ -34,11 +34,15 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "generate-icons": "node scripts/generate-web-icons.js",
+    "prebuild": "npm run generate-icons",
+    "build": "expo export -p web",
+    "prestart": "npm run generate-icons",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "preweb": "npm run generate-icons",
     "web": "expo start --web",
-    "build": "expo export -p web",
     "test": "jest"
   },
   "private": true

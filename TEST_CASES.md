@@ -2018,5 +2018,25 @@ All 83 automated tests across 13 test suites were verified passing via `npm test
 
 **Automation:** `src/services/__tests__/currencyService.test.ts` — `toggles currency enabled state and enforces minimum 1 enabled currency`
 
+---
+
+### TC-095 — Automatic PWA, Web Icon, and OpenGraph Asset Generation
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Deployment / Web & PWA
+
+**Platform:** Web, Android, iOS
+
+**Given** Source image assets configured in `app.json` or located in `assets/` (e.g. `icon-v2.png`, `favicon-v2.png`).
+
+**When** `npm run build`, `npm run generate-icons`, or `npm start` is executed.
+
+**Then** All Web and PWA icon resolutions (`icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, `favicon-32x32.png`, `favicon-16x16.png`, `favicon.ico`, `og-image.png`), `manifest.json`, and `index.html` are dynamically generated into `public/` and bundled into `dist/`, ensuring Android browser installation icons and Vercel overview/social preview images reflect the latest source assets automatically.
+
+**Automation:** `scripts/__tests__/generateWebIcons.test.ts` — `generates all PWA icons, web favicons, manifest and index.html from source assets`
+
 
 
