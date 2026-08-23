@@ -23,9 +23,13 @@ export function useAppData(enabled: boolean = true) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const { showToast, updateToast } = useToast();
   const [tursoConfig, setTursoConfig] = useState<TursoConfig>(() => tursoService.getConfig());
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
+      setConnectionError(null);
       const [bootstrapResult] = await Promise.all([
         tursoService.bootstrapAppData(60),
         refreshCurrencyRates(),
@@ -47,7 +51,11 @@ export function useAppData(enabled: boolean = true) {
       setTransactions(bootstrapResult.recentTransactions);
       setTotalCount(bootstrapResult.totalCount);
       setIsFullyLoaded(bootstrapResult.recentTransactions.length >= bootstrapResult.totalCount);
-      setTursoConfig(tursoService.getConfig());
+      const currentConfig = tursoService.getConfig();
+      setTursoConfig(currentConfig);
+      setIsConnected(currentConfig.isConnected);
+      setIsInitialLoading(false);
+      setConnectionError(null);
 
       // Background subscription auto-generation without blocking initial render
       subscriptionService
@@ -74,8 +82,15 @@ export function useAppData(enabled: boolean = true) {
         .catch((err) => {
           console.warn('Subscription background auto-generation error:', err);
         });
-    } catch (e) {
+    } catch (e: any) {
       console.warn('Error loading app data:', e);
+      const currentConfig = tursoService.getConfig();
+      setTursoConfig(currentConfig);
+      setIsConnected(currentConfig.isConnected);
+      setIsInitialLoading(false);
+      if (!currentConfig.isConnected) {
+        setConnectionError(e?.message || 'Connection failed');
+      }
     }
   }, []);
 
@@ -134,6 +149,10 @@ export function useAppData(enabled: boolean = true) {
   return {
     transactions,
     tursoConfig,
+    isInitialLoading,
+    isConnected,
+    connectionError,
+    retryConnection: loadData,
     loadData,
     clearAllTransactions,
     isFullyLoaded,

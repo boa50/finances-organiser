@@ -2,19 +2,18 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
-import { Transaction, TursoConfig } from '../types';
+import { Transaction } from '../types';
 import { DEFAULT_CURRENCY } from '../utils/currencies';
 import { calculateFinancialSummary, GroupedRecentItem, groupRecentTransactions, parseTransactionDate } from '../utils/financials';
 import { TransactionEditModal } from '../components/transactions/TransactionEditModal';
 import { TransactionItemCard } from '../components/transactions/TransactionItemCard';
 import { NetBalanceHeroCard } from '../components/overview/NetBalanceHeroCard';
-import { AppBadge, AppEmptyState, AppSectionHeader, AppText } from '../components/ui';
+import { AppEmptyState, AppSectionHeader, AppText } from '../components/ui';
 import { ArrowDownLeft, ArrowUpRight, ChartNoAxesCombined, Plus } from 'lucide-react-native';
 import theme, { useTheme } from '../theme';
 
 interface OverviewScreenProps {
   transactions: Transaction[];
-  tursoConfig: TursoConfig;
   totalCount?: number;
   onNavigateTransactions: () => void;
   onRefresh: () => void | Promise<void>;
@@ -22,7 +21,6 @@ interface OverviewScreenProps {
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   transactions,
-  tursoConfig,
   totalCount,
   onNavigateTransactions,
   onRefresh,
@@ -77,19 +75,12 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         {/* Pinned Top Section: Header, Hero Card & Quick Actions */}
         <View style={styles.fixedHeader}>
-          {/* Header Banner & Turso Cloud Badge */}
+          {/* Header Banner */}
           <View style={styles.header}>
             <View>
               <AppText style={[styles.welcomeTitle, { color: theme.colors.textPrimary }]}>{t('overview.title')}</AppText>
               <AppText style={[styles.welcomeSubtitle, { color: theme.colors.textSecondary }]}>{t('overview.subtitle')}</AppText>
             </View>
-
-            <AppBadge
-              label={tursoConfig.isConnected ? t('overview.tursoDb') : t('overview.tursoOffline')}
-              variant={tursoConfig.isConnected ? 'success' : 'warning'}
-              statusDot
-              size="sm"
-            />
           </View>
 
           {/* Main Net Balance Hero Card */}

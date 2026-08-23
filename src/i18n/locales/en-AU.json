@@ -26,7 +26,11 @@
     "preview": "Preview",
     "month": "month",
     "clear": "Clear",
-    "paste": "Paste"
+    "paste": "Paste",
+    "loadingFinances": "Loading your finances...",
+    "connectionFailedTitle": "Connection Required",
+    "connectionFailedMessage": "Unable to connect to the cloud database. Please check your internet connection and try again.",
+    "retryConnection": "Retry Connection"
   },
   "auth": {
     "subtitle": "Enter your password to continue",

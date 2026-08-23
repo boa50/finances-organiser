@@ -26,7 +26,11 @@
     "preview": "Pré-visualização",
     "month": "mês",
     "clear": "Limpar",
-    "paste": "Colar"
+    "paste": "Colar",
+    "loadingFinances": "Carregando suas finanças...",
+    "connectionFailedTitle": "Conexão Necessária",
+    "connectionFailedMessage": "Não foi possível conectar ao banco de dados na nuvem. Verifique sua conexão com a internet e tente novamente.",
+    "retryConnection": "Tentar Novamente"
   },
   "auth": {
     "subtitle": "Digite sua senha para continuar",

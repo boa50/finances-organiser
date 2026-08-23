@@ -2,19 +2,17 @@ import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { Globe, LogOut, Moon, Sun, Wallet } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
-import { AppBadge, AppText } from './ui';
+import { AppText } from './ui';
 import { toggleAppLanguage } from '../i18n';
 import theme, { useTheme } from '../theme';
 
 export interface AppHeaderProps {
-  isConnected: boolean;
   hasTransactions?: boolean;
   onClearAll?: () => void;
   onLogout: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  isConnected,
   onLogout,
 }) => {
   const { t, i18n } = useTranslation();
@@ -51,12 +49,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </View>
 
       <View style={styles.topActions}>
-        <AppBadge
-          label={isConnected ? t('header.tursoConnected') : t('header.tursoOffline')}
-          variant={isConnected ? 'success' : 'warning'}
-          statusDot
-          size="sm"
-        />
 
         <Pressable
           accessibilityRole="button"

@@ -8,6 +8,7 @@ import {
   StatusBar,
   Platform,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   OverviewScreen,
   AnalyticsScreen,
@@ -17,18 +18,21 @@ import {
   LoginScreen,
 } from './src/screens';
 import { AppHeader, AppTabBar, TabName, TransactionEditModal } from './src/components';
-import { GlobalToast } from './src/components/ui';
+import { AppButton, AppCard, AppLoadingView, AppText, GlobalToast } from './src/components/ui';
 import { useAuth } from './src/hooks/useAuth';
 import { useAppData } from './src/hooks/useAppData';
 import { Plus } from 'lucide-react-native';
-import { ThemeProvider, useTheme } from './src/theme';
+import theme, { ThemeProvider, useTheme } from './src/theme';
 import { ToastProvider } from './src/contexts';
 
 function MainApp() {
+  const { t } = useTranslation();
   const { isAuthenticated, authenticate, logout } = useAuth();
   const {
     transactions,
-    tursoConfig,
+    isInitialLoading,
+    isConnected,
+    connectionError,
     loadData,
     clearAllTransactions,
     isFullyLoaded,
@@ -44,6 +48,52 @@ function MainApp() {
     return <LoginScreen onAuthenticated={authenticate} />;
   }
 
+  if (isInitialLoading) {
+    return (
+      <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.colors.background }]}>
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.colors.background}
+        />
+        <AppLoadingView message={t('common.loadingFinances')} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!isConnected && connectionError) {
+    return (
+      <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.colors.background }]}>
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.colors.background}
+        />
+        <View style={styles.errorCenterContainer}>
+          <AppCard style={styles.errorCard} padding="xl">
+            <AppText style={[styles.errorTitle, { color: theme.colors.textPrimary }]}>
+              {t('common.connectionFailedTitle')}
+            </AppText>
+            <AppText style={[styles.errorMessage, { color: theme.colors.textSecondary }]}>
+              {t('common.connectionFailedMessage')}
+            </AppText>
+            <View style={styles.errorActions}>
+              <AppButton
+                title={t('common.retryConnection')}
+                variant="primary"
+                onPress={loadData}
+              />
+              <AppButton
+                title={t('header.logout')}
+                variant="ghost"
+                onPress={logout}
+              />
+            </View>
+          </AppCard>
+        </View>
+        <GlobalToast />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.safeContainer, { backgroundColor: theme.colors.background }]}>
       <StatusBar
@@ -52,7 +102,6 @@ function MainApp() {
       />
 
       <AppHeader
-        isConnected={tursoConfig.isConnected}
         hasTransactions={transactions.length > 0}
         onClearAll={clearAllTransactions}
         onLogout={logout}
@@ -62,7 +111,6 @@ function MainApp() {
         {activeTab === 'overview' && (
           <OverviewScreen
             transactions={transactions}
-            tursoConfig={tursoConfig}
             totalCount={totalCount}
             onNavigateTransactions={() => setActiveTab('transactions')}
             onRefresh={loadData}
@@ -152,5 +200,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 10,
     zIndex: 25,
+  },
+  errorCenterContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing['2xl'],
+  },
+  errorCard: {
+    maxWidth: 440,
+    width: '100%',
+    alignItems: 'center',
+  },
+  errorTitle: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.bold,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: theme.fontSize.sm,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  errorActions: {
+    width: '100%',
+    gap: theme.spacing.md,
   },
 });

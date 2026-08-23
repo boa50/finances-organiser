@@ -249,7 +249,7 @@ finances-organiser/
         ├── management/              # Entity management components
         │   ├── EntityManagementCard.tsx     # Reorderable entity card with switch toggle
         │   └── index.ts
-        ├── AppHeader.tsx            # Sticky global header with DB status, theme toggle, sync & logout
+        ├── AppHeader.tsx            # Sticky global header with theme toggle, language switch & logout
         ├── AppTabBar.tsx            # Bottom navigation tab bar
         ├── CategoryIcon.tsx         # Lucide vector icon mapping for category display
         └── index.ts                 # Top-level components barrel export
