@@ -18,6 +18,7 @@ function mapRowToTransaction(row: any) {
     installmentNumber: Number(row.installment_number) || 0,
     installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
     subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
+    referencedTransactionId: row.referenced_transaction_id ? String(row.referenced_transaction_id) : undefined,
     date: normalizeTransactionDate(String(row.date)),
     notes: row.notes ? String(row.notes) : undefined,
     createdAt: String(row.created_at || row.date),

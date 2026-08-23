@@ -104,35 +104,42 @@ class TursoDatabaseService {
     return headers;
   }
 
-  public async initDatabase(): Promise<boolean> {
-    try {
-      if (typeof window !== 'undefined') {
-        const res = await fetch('/api/health', {
-          method: 'GET',
-          headers: this.getApiHeaders(),
-        });
-        if (isJsonResponse(res)) {
-          const data = await res.json();
-          if (data.isConnected) {
-            this.config.isConnected = true;
-            this.config.lastSyncedAt = new Date().toISOString();
-            return true;
-          }
-        }
-      }
-    } catch (e) {
-      // Fallback below
-    }
+  private schemaEnsured = false;
 
-    if (!this.config.url || !this.config.authToken) {
-      return false;
-    }
+  public resetSchemaEnsured(): void {
+    this.schemaEnsured = false;
+  }
 
-    if (!this.client) {
+  public async ensureSchema(force = false): Promise<boolean> {
+    if (!this.client && this.config.url && this.config.authToken) {
       this.initClient(this.config.url, this.config.authToken);
     }
-
     if (!this.client) return false;
+
+    if (this.schemaEnsured && !force) {
+      return true;
+    }
+
+    try {
+      if (!force) {
+        await this.client.batch(
+          [
+            'SELECT id, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, referenced_transaction_id, date, created_at FROM transactions LIMIT 0',
+            'SELECT id, currency_id, category_id, payment_method_id, bank_id, store, frequency, billing_day, billing_month, active, created_at, updated_at FROM subscriptions LIMIT 0',
+            'SELECT id, name, icon, color, type, display_order, enabled FROM categories LIMIT 0',
+            'SELECT id, name, allow_installments, display_order, enabled FROM payment_methods LIMIT 0',
+            'SELECT id, name, display_order, enabled FROM banks LIMIT 0',
+            'SELECT id, symbol, name, flag, display_order, enabled FROM currencies LIMIT 0',
+          ],
+          'read'
+        );
+        this.schemaEnsured = true;
+        this.config.isConnected = true;
+        return true;
+      }
+    } catch (e) {
+      // Fast path failed, proceed to full schema & migrations
+    }
 
     try {
       await this.client.execute(`
@@ -150,6 +157,7 @@ class TursoDatabaseService {
           installment_number INTEGER DEFAULT 0,
           installment_group_id TEXT,
           subscription_id TEXT,
+          referenced_transaction_id TEXT,
           date TEXT NOT NULL,
           notes TEXT,
           created_at TEXT NOT NULL
@@ -165,6 +173,7 @@ class TursoDatabaseService {
       try { await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_number INTEGER DEFAULT 0'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE transactions ADD COLUMN installment_group_id TEXT'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE transactions ADD COLUMN subscription_id TEXT'); } catch (e) {}
+      try { await this.client.execute('ALTER TABLE transactions ADD COLUMN referenced_transaction_id TEXT'); } catch (e) {}
 
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS subscriptions (
@@ -254,14 +263,70 @@ class TursoDatabaseService {
       try { await this.client.execute('ALTER TABLE banks ADD COLUMN display_order INTEGER DEFAULT 0'); } catch (e) {}
       try { await this.client.execute('ALTER TABLE banks ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1'); } catch (e) {}
 
+      this.schemaEnsured = true;
       this.config.isConnected = true;
       this.config.lastSyncedAt = new Date().toISOString();
       return true;
     } catch (err) {
-      console.error('Turso init error:', err);
-      this.config.isConnected = false;
+      console.error('Failed to ensure Turso schema:', err);
       return false;
     }
+  }
+
+  public async executeWithSchemaRetry<T>(fn: (client: Client) => Promise<T>): Promise<T> {
+    if (!this.client && this.config.url && this.config.authToken) {
+      this.initClient(this.config.url, this.config.authToken);
+    }
+    if (!this.client) {
+      throw new Error('Turso client not initialized');
+    }
+
+    if (!this.schemaEnsured) {
+      await this.ensureSchema(false);
+    }
+
+    try {
+      return await fn(this.client);
+    } catch (err: any) {
+      const errMsg = String(err?.message || err || '');
+      if (
+        errMsg.includes('no such column') ||
+        errMsg.includes('no such table') ||
+        errMsg.includes('SQLITE_UNKNOWN') ||
+        errMsg.includes('has no column')
+      ) {
+        console.warn('Schema mismatch detected during Turso query, running migrations and retrying...', errMsg);
+        await this.ensureSchema(true);
+        return await fn(this.client);
+      }
+      throw err;
+    }
+  }
+
+  public async initDatabase(): Promise<boolean> {
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch('/api/health', {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (isJsonResponse(res)) {
+          const data = await res.json();
+          if (data.isConnected) {
+            this.config.isConnected = true;
+            this.config.lastSyncedAt = new Date().toISOString();
+            if (this.client) {
+              await this.ensureSchema(false);
+            }
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback below
+    }
+
+    return await this.ensureSchema(false);
   }
 
   private mapRowToTransaction(row: any): Transaction {
@@ -279,6 +344,7 @@ class TursoDatabaseService {
       installmentNumber: Number(row.installment_number) || 0,
       installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
       subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
+      referencedTransactionId: row.referenced_transaction_id ? String(row.referenced_transaction_id) : undefined,
       date: normalizeTransactionDate(String(row.date)),
       notes: row.notes ? String(row.notes) : undefined,
       createdAt: String(row.created_at || row.date),
@@ -348,7 +414,9 @@ class TursoDatabaseService {
     if (!this.client) return this.localMemoryTx;
 
     try {
-      const res = await this.client.execute('SELECT * FROM transactions ORDER BY date DESC, created_at DESC');
+      const res = await this.executeWithSchemaRetry((client) =>
+        client.execute('SELECT * FROM transactions ORDER BY date DESC, created_at DESC')
+      );
       const items: Transaction[] = res.rows.map((row: any) => this.mapRowToTransaction(row));
 
       this.localMemoryTx = items;
@@ -392,10 +460,12 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        const res = await this.client.execute({
-          sql: 'SELECT * FROM transactions WHERE substr(date, 1, 10) >= ? ORDER BY date DESC, created_at DESC',
-          args: [sinceDateStr],
-        });
+        const res = await this.executeWithSchemaRetry((client) =>
+          client.execute({
+            sql: 'SELECT * FROM transactions WHERE substr(date, 1, 10) >= ? ORDER BY date DESC, created_at DESC',
+            args: [sinceDateStr],
+          })
+        );
         const items = res.rows.map((row: any) => this.mapRowToTransaction(row));
         this.syncRecentIntoLocalCache(items, sinceDays);
         this.config.isConnected = true;
@@ -426,6 +496,50 @@ class TursoDatabaseService {
 
   public getLocalTransactionCount(): number {
     return this.localMemoryTx.length;
+  }
+
+  public getLocalTransactionById(id: string): Transaction | undefined {
+    if (!id) return undefined;
+    return this.localMemoryTx.find((t) => t.id === id);
+  }
+
+  public async getTransactionById(id: string): Promise<Transaction | null> {
+    if (!id) return null;
+    const local = this.getLocalTransactionById(id);
+    if (local) return local;
+
+    try {
+      if (typeof window !== 'undefined') {
+        const res = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+          method: 'GET',
+          headers: this.getApiHeaders(),
+        });
+        if (isJsonResponse(res)) {
+          const tx: Transaction = await res.json();
+          return tx;
+        }
+      }
+    } catch (e) {
+      // Fallback
+    }
+
+    if (this.client) {
+      try {
+        const result = await this.executeWithSchemaRetry((client) =>
+          client.execute({
+            sql: 'SELECT * FROM transactions WHERE id = ? LIMIT 1',
+            args: [id],
+          })
+        );
+        if (result.rows.length > 0) {
+          return this.mapRowToTransaction(result.rows[0]);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch transaction by id from Turso:', err);
+      }
+    }
+
+    return null;
   }
 
   public async bootstrapAppData(sinceDays: number = 60): Promise<BootstrapAppDataResult> {
@@ -463,17 +577,19 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        const [currenciesRes, categoriesRes, paymentMethodsRes, banksRes, countRes, txRes] = await Promise.all([
-          this.client.execute('SELECT * FROM currencies ORDER BY display_order ASC'),
-          this.client.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC'),
-          this.client.execute('SELECT * FROM payment_methods ORDER BY display_order ASC, name ASC'),
-          this.client.execute('SELECT * FROM banks ORDER BY display_order ASC, name ASC'),
-          this.client.execute('SELECT COUNT(*) as total FROM transactions'),
-          this.client.execute({
-            sql: 'SELECT * FROM transactions WHERE substr(date, 1, 10) >= ? ORDER BY date DESC, created_at DESC',
-            args: [sinceDateStr],
-          }),
-        ]);
+        const [currenciesRes, categoriesRes, paymentMethodsRes, banksRes, countRes, txRes] = await this.executeWithSchemaRetry((client) =>
+          Promise.all([
+            client.execute('SELECT * FROM currencies ORDER BY display_order ASC'),
+            client.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC'),
+            client.execute('SELECT * FROM payment_methods ORDER BY display_order ASC, name ASC'),
+            client.execute('SELECT * FROM banks ORDER BY display_order ASC, name ASC'),
+            client.execute('SELECT COUNT(*) as total FROM transactions'),
+            client.execute({
+              sql: 'SELECT * FROM transactions WHERE substr(date, 1, 10) >= ? ORDER BY date DESC, created_at DESC',
+              args: [sinceDateStr],
+            }),
+          ])
+        );
 
         const currencies = (currenciesRes.rows || []).map((row: any) => ({
           code: String(row.id),
@@ -560,13 +676,15 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        const countRes = await this.client.execute('SELECT COUNT(*) as total FROM transactions');
-        const total = Number(countRes.rows[0]?.total || 0);
-
-        const res = await this.client.execute({
-          sql: 'SELECT * FROM transactions ORDER BY date DESC, created_at DESC LIMIT ? OFFSET ?',
-          args: [limit, offset],
+        const { countRes, res } = await this.executeWithSchemaRetry(async (client) => {
+          const count = await client.execute('SELECT COUNT(*) as total FROM transactions');
+          const r = await client.execute({
+            sql: 'SELECT * FROM transactions ORDER BY date DESC, created_at DESC LIMIT ? OFFSET ?',
+            args: [limit, offset],
+          });
+          return { countRes: count, res: r };
         });
+        const total = Number(countRes.rows[0]?.total || 0);
         const items = res.rows.map((row: any) => this.mapRowToTransaction(row));
         this.mergeIntoLocalCache(items);
         this.config.isConnected = true;
@@ -632,16 +750,18 @@ class TursoDatabaseService {
 
         const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
 
-        const countRes = await this.client.execute({
-          sql: `SELECT COUNT(*) as total FROM transactions LEFT JOIN categories ON transactions.category_id = categories.id ${whereSql}`,
-          args: [...args],
+        const { countRes, res } = await this.executeWithSchemaRetry(async (client) => {
+          const count = await client.execute({
+            sql: `SELECT COUNT(*) as total FROM transactions LEFT JOIN categories ON transactions.category_id = categories.id ${whereSql}`,
+            args: [...args],
+          });
+          const r = await client.execute({
+            sql: `SELECT transactions.* FROM transactions LEFT JOIN categories ON transactions.category_id = categories.id ${whereSql} ORDER BY transactions.date DESC, transactions.created_at DESC LIMIT ? OFFSET ?`,
+            args: [...args, limit, offset],
+          });
+          return { countRes: count, res: r };
         });
         const total = Number(countRes.rows[0]?.total || 0);
-
-        const res = await this.client.execute({
-          sql: `SELECT transactions.* FROM transactions LEFT JOIN categories ON transactions.category_id = categories.id ${whereSql} ORDER BY transactions.date DESC, transactions.created_at DESC LIMIT ? OFFSET ?`,
-          args: [...args, limit, offset],
-        });
         const items = res.rows.map((row: any) => this.mapRowToTransaction(row));
         this.mergeIntoLocalCache(items);
         this.config.isConnected = true;
@@ -684,12 +804,11 @@ class TursoDatabaseService {
         }
       }
     } catch (e) {
-      // Fallback below
-    }
-
-    if (this.client) {
+      // Fallback b    if (this.client) {
       try {
-        const res = await this.client.execute('SELECT COUNT(*) as total FROM transactions');
+        const res = await this.executeWithSchemaRetry((client) =>
+          client.execute('SELECT COUNT(*) as total FROM transactions')
+        );
         return Number(res.rows[0]?.total || 0);
       } catch (err) {
         // Fallback
@@ -723,11 +842,13 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        const res = await this.client.execute(`
-          SELECT currency_id, type, SUM(amount) as total
-          FROM transactions
-          GROUP BY currency_id, type
-        `);
+        const res = await this.executeWithSchemaRetry((client) =>
+          client.execute(`
+            SELECT currency_id, type, SUM(amount) as total
+            FROM transactions
+            GROUP BY currency_id, type
+          `)
+        );
         const byCurrency: Record<string, { income: number; expense: number }> = {};
         for (const row of res.rows) {
           const curr = String(row.currency_id || 'BRL');
@@ -798,28 +919,31 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        await this.client.execute({
-          sql: `INSERT INTO transactions (id, type, title, amount, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          args: [
-            newTx.id,
-            newTx.type,
-            newTx.title,
-            newTx.amount,
-            newTx.currencyId,
-            newTx.categoryId || null,
-            newTx.paymentMethodId || null,
-            newTx.bankId || null,
-            newTx.store || null,
-            newTx.installments || 0,
-            newTx.installmentNumber || 0,
-            newTx.installmentGroupId || null,
-            newTx.subscriptionId || null,
-            newTx.date,
-            newTx.notes || '',
-            newTx.createdAt,
-          ],
-        });
+        await this.executeWithSchemaRetry((client) =>
+          client.execute({
+            sql: `INSERT INTO transactions (id, type, title, amount, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, referenced_transaction_id, date, notes, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [
+              newTx.id,
+              newTx.type,
+              newTx.title,
+              newTx.amount,
+              newTx.currencyId,
+              newTx.categoryId || null,
+              newTx.paymentMethodId || null,
+              newTx.bankId || null,
+              newTx.store || null,
+              newTx.installments || 0,
+              newTx.installmentNumber || 0,
+              newTx.installmentGroupId || null,
+              newTx.subscriptionId || null,
+              newTx.referencedTransactionId || null,
+              newTx.date,
+              newTx.notes || '',
+              newTx.createdAt,
+            ],
+          })
+        );
         this.config.isConnected = true;
       } catch (err) {
         console.error('Failed to sync added transaction to Turso DB:', err);
@@ -850,10 +974,12 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        await this.client.execute({
-          sql: 'DELETE FROM transactions WHERE id = ?',
-          args: [id],
-        });
+        await this.executeWithSchemaRetry((client) =>
+          client.execute({
+            sql: 'DELETE FROM transactions WHERE id = ?',
+            args: [id],
+          })
+        );
       } catch (err) {
         console.error('Failed to delete transaction from Turso:', err);
       }
@@ -900,10 +1026,12 @@ class TursoDatabaseService {
     if (this.client) {
       if (groupId) {
         try {
-          await this.client.execute({
-            sql: 'DELETE FROM transactions WHERE installment_group_id = ?',
-            args: [groupId],
-          });
+          await this.executeWithSchemaRetry((client) =>
+            client.execute({
+              sql: 'DELETE FROM transactions WHERE installment_group_id = ?',
+              args: [groupId],
+            })
+          );
           this.config.isConnected = true;
         } catch (err) {
           console.error('Failed to delete transaction group from Turso:', err);
@@ -912,10 +1040,12 @@ class TursoDatabaseService {
 
       for (const id of siblingIds) {
         try {
-          await this.client.execute({
-            sql: 'DELETE FROM transactions WHERE id = ?',
-            args: [id],
-          });
+          await this.executeWithSchemaRetry((client) =>
+            client.execute({
+              sql: 'DELETE FROM transactions WHERE id = ?',
+              args: [id],
+            })
+          );
         } catch (err) {
           // Ignore
         }
@@ -981,28 +1111,31 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        await this.client.execute({
-          sql: `UPDATE transactions
-                SET type = ?, title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
-                WHERE id = ?`,
-          args: [
-            updatedTx.type,
-            updatedTx.title,
-            updatedTx.amount,
-            updatedTx.currencyId,
-            updatedTx.categoryId || null,
-            updatedTx.paymentMethodId || null,
-            updatedTx.bankId || null,
-            updatedTx.store || null,
-            updatedTx.installments || 0,
-            updatedTx.installmentNumber || 0,
-            updatedTx.installmentGroupId || null,
-            updatedTx.subscriptionId || null,
-            updatedTx.date,
-            updatedTx.notes || '',
-            id,
-          ],
-        });
+        await this.executeWithSchemaRetry((client) =>
+          client.execute({
+            sql: `UPDATE transactions
+                  SET type = ?, title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, referenced_transaction_id = ?, date = ?, notes = ?
+                  WHERE id = ?`,
+            args: [
+              updatedTx.type,
+              updatedTx.title,
+              updatedTx.amount,
+              updatedTx.currencyId,
+              updatedTx.categoryId || null,
+              updatedTx.paymentMethodId || null,
+              updatedTx.bankId || null,
+              updatedTx.store || null,
+              updatedTx.installments || 0,
+              updatedTx.installmentNumber || 0,
+              updatedTx.installmentGroupId || null,
+              updatedTx.subscriptionId || null,
+              updatedTx.referencedTransactionId || null,
+              updatedTx.date,
+              updatedTx.notes || '',
+              id,
+            ],
+          })
+        );
         this.config.isConnected = true;
       } catch (error) {
         console.error('Failed to sync updated transaction to Turso:', error);
@@ -1061,6 +1194,7 @@ class TursoDatabaseService {
           installmentNumber: i,
           installmentGroupId: newGroupId,
           subscriptionId: undefined,
+          referencedTransactionId: template.referencedTransactionId,
           date: normalizeTransactionDate(installmentDate),
           notes: template.notes,
         };
@@ -1085,6 +1219,7 @@ class TursoDatabaseService {
       installmentNumber: 0,
       installmentGroupId: undefined,
       subscriptionId: undefined,
+      referencedTransactionId: existing.referencedTransactionId,
       date: normalizeTransactionDate(currentDate),
       notes: existing.notes,
     };
@@ -1140,7 +1275,10 @@ class TursoDatabaseService {
 
     if (this.client) {
       try {
-        await this.client.execute('DELETE FROM transactions');
+        await this.executeWithSchemaRetry((client) =>
+          client.execute('DELETE FROM transactions')
+        );
+        this.config.isConnected = true;
       } catch (e) {
         console.error('Failed to clear Turso database transactions', e);
       }

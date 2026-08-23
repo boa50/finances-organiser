@@ -8,9 +8,10 @@ import { categoryService } from '../../services/categoryService';
 import { paymentMethodService } from '../../services/paymentMethodService';
 import { bankService } from '../../services/bankService';
 import { subscriptionService } from '../../services/subscriptionService';
+import { tursoService } from '../../services/tursoService';
 import { AppCard, AppIconBadge, AppBadge, AppText, AppIconButton } from '../ui';
 import theme, { useTheme } from '../../theme';
-import { TrendingUp, TrendingDown } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Link2 } from 'lucide-react-native';
 
 export interface TransactionItemCardProps {
   transaction: Transaction;
@@ -25,6 +26,7 @@ export interface TransactionItemCardProps {
   categoryName?: string;
   paymentMethodName?: string;
   bankName?: string;
+  referencedTransactionTitle?: string;
 }
 
 export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
@@ -40,6 +42,7 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   categoryName,
   paymentMethodName,
   bankName,
+  referencedTransactionTitle,
 }) => {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
@@ -106,6 +109,47 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
   })();
 
   const catLabel = resolvedCategory;
+
+  const [asyncRefTitle, setAsyncRefTitle] = React.useState<string | undefined>(() => {
+    if (referencedTransactionTitle) return referencedTransactionTitle;
+    if (transaction.referencedTransactionId) {
+      return tursoService.getLocalTransactionById(transaction.referencedTransactionId)?.title;
+    }
+    return undefined;
+  });
+
+  React.useEffect(() => {
+    if (referencedTransactionTitle) {
+      setAsyncRefTitle(referencedTransactionTitle);
+      return;
+    }
+    if (!transaction.referencedTransactionId) {
+      setAsyncRefTitle(undefined);
+      return;
+    }
+    const local = tursoService.getLocalTransactionById(transaction.referencedTransactionId);
+    if (local?.title) {
+      setAsyncRefTitle(local.title);
+      return;
+    }
+
+    let isMounted = true;
+    tursoService.getTransactionById(transaction.referencedTransactionId).then((found) => {
+      if (isMounted && found?.title) {
+        setAsyncRefTitle(found.title);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [transaction.referencedTransactionId, referencedTransactionTitle]);
+
+  const resolvedReferenceTitle = referencedTransactionTitle ?? asyncRefTitle ?? (
+    transaction.referencedTransactionId
+      ? tursoService.getLocalTransactionById(transaction.referencedTransactionId)?.title
+      : undefined
+  );
 
   return (
     <AppCard style={styles.txRow} padding="lg">
@@ -174,6 +218,17 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
             ) : null}
             <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
             <AppText style={[styles.txDate, { color: theme.colors.textTertiary }]}>{formattedDate}</AppText>
+            {resolvedReferenceTitle ? (
+              <>
+                <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
+                <View style={styles.referenceBadge}>
+                  <Link2 size={11} color={theme.colors.accent} />
+                  <AppText style={[styles.referenceText, { color: theme.colors.accent }]} numberOfLines={1}>
+                    {`${t('transactions.referencedPrefix', { defaultValue: 'Ref:' })} ${resolvedReferenceTitle}`}
+                  </AppText>
+                </View>
+              </>
+            ) : null}
           </View>
 
           <View style={styles.actionsRow}>
@@ -308,6 +363,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+  },
+  referenceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  referenceText: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.semibold,
   },
 });
 

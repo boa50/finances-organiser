@@ -48,11 +48,16 @@ Preserve reliable CRUD and offline-first persistence across all entities (transa
 
 1. **Inspect before adding**: Extend existing services before creating new ones; use `localStorageHelper.ts` for storage boilerplate.
 2. **Strict credential isolation**: Never import `api/_db.ts` or expose `TURSO_AUTH_TOKEN` in client code.
-3. **Additive field changes**: When modifying an entity schema:
-   - Update `src/types/index.ts`.
-   - Update the client service and `localStorageHelper` serialization.
-   - Update `api/_db.ts` table definitions and migrations.
-   - Update `/api/*` endpoint request validation and parameterized SQL.
-   - Update affected forms, modals, and UI cards.
-4. **Parameterized queries**: All server-side SQL queries must use parameterized placeholders (`?`, `:param`).
+3. **Additive field changes & migration workflow**: When modifying any database schema:
+   - **Types**: Update `src/types/index.ts`.
+   - **Dual-Layer Schema & Migrations**:
+     - Update `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ... ADD COLUMN ...` migrations in **both** `api/_db.ts` and `src/services/tursoService.ts`.
+     - Update the fast-path check query in **both** `api/_db.ts` and `src/services/tursoService.ts`.
+   - **Mapper Synchronization**:
+     - Update `mapRowToTransaction` in `api/transactions.ts`, `api/bootstrap.ts`, and `src/services/tursoService.ts`.
+   - **Self-Healing Execution**:
+     - Execute client queries via `tursoService.executeWithSchemaRetry((client) => ...)`.
+     - Execute API queries via `executeWithDbRetry(client, () => ...)`.
+   - **Client Storage & UI**: Update `localStorageHelper.ts`, domain services, forms, modals, list cards, and localization files.
+4. **Parameterized queries**: All SQL queries (API routes and client queries) must use parameterized placeholders (`?`).
 5. **Preserve offline reliability**: When cloud API fails, gracefully fallback to local cache without data loss.

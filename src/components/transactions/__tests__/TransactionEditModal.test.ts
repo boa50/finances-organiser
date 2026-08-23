@@ -88,6 +88,10 @@ jest.mock('lucide-react-native', () => {
     CreditCard: (props: any) => React.createElement('span', { 'data-icon': 'credit-card', ...props }),
     Building2: (props: any) => React.createElement('span', { 'data-icon': 'building-2', ...props }),
     Calendar: (props: any) => React.createElement('span', { 'data-icon': 'calendar', ...props }),
+    Copy: (props: any) => React.createElement('span', { 'data-icon': 'copy', ...props }),
+    Check: (props: any) => React.createElement('span', { 'data-icon': 'check', ...props }),
+    Link2: (props: any) => React.createElement('span', { 'data-icon': 'link2', ...props }),
+    X: (props: any) => React.createElement('span', { 'data-icon': 'x', ...props }),
   };
 });
 
@@ -99,8 +103,10 @@ jest.mock('../../ui', () => {
   const React = require('react');
   return {
     AppButton: (props: any) => React.createElement('button', { onClick: props.onPress, disabled: props.loading }, props.title),
+    AppCard: (props: any) => React.createElement('div', { ...props }, props.children),
     AppChipSelector: () => null,
     AppDatePicker: () => null,
+    AppIconButton: (props: any) => React.createElement('button', { onClick: props.onPress }, props.icon),
     AppModal: (props: any) => (props.visible ? React.createElement('div', null, props.children) : null),
     AppSegmentedControl: () => null,
     AppText: (props: any) => React.createElement('span', null, props.children),

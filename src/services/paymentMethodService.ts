@@ -51,25 +51,24 @@ class PaymentMethodService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        const res = await client.execute('SELECT * FROM payment_methods ORDER BY display_order ASC, name ASC');
-        if (res.rows) {
-          const dbItems: PaymentMethodItem[] = res.rows.map((row: any) => ({
-            id: String(row.id),
-            name: String(row.name),
-            allowInstallments: Boolean(row.allow_installments),
-            displayOrder: Number(row.display_order ?? 0),
-            enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
-          }));
-          this.paymentMethods = dbItems;
-          this.saveToLocalStorage();
-          return [...this.paymentMethods];
-        }
-      } catch (e) {
-        console.warn('Could not fetch payment methods from Turso DB, using local cache:', e);
+    try {
+      const res = await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('SELECT * FROM payment_methods ORDER BY display_order ASC, name ASC')
+      );
+      if (res.rows) {
+        const dbItems: PaymentMethodItem[] = res.rows.map((row: any) => ({
+          id: String(row.id),
+          name: String(row.name),
+          allowInstallments: Boolean(row.allow_installments),
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+        this.paymentMethods = dbItems;
+        this.saveToLocalStorage();
+        return [...this.paymentMethods];
       }
+    } catch (e) {
+      console.warn('Could not fetch payment methods from Turso DB, using local cache:', e);
     }
 
     return [...this.paymentMethods];
@@ -126,18 +125,17 @@ class PaymentMethodService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
+    try {
+      await tursoService.executeWithSchemaRetry(async (client) => {
         for (let index = 0; index < orderedIds.length; index++) {
           await client.execute({
             sql: 'UPDATE payment_methods SET display_order = ? WHERE id = ?',
             args: [index, orderedIds[index]],
           });
         }
-      } catch (err) {
-        console.error('Failed to sync payment method reorder to Turso DB:', err);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to sync payment method reorder to Turso DB:', err);
     }
 
     return this.getPaymentMethods();
@@ -191,28 +189,15 @@ class PaymentMethodService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'INSERT INTO payment_methods (id, name, allow_installments, display_order, enabled) VALUES (?, ?, ?, ?, ?)',
           args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0, nextOrder, isEnabled ? 1 : 0],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE payment_methods ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: 'INSERT INTO payment_methods (id, name, allow_installments, display_order, enabled) VALUES (?, ?, ?, ?, ?)',
-              args: [newMethod.id, newMethod.name, allowInstallments ? 1 : 0, nextOrder, isEnabled ? 1 : 0],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync added payment method to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync added payment method to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync added payment method to Turso DB:', err);
     }
 
     return newMethod;
@@ -265,28 +250,15 @@ class PaymentMethodService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'UPDATE payment_methods SET name = ?, allow_installments = ?, enabled = ? WHERE id = ?',
           args: [trimmed, updated.allowInstallments ? 1 : 0, updated.enabled ? 1 : 0, id],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE payment_methods ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: 'UPDATE payment_methods SET name = ?, allow_installments = ?, enabled = ? WHERE id = ?',
-              args: [trimmed, updated.allowInstallments ? 1 : 0, updated.enabled ? 1 : 0, id],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync payment method update to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync payment method update to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync payment method update to Turso DB:', err);
     }
 
     return updated;
@@ -322,9 +294,8 @@ class PaymentMethodService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
+    try {
+      await tursoService.executeWithSchemaRetry(async (client) => {
         await client.execute({
           sql: 'UPDATE transactions SET payment_method_id = NULL WHERE payment_method_id = ?',
           args: [id],
@@ -337,9 +308,9 @@ class PaymentMethodService {
           sql: 'DELETE FROM payment_methods WHERE id = ?',
           args: [id],
         });
-      } catch (err) {
-        console.error('Failed to delete payment method from Turso DB:', err);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to delete payment method from Turso DB:', err);
     }
 
     this.paymentMethods = this.paymentMethods.filter((pm) => pm.id !== id);
@@ -365,13 +336,12 @@ class PaymentMethodService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute('DELETE FROM payment_methods');
-      } catch (err) {
-        console.error('Failed to reset payment methods in Turso DB:', err);
-      }
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('DELETE FROM payment_methods')
+      );
+    } catch (err) {
+      console.error('Failed to reset payment methods in Turso DB:', err);
     }
 
     return [];

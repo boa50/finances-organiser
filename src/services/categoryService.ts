@@ -84,26 +84,25 @@ class CategoryService {
       // Fallback below
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        const res = await client.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC');
-        if (res.rows) {
-          const dbCategories: CategoryItem[] = res.rows.map((row: any) => ({
-            id: String(row.id),
-            name: String(row.name),
-            icon: String(row.icon),
-            color: String(row.color),
-            type: row.type as TransactionType,
-            displayOrder: Number(row.display_order ?? 0),
-            enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
-          }));
-          this.categories = dbCategories;
-          this.saveToCache();
-        }
-      } catch (e) {
-        console.warn('Could not fetch categories from Turso DB, using local cache:', e);
+    try {
+      const res = await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('SELECT * FROM categories ORDER BY display_order ASC, name ASC')
+      );
+      if (res.rows) {
+        const dbCategories: CategoryItem[] = res.rows.map((row: any) => ({
+          id: String(row.id),
+          name: String(row.name),
+          icon: String(row.icon),
+          color: String(row.color),
+          type: row.type as TransactionType,
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+        this.categories = dbCategories;
+        this.saveToCache();
       }
+    } catch (e) {
+      console.warn('Could not fetch categories from Turso DB, using local cache:', e);
     }
 
     if (type) {
@@ -166,18 +165,17 @@ class CategoryService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
+    try {
+      await tursoService.executeWithSchemaRetry(async (client) => {
         for (let index = 0; index < orderedIds.length; index++) {
           await client.execute({
             sql: 'UPDATE categories SET display_order = ? WHERE id = ?',
             args: [index, orderedIds[index]],
           });
         }
-      } catch (err) {
-        console.error('Failed to sync category reorder to Turso DB:', err);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to sync category reorder to Turso DB:', err);
     }
 
     return this.getCategories(type);
@@ -227,10 +225,9 @@ class CategoryService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: `INSERT INTO categories (id, name, icon, color, type, display_order, enabled)
                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
           args: [
@@ -242,31 +239,10 @@ class CategoryService {
             newCategory.displayOrder ?? 0,
             newCategory.enabled ? 1 : 0,
           ],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE categories ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: `INSERT INTO categories (id, name, icon, color, type, display_order, enabled)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
-              args: [
-                newCategory.id,
-                newCategory.name,
-                newCategory.icon,
-                newCategory.color,
-                newCategory.type,
-                newCategory.displayOrder ?? 0,
-                newCategory.enabled ? 1 : 0,
-              ],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync added category to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync added category to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync added category to Turso DB:', err);
     }
 
     return newCategory;
@@ -320,10 +296,9 @@ class CategoryService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: `UPDATE categories SET name = ?, icon = ?, color = ?, type = ?, enabled = ? WHERE id = ?`,
           args: [
             nextCategory.name,
@@ -333,29 +308,10 @@ class CategoryService {
             nextCategory.enabled ? 1 : 0,
             nextCategory.id,
           ],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE categories ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: `UPDATE categories SET name = ?, icon = ?, color = ?, type = ?, enabled = ? WHERE id = ?`,
-              args: [
-                nextCategory.name,
-                nextCategory.icon,
-                nextCategory.color,
-                nextCategory.type,
-                nextCategory.enabled ? 1 : 0,
-                nextCategory.id,
-              ],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync category update to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync category update to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync category update to Turso DB:', err);
     }
 
     return nextCategory;
@@ -391,9 +347,8 @@ class CategoryService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
+    try {
+      await tursoService.executeWithSchemaRetry(async (client) => {
         await client.execute({
           sql: 'UPDATE transactions SET category_id = NULL WHERE category_id = ?',
           args: [id],
@@ -406,9 +361,9 @@ class CategoryService {
           sql: 'DELETE FROM categories WHERE id = ?',
           args: [id],
         });
-      } catch (err) {
-        console.error('Failed to delete category from Turso DB:', err);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to delete category from Turso DB:', err);
     }
 
     this.categories = this.categories.filter((c) => c.id !== id);
@@ -434,13 +389,12 @@ class CategoryService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute('DELETE FROM categories');
-      } catch (err) {
-        console.error('Failed to clear categories in Turso DB:', err);
-      }
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('DELETE FROM categories')
+      );
+    } catch (err) {
+      console.error('Failed to clear categories in Turso DB:', err);
     }
 
     return [];

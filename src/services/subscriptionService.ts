@@ -61,34 +61,33 @@ class SubscriptionService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        const res = await client.execute('SELECT * FROM subscriptions ORDER BY title ASC');
-        const items: Subscription[] = res.rows.map((row: any) => ({
-          id: String(row.id),
-          title: String(row.title),
-          amount: Number(row.amount),
-          currencyId: String(row.currency_id || row.currency || 'BRL'),
-          categoryId: row.category_id ? String(row.category_id) : undefined,
-          paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
-          bankId: row.bank_id ? String(row.bank_id) : undefined,
-          store: row.store ? String(row.store) : undefined,
-          frequency: String(row.frequency || 'monthly') as 'monthly' | 'annual',
-          billingDay: Number(row.billing_day) || 1,
-          billingMonth: row.billing_month != null ? Number(row.billing_month) : undefined,
-          active: Boolean(row.active),
-          notes: row.notes ? String(row.notes) : undefined,
-          createdAt: String(row.created_at),
-          updatedAt: String(row.updated_at),
-        }));
+    try {
+      const res = await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('SELECT * FROM subscriptions ORDER BY title ASC')
+      );
+      const items: Subscription[] = res.rows.map((row: any) => ({
+        id: String(row.id),
+        title: String(row.title),
+        amount: Number(row.amount),
+        currencyId: String(row.currency_id || row.currency || 'BRL'),
+        categoryId: row.category_id ? String(row.category_id) : undefined,
+        paymentMethodId: row.payment_method_id ? String(row.payment_method_id) : undefined,
+        bankId: row.bank_id ? String(row.bank_id) : undefined,
+        store: row.store ? String(row.store) : undefined,
+        frequency: String(row.frequency || 'monthly') as 'monthly' | 'annual',
+        billingDay: Number(row.billing_day) || 1,
+        billingMonth: row.billing_month != null ? Number(row.billing_month) : undefined,
+        active: Boolean(row.active),
+        notes: row.notes ? String(row.notes) : undefined,
+        createdAt: String(row.created_at),
+        updatedAt: String(row.updated_at),
+      }));
 
-        this.localMemorySubs = items;
-        this.saveLocalCache();
-        return items;
-      } catch (err) {
-        console.warn('Failed to fetch subscriptions from Turso client:', err);
-      }
+      this.localMemorySubs = items;
+      this.saveLocalCache();
+      return items;
+    } catch (err) {
+      console.warn('Failed to fetch subscriptions from Turso client:', err);
     }
 
     return this.localMemorySubs;
@@ -134,54 +133,32 @@ class SubscriptionService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      const insertSql = `INSERT INTO subscriptions (id, title, amount, currency_id, category_id, payment_method_id, bank_id, store, frequency, billing_day, billing_month, active, notes, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      const insertArgs = [
-        newSub.id,
-        newSub.title,
-        newSub.amount,
-        newSub.currencyId,
-        newSub.categoryId || null,
-        newSub.paymentMethodId || null,
-        newSub.bankId || null,
-        newSub.store || null,
-        newSub.frequency || 'monthly',
-        newSub.billingDay,
-        newSub.billingMonth || null,
-        newSub.active ? 1 : 0,
-        newSub.notes || '',
-        newSub.createdAt,
-        newSub.updatedAt,
-      ];
-
-      try {
-        await client.execute({
-          sql: insertSql,
-          args: insertArgs,
-        });
-      } catch (err: any) {
-        if (
-          err?.message?.includes('frequency') ||
-          err?.message?.includes('billing_month') ||
-          err?.message?.includes('no such column') ||
-          err?.message?.includes('has no column named')
-        ) {
-          try {
-            try { await client.execute("ALTER TABLE subscriptions ADD COLUMN frequency TEXT NOT NULL DEFAULT 'monthly'"); } catch (e) {}
-            try { await client.execute('ALTER TABLE subscriptions ADD COLUMN billing_month INTEGER'); } catch (e) {}
-            await client.execute({
-              sql: insertSql,
-              args: insertArgs,
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync added subscription to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync added subscription to Turso:', err);
-        }
-      }
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
+          sql: `INSERT INTO subscriptions (id, title, amount, currency_id, category_id, payment_method_id, bank_id, store, frequency, billing_day, billing_month, active, notes, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [
+            newSub.id,
+            newSub.title,
+            newSub.amount,
+            newSub.currencyId,
+            newSub.categoryId || null,
+            newSub.paymentMethodId || null,
+            newSub.bankId || null,
+            newSub.store || null,
+            newSub.frequency || 'monthly',
+            newSub.billingDay,
+            newSub.billingMonth || null,
+            newSub.active ? 1 : 0,
+            newSub.notes || '',
+            newSub.createdAt,
+            newSub.updatedAt,
+          ],
+        })
+      );
+    } catch (err) {
+      console.error('Failed to sync added subscription to Turso:', err);
     }
 
     return newSub;
@@ -233,54 +210,32 @@ class SubscriptionService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      const updateSql = `UPDATE subscriptions
-            SET title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, frequency = ?, billing_day = ?, billing_month = ?, active = ?, notes = ?, updated_at = ?
-            WHERE id = ?`;
-      const updateArgs = [
-        updatedSub.title,
-        updatedSub.amount,
-        updatedSub.currencyId,
-        updatedSub.categoryId || null,
-        updatedSub.paymentMethodId || null,
-        updatedSub.bankId || null,
-        updatedSub.store || null,
-        updatedSub.frequency || 'monthly',
-        updatedSub.billingDay,
-        updatedSub.billingMonth || null,
-        updatedSub.active ? 1 : 0,
-        updatedSub.notes || '',
-        updatedSub.updatedAt,
-        id,
-      ];
-
-      try {
-        await client.execute({
-          sql: updateSql,
-          args: updateArgs,
-        });
-      } catch (err: any) {
-        if (
-          err?.message?.includes('frequency') ||
-          err?.message?.includes('billing_month') ||
-          err?.message?.includes('no such column') ||
-          err?.message?.includes('has no column named')
-        ) {
-          try {
-            try { await client.execute("ALTER TABLE subscriptions ADD COLUMN frequency TEXT NOT NULL DEFAULT 'monthly'"); } catch (e) {}
-            try { await client.execute('ALTER TABLE subscriptions ADD COLUMN billing_month INTEGER'); } catch (e) {}
-            await client.execute({
-              sql: updateSql,
-              args: updateArgs,
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync updated subscription to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync updated subscription to Turso:', err);
-        }
-      }
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
+          sql: `UPDATE subscriptions
+                SET title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, frequency = ?, billing_day = ?, billing_month = ?, active = ?, notes = ?, updated_at = ?
+                WHERE id = ?`,
+          args: [
+            updatedSub.title,
+            updatedSub.amount,
+            updatedSub.currencyId,
+            updatedSub.categoryId || null,
+            updatedSub.paymentMethodId || null,
+            updatedSub.bankId || null,
+            updatedSub.store || null,
+            updatedSub.frequency || 'monthly',
+            updatedSub.billingDay,
+            updatedSub.billingMonth || null,
+            updatedSub.active ? 1 : 0,
+            updatedSub.notes || '',
+            updatedSub.updatedAt,
+            id,
+          ],
+        })
+      );
+    } catch (err) {
+      console.error('Failed to sync updated subscription to Turso:', err);
     }
 
     return updatedSub;
@@ -307,16 +262,15 @@ class SubscriptionService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'DELETE FROM subscriptions WHERE id = ?',
           args: [id],
-        });
-      } catch (err) {
-        console.error('Failed to delete subscription from Turso:', err);
-      }
+        })
+      );
+    } catch (err) {
+      console.error('Failed to delete subscription from Turso:', err);
     }
 
     this.localMemorySubs = this.localMemorySubs.filter((s) => s.id !== id);

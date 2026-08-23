@@ -18,18 +18,22 @@ import { tursoService } from '../../services/tursoService';
 import { CategoryIcon } from '../CategoryIcon';
 import {
   AppButton,
+  AppCard,
   AppChipSelector,
   AppDatePicker,
+  AppIconButton,
   AppModal,
   AppSegmentedControl,
   AppText,
   AppTextInput,
   FeedbackMessage,
 } from '../ui';
-import { CreditCard, Building2, Calendar } from 'lucide-react-native';
+import { CreditCard, Building2, Calendar, Copy, Check, Link2, X } from 'lucide-react-native';
 import theme, { useTheme } from '../../theme';
 import { useToast } from '../../contexts';
 import { calculateInstallmentDate, normalizeTransactionDate, parseTransactionDate } from '../../utils/financials';
+import { copyToClipboard, pasteFromClipboard } from '../../utils/clipboard';
+import { formatMoney } from '../../utils/currencies';
 
 export interface TransactionEditModalProps {
   visible: boolean;
@@ -68,6 +72,10 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
   const [installmentInputText, setInstallmentInputText] = useState('1');
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState('');
+  const [referencedTransactionId, setReferencedTransactionId] = useState('');
+  const [resolvedReferencedTx, setResolvedReferencedTx] = useState<Transaction | null>(null);
+  const [referenceError, setReferenceError] = useState<string | null>(null);
+  const [copiedIdToast, setCopiedIdToast] = useState(false);
   const [saving, setSaving] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -86,6 +94,10 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
     setInstallmentInputText('1');
     setDate(new Date());
     setNotes('');
+    setReferencedTransactionId('');
+    setResolvedReferencedTx(null);
+    setReferenceError(null);
+    setCopiedIdToast(false);
     setErrorMessage(null);
     setAvailableCategories([]);
     setAvailablePaymentMethods([]);
@@ -141,6 +153,26 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           setStore(transaction.store || '');
           setNotes(transaction.notes || '');
 
+          if (transaction.referencedTransactionId) {
+            setReferencedTransactionId(transaction.referencedTransactionId);
+            const syncLocal = tursoService.getLocalTransactionById(transaction.referencedTransactionId);
+            if (syncLocal) {
+              setResolvedReferencedTx(syncLocal);
+              setReferenceError(null);
+            }
+            tursoService.getTransactionById(transaction.referencedTransactionId).then((found) => {
+              if (!isCancelled) {
+                if (found) {
+                  setResolvedReferencedTx(found);
+                  setReferenceError(null);
+                } else {
+                  setResolvedReferencedTx(null);
+                  setReferenceError(t('transactionModal.referenceNotFound'));
+                }
+              }
+            });
+          }
+
           if (transaction.installments && transaction.installments > 1) {
             const totalAmount = transaction.amount * transaction.installments;
             setAmount(String(totalAmount));
@@ -175,6 +207,9 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           setStore('');
           setDate(new Date());
           setNotes('');
+          setReferencedTransactionId('');
+          setResolvedReferencedTx(null);
+          setReferenceError(null);
 
           const defaultPm = pms.find((p) => p.id === defaultPmId) || pms[0];
           const initInst = defaultPm?.allowInstallments ? 1 : 0;
@@ -198,6 +233,54 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
       isCancelled = true;
     };
   }, [visible, transaction]);
+
+  const handleCopyId = async () => {
+    if (!transaction?.id) return;
+    const success = await copyToClipboard(transaction.id);
+    if (success) {
+      setCopiedIdToast(true);
+      showToast({ type: 'success', message: t('transactionModal.idCopied') });
+      setTimeout(() => setCopiedIdToast(false), 2500);
+    }
+  };
+
+  const handleReferencedIdChange = async (newId: string) => {
+    const trimmed = newId.trim();
+    setReferencedTransactionId(trimmed);
+
+    if (!trimmed) {
+      setResolvedReferencedTx(null);
+      setReferenceError(null);
+      return;
+    }
+
+    if (transaction && trimmed === transaction.id) {
+      setResolvedReferencedTx(null);
+      setReferenceError(t('transactionModal.cannotReferenceSelf'));
+      return;
+    }
+
+    try {
+      const found = await tursoService.getTransactionById(trimmed);
+      if (found) {
+        setResolvedReferencedTx(found);
+        setReferenceError(null);
+      } else {
+        setResolvedReferencedTx(null);
+        setReferenceError(t('transactionModal.referenceNotFound'));
+      }
+    } catch (err) {
+      setResolvedReferencedTx(null);
+      setReferenceError(t('transactionModal.referenceNotFound'));
+    }
+  };
+
+  const handlePasteId = async () => {
+    const text = await pasteFromClipboard();
+    if (text) {
+      handleReferencedIdChange(text);
+    }
+  };
 
   const currentPmItem = availablePaymentMethods.find((pm) => pm.id === paymentMethodId);
   const pmSupportsInstallments = currentPmItem?.allowInstallments ?? false;
@@ -252,6 +335,7 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
         store: type === 'expense' ? (store.trim() || undefined) : undefined,
         date: normalizeTransactionDate(date),
         notes: notes.trim() || undefined,
+        referencedTransactionId: referencedTransactionId.trim() || undefined,
       };
 
       if (!transaction && finalInstallments > 1) {
@@ -350,6 +434,36 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
           {errorMessage && (
             <View style={styles.errorContainer}>
               <FeedbackMessage type="error" message={errorMessage} />
+            </View>
+          )}
+
+          {/* Transaction ID Copy Bar (Edit Mode) */}
+          {transaction && (
+            <View style={styles.idContainer}>
+              <AppText style={[styles.idLabel, { color: theme.colors.textSecondary }]}>
+                {t('transactionModal.transactionId')}:
+              </AppText>
+              <Pressable
+                onPress={handleCopyId}
+                style={({ pressed }) => [
+                  styles.idBadge,
+                  {
+                    backgroundColor: theme.colors.surfaceRecessed,
+                    borderColor: theme.colors.borderSubtle,
+                  },
+                  pressed && { opacity: 0.7 },
+                ]}
+                accessibilityLabel={t('transactionModal.copyId')}
+              >
+                <AppText style={[styles.idValue, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                  {transaction.id}
+                </AppText>
+                {copiedIdToast ? (
+                  <Check size={13} color={theme.colors.success} />
+                ) : (
+                  <Copy size={13} color={theme.colors.accent} />
+                )}
+              </Pressable>
             </View>
           )}
 
@@ -594,6 +708,88 @@ export const TransactionEditModal: React.FC<TransactionEditModalProps> = ({
             />
           </Field>
 
+          {/* Referenced Transaction ID */}
+          <Field label={t('transactionModal.referencedTransactionField')}>
+            <AppTextInput
+              value={referencedTransactionId}
+              onChangeText={handleReferencedIdChange}
+              placeholder={t('transactionModal.referencedTransactionPlaceholder')}
+              autoCapitalize="none"
+              autoCorrect={false}
+              error={Boolean(referenceError)}
+              helperText={referenceError || undefined}
+              rightElement={
+                <View style={styles.referencedInputRight}>
+                  {referencedTransactionId ? (
+                    <AppIconButton
+                      variant="custom"
+                      size="sm"
+                      icon={<X size={13} color={theme.colors.textSecondary} />}
+                      onPress={() => handleReferencedIdChange('')}
+                      accessibilityLabel={t('common.clear', { defaultValue: 'Clear' })}
+                    />
+                  ) : (
+                    <Pressable
+                      onPress={handlePasteId}
+                      style={({ pressed }) => [
+                        styles.pasteBtn,
+                        {
+                          backgroundColor: theme.colors.surfaceRecessed,
+                          borderColor: theme.colors.borderSubtle,
+                        },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      accessibilityLabel={t('common.paste', { defaultValue: 'Paste' })}
+                    >
+                      <AppText style={[styles.pasteBtnText, { color: theme.colors.accent }]}>
+                        {t('common.paste', { defaultValue: 'Paste' })}
+                      </AppText>
+                    </Pressable>
+                  )}
+                </View>
+              }
+            />
+
+            {resolvedReferencedTx && (
+              <AppCard style={styles.referenceCard} padding="md">
+                <View style={styles.referenceCardContent}>
+                  <View style={styles.referenceCardHeader}>
+                    <View style={styles.referenceCardLeft}>
+                      <Link2 size={15} color={theme.colors.accent} />
+                      <AppText style={[styles.referenceCardTitle, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                        {resolvedReferencedTx.title}
+                      </AppText>
+                    </View>
+                    <AppText style={[styles.referenceCardAmount, { color: theme.colors.textSecondary }]} tabularNums>
+                      {formatMoney(resolvedReferencedTx.amount, resolvedReferencedTx.currencyId)}
+                    </AppText>
+                  </View>
+                  <View style={styles.referenceCardFooter}>
+                    <AppText style={[styles.referenceCardDate, { color: theme.colors.textTertiary }]}>
+                      {resolvedReferencedTx.date
+                        ? parseTransactionDate(resolvedReferencedTx.date).toLocaleDateString(i18n.language || undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
+                        : ''}
+                    </AppText>
+                    <Pressable
+                      onPress={() => handleReferencedIdChange('')}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                      accessibilityLabel={t('transactionModal.unlink')}
+                    >
+                      <AppText style={[styles.unlinkText, { color: theme.colors.danger }]}>
+                        {t('transactionModal.unlink')}
+                      </AppText>
+                    </Pressable>
+                  </View>
+                </View>
+              </AppCard>
+            )}
+          </Field>
+
           {/* Actions */}
           <View style={styles.actions}>
             <View style={styles.actionBtnWrapper}>
@@ -660,6 +856,34 @@ const styles = StyleSheet.create({
   errorContainer: {
     marginBottom: theme.spacing.xs,
   },
+  idContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: 2,
+    marginBottom: 2,
+  },
+  idLabel: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  idBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 5,
+    borderRadius: theme.radii.sm,
+    borderWidth: 1,
+  },
+  idValue: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.semibold,
+  },
   field: {
     gap: theme.spacing.xs,
   },
@@ -718,6 +942,61 @@ const styles = StyleSheet.create({
   },
   datePickerValueText: {
     fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+  },
+  referencedInputRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  pasteBtn: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 5,
+    borderRadius: theme.radii.sm,
+    borderWidth: 1,
+  },
+  pasteBtnText: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.bold,
+  },
+  referenceCard: {
+    marginTop: theme.spacing.xs,
+  },
+  referenceCardContent: {
+    gap: 4,
+  },
+  referenceCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  referenceCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    flex: 1,
+  },
+  referenceCardTitle: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.semibold,
+    flex: 1,
+  },
+  referenceCardAmount: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.bold,
+  },
+  referenceCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  referenceCardDate: {
+    fontSize: theme.fontSize.xs,
+  },
+  unlinkText: {
+    fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
   },
   actions: {

@@ -20,6 +20,7 @@ function mapRowToTransaction(row: any) {
     installmentNumber: Number(row.installment_number) || 0,
     installmentGroupId: row.installment_group_id ? String(row.installment_group_id) : undefined,
     subscriptionId: row.subscription_id ? String(row.subscription_id) : undefined,
+    referencedTransactionId: row.referenced_transaction_id ? String(row.referenced_transaction_id) : undefined,
     date: normalizeTransactionDate(String(row.date)),
     notes: row.notes ? String(row.notes) : undefined,
     createdAt: String(row.created_at || row.date),
@@ -37,9 +38,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await ensureTablesExist(client);
 
-    // GET /api/transactions - Fetch transactions with optional pagination, since filter, and search
+    // GET /api/transactions - Fetch transactions with optional pagination, since filter, search, or specific ID
     if (req.method === 'GET') {
-      const { since, limit, offset, search, type, count, totals } = req.query;
+      const { id, since, limit, offset, search, type, count, totals } = req.query;
+
+      if (id && id !== 'all') {
+        const result = await client.execute({
+          sql: `SELECT transactions.* FROM transactions WHERE id = ? LIMIT 1`,
+          args: [String(id)],
+        });
+        if (result.rows.length === 0) {
+          return res.status(404).json({ error: 'Transaction not found' });
+        }
+        return res.status(200).json(mapRowToTransaction(result.rows[0]));
+      }
 
       if (totals === 'true') {
         const result = await client.execute(`
@@ -132,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // POST /api/transactions - Add a new transaction
     if (req.method === 'POST') {
-      const { type, title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, installments, installmentNumber, installmentGroupId, subscriptionId, date, notes } = req.body || {};
+      const { type, title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, installments, installmentNumber, installmentGroupId, subscriptionId, referencedTransactionId, date, notes } = req.body || {};
       const currVal = currencyId || currency;
       if (!type || !title || amount === undefined || !currVal || !date) {
         return res.status(400).json({ error: 'Missing required transaction fields' });
@@ -149,11 +161,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const instNumVal = type === 'expense' ? (Number(installmentNumber) || 0) : 0;
       const instGroupIdVal = type === 'expense' && installmentGroupId ? String(installmentGroupId).trim() : null;
       const subIdVal = subscriptionId ? String(subscriptionId).trim() : null;
+      const refTxIdVal = referencedTransactionId ? String(referencedTransactionId).trim() : null;
 
       await client.execute({
-        sql: `INSERT INTO transactions (id, type, title, amount, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, notes, created_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [id, type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, normDate, notes || '', createdAt],
+        sql: `INSERT INTO transactions (id, type, title, amount, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, referenced_transaction_id, date, notes, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [id, type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, refTxIdVal, normDate, notes || '', createdAt],
       });
 
       const newTx = {
@@ -170,6 +183,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         installmentNumber: instNumVal || undefined,
         installmentGroupId: instGroupIdVal || undefined,
         subscriptionId: subIdVal || undefined,
+        referencedTransactionId: refTxIdVal || undefined,
         date: normDate,
         notes: notes || undefined,
         createdAt,
@@ -179,7 +193,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // PUT /api/transactions - Update an existing transaction
     if (req.method === 'PUT') {
-      const { id, type, title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, installments, installmentNumber, installmentGroupId, subscriptionId, date, notes } = req.body || {};
+      const { id, type, title, amount, currencyId, currency, categoryId, paymentMethodId, bankId, store, installments, installmentNumber, installmentGroupId, subscriptionId, referencedTransactionId, date, notes } = req.body || {};
       const currVal = currencyId || currency;
       if (!id || !type || !title || amount === undefined || !currVal || !date) {
         return res.status(400).json({ error: 'Missing required transaction fields for update' });
@@ -194,12 +208,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const instNumVal = type === 'expense' ? (Number(installmentNumber) || 0) : 0;
       const instGroupIdVal = type === 'expense' && installmentGroupId ? String(installmentGroupId).trim() : null;
       const subIdVal = subscriptionId ? String(subscriptionId).trim() : null;
+      const refTxIdVal = referencedTransactionId ? String(referencedTransactionId).trim() : null;
 
       await client.execute({
         sql: `UPDATE transactions
-              SET type = ?, title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, date = ?, notes = ?
+              SET type = ?, title = ?, amount = ?, currency_id = ?, category_id = ?, payment_method_id = ?, bank_id = ?, store = ?, installments = ?, installment_number = ?, installment_group_id = ?, subscription_id = ?, referenced_transaction_id = ?, date = ?, notes = ?
               WHERE id = ?`,
-        args: [type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, normDate, notes || '', id],
+        args: [type, title, Number(amount), currVal, catIdVal, pmIdVal, bankIdVal, storeVal, instVal, instNumVal, instGroupIdVal, subIdVal, refTxIdVal, normDate, notes || '', id],
       });
 
       const updatedTx = {
@@ -216,6 +231,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         installmentNumber: instNumVal || undefined,
         installmentGroupId: instGroupIdVal || undefined,
         subscriptionId: subIdVal || undefined,
+        referencedTransactionId: refTxIdVal || undefined,
         date: normDate,
         notes: notes || undefined,
       };

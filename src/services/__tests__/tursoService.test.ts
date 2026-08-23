@@ -480,4 +480,131 @@ describe('tursoService', () => {
     // Older item outside 60-day window is preserved
     expect(tursoService.getLocalTransactionCount()).toBe(2);
   });
+
+  it('handles referencedTransactionId when adding, updating, and querying transactions', async () => {
+    const parentTx = await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Original Purchase',
+      amount: 300,
+      currencyId: 'BRL',
+      date: '2026-08-01',
+    });
+
+    const refundTx = await tursoService.addTransaction({
+      type: 'income',
+      title: 'Refund for Purchase',
+      amount: 300,
+      currencyId: 'BRL',
+      referencedTransactionId: parentTx.id,
+      date: '2026-08-05',
+    });
+
+    expect(refundTx.referencedTransactionId).toBe(parentTx.id);
+
+    // Test synchronous getLocalTransactionById
+    const localFound = tursoService.getLocalTransactionById(parentTx.id);
+    expect(localFound).toBeDefined();
+    expect(localFound?.title).toBe('Original Purchase');
+
+    // Test getTransactionById
+    const asyncFound = await tursoService.getTransactionById(parentTx.id);
+    expect(asyncFound).toBeDefined();
+    expect(asyncFound?.title).toBe('Original Purchase');
+
+    // Test non-existent ID
+    const notFound = await tursoService.getTransactionById('non-existent-tx-id');
+    expect(notFound).toBeNull();
+
+    // Test update with referencedTransactionId
+    const updated = await tursoService.updateTransaction(refundTx.id, {
+      type: 'income',
+      title: 'Partial Refund',
+      amount: 150,
+      currencyId: 'BRL',
+      referencedTransactionId: parentTx.id,
+      date: '2026-08-05',
+    });
+
+    expect(updated.title).toBe('Partial Refund');
+    expect(updated.referencedTransactionId).toBe(parentTx.id);
+  });
+
+  it('preserves referencedTransactionId when duplicating transactions', async () => {
+    const originalRef = await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Ref Source',
+      amount: 100,
+      currencyId: 'BRL',
+      date: '2026-08-01',
+    });
+
+    const txToDuplicate = await tursoService.addTransaction({
+      type: 'expense',
+      title: 'Warranty Payment',
+      amount: 25,
+      currencyId: 'BRL',
+      referencedTransactionId: originalRef.id,
+      date: '2026-08-02',
+    });
+
+    const duplicates = await tursoService.duplicateTransaction(txToDuplicate);
+    expect(duplicates.length).toBe(1);
+    expect(duplicates[0].referencedTransactionId).toBe(originalRef.id);
+  });
+
+  it('runs ensureSchema and recovers from schema mismatch error via executeWithSchemaRetry', async () => {
+    const ensureSpy = jest.spyOn(tursoService, 'ensureSchema').mockResolvedValue(true);
+
+    let attempts = 0;
+    const fakeClient = {
+      execute: jest.fn().mockImplementation(async () => {
+        attempts++;
+        if (attempts === 1) {
+          throw new Error('SQLite error: no such column: referenced_transaction_id');
+        }
+        return { rows: [{ count: 1 }] };
+      }),
+    };
+
+    (tursoService as any).client = fakeClient;
+    (tursoService as any).schemaEnsured = true;
+
+    const result = await (tursoService as any).executeWithSchemaRetry((client: any) =>
+      client.execute('SELECT * FROM transactions')
+    );
+
+    expect(result).toEqual({ rows: [{ count: 1 }] });
+    expect(attempts).toBe(2);
+    expect(ensureSpy).toHaveBeenCalledWith(true);
+
+    ensureSpy.mockRestore();
+    (tursoService as any).client = null;
+    (tursoService as any).schemaEnsured = false;
+  });
+
+  it('maps referenced_transaction_id from database row to referencedTransactionId property', () => {
+    const rawRow = {
+      id: 'tx-test-row-1',
+      type: 'income',
+      title: 'Salary Deposit',
+      amount: 4500,
+      currency_id: 'BRL',
+      category_id: 'cat-income-1',
+      payment_method_id: 'pm-1',
+      bank_id: 'bank-1',
+      store: null,
+      installments: 0,
+      installment_number: 0,
+      installment_group_id: null,
+      subscription_id: null,
+      referenced_transaction_id: 'tx-parent-999',
+      date: '2026-08-20',
+      notes: 'Monthly pay',
+      created_at: '2026-08-20T10:00:00.000Z',
+    };
+
+    const mapped = (tursoService as any).mapRowToTransaction(rawRow);
+    expect(mapped.id).toBe('tx-test-row-1');
+    expect(mapped.referencedTransactionId).toBe('tx-parent-999');
+  });
 });

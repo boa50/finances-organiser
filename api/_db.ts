@@ -46,6 +46,26 @@ export function resetTablesEnsuredCache(): void {
   tablesEnsured = false;
 }
 
+export async function executeWithDbRetry<T>(client: Client, fn: () => Promise<T>): Promise<T> {
+  await ensureTablesExist(client, false);
+  try {
+    return await fn();
+  } catch (err: any) {
+    const errMsg = String(err?.message || err || '');
+    if (
+      errMsg.includes('no such column') ||
+      errMsg.includes('no such table') ||
+      errMsg.includes('SQLITE_UNKNOWN') ||
+      errMsg.includes('has no column')
+    ) {
+      console.warn('Schema mismatch detected in API route execution, running migrations and retrying...', errMsg);
+      await ensureTablesExist(client, true);
+      return await fn();
+    }
+    throw err;
+  }
+}
+
 export async function ensureTablesExist(client: Client, force = false): Promise<void> {
   if (tablesEnsured && !force) {
     return;
@@ -55,7 +75,7 @@ export async function ensureTablesExist(client: Client, force = false): Promise<
   try {
     await client.batch(
       [
-        'SELECT id, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, date, created_at FROM transactions LIMIT 0',
+        'SELECT id, currency_id, category_id, payment_method_id, bank_id, store, installments, installment_number, installment_group_id, subscription_id, referenced_transaction_id, date, created_at FROM transactions LIMIT 0',
         'SELECT id, currency_id, category_id, payment_method_id, bank_id, store, frequency, billing_day, billing_month, active, created_at, updated_at FROM subscriptions LIMIT 0',
         'SELECT id, name, icon, color, type, display_order, enabled FROM categories LIMIT 0',
         'SELECT id, name, allow_installments, display_order, enabled FROM payment_methods LIMIT 0',
@@ -85,6 +105,7 @@ export async function ensureTablesExist(client: Client, force = false): Promise<
       installment_number INTEGER DEFAULT 0,
       installment_group_id TEXT,
       subscription_id TEXT,
+      referenced_transaction_id TEXT,
       date TEXT NOT NULL,
       notes TEXT,
       created_at TEXT NOT NULL
@@ -141,6 +162,12 @@ export async function ensureTablesExist(client: Client, force = false): Promise<
 
   try {
     await client.execute('ALTER TABLE transactions ADD COLUMN subscription_id TEXT');
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    await client.execute('ALTER TABLE transactions ADD COLUMN referenced_transaction_id TEXT');
   } catch (e) {
     // Column already exists
   }

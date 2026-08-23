@@ -16,6 +16,7 @@ export interface Transaction {
   date: string; // ISO 8601 string: YYYY-MM-DDTHH:mm:ss.sssZ
   notes?: string;
   subscriptionId?: string;
+  referencedTransactionId?: string;
   createdAt: string;
 }
 

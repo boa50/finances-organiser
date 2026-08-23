@@ -51,24 +51,23 @@ class BankService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        const res = await client.execute('SELECT * FROM banks ORDER BY display_order ASC, name ASC');
-        if (res.rows) {
-          const dbItems: BankItem[] = res.rows.map((row: any) => ({
-            id: String(row.id),
-            name: String(row.name),
-            displayOrder: Number(row.display_order ?? 0),
-            enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
-          }));
-          this.banks = dbItems;
-          this.saveToLocalStorage();
-          return [...this.banks];
-        }
-      } catch (e) {
-        console.warn('Could not fetch banks from Turso DB, using local cache:', e);
+    try {
+      const res = await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('SELECT * FROM banks ORDER BY display_order ASC, name ASC')
+      );
+      if (res.rows) {
+        const dbItems: BankItem[] = res.rows.map((row: any) => ({
+          id: String(row.id),
+          name: String(row.name),
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+        this.banks = dbItems;
+        this.saveToLocalStorage();
+        return [...this.banks];
       }
+    } catch (e) {
+      console.warn('Could not fetch banks from Turso DB, using local cache:', e);
     }
 
     return [...this.banks];
@@ -125,18 +124,17 @@ class BankService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
+    try {
+      await tursoService.executeWithSchemaRetry(async (client) => {
         for (let index = 0; index < orderedIds.length; index++) {
           await client.execute({
             sql: 'UPDATE banks SET display_order = ? WHERE id = ?',
             args: [index, orderedIds[index]],
           });
         }
-      } catch (err) {
-        console.error('Failed to sync bank reorder to Turso DB:', err);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to sync bank reorder to Turso DB:', err);
     }
 
     return this.getBanks();
@@ -185,28 +183,15 @@ class BankService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'INSERT INTO banks (id, name, display_order, enabled) VALUES (?, ?, ?, ?)',
           args: [newBank.id, newBank.name, nextOrder, isEnabled ? 1 : 0],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE banks ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: 'INSERT INTO banks (id, name, display_order, enabled) VALUES (?, ?, ?, ?)',
-              args: [newBank.id, newBank.name, nextOrder, isEnabled ? 1 : 0],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync added bank to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync added bank to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync added bank to Turso DB:', err);
     }
 
     return newBank;
@@ -253,28 +238,15 @@ class BankService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'UPDATE banks SET name = ?, enabled = ? WHERE id = ?',
           args: [trimmed, updated.enabled ? 1 : 0, id],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE banks ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: 'UPDATE banks SET name = ?, enabled = ? WHERE id = ?',
-              args: [trimmed, updated.enabled ? 1 : 0, id],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync bank update to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync bank update to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync bank update to Turso DB:', err);
     }
 
     return updated;
@@ -310,9 +282,8 @@ class BankService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
+    try {
+      await tursoService.executeWithSchemaRetry(async (client) => {
         await client.execute({
           sql: 'UPDATE transactions SET bank_id = NULL WHERE bank_id = ?',
           args: [id],
@@ -325,9 +296,9 @@ class BankService {
           sql: 'DELETE FROM banks WHERE id = ?',
           args: [id],
         });
-      } catch (err) {
-        console.error('Failed to delete bank from Turso DB:', err);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to delete bank from Turso DB:', err);
     }
 
     this.banks = this.banks.filter((b) => b.id !== id);
@@ -353,13 +324,12 @@ class BankService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute('DELETE FROM banks');
-      } catch (err) {
-        console.error('Failed to reset banks in Turso DB:', err);
-      }
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('DELETE FROM banks')
+      );
+    } catch (err) {
+      console.error('Failed to reset banks in Turso DB:', err);
     }
 
     return [];

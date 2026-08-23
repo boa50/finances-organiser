@@ -24,7 +24,9 @@
     "subscription": "Assinatura",
     "annualSubscription": "Assinatura Anual",
     "preview": "Pré-visualização",
-    "month": "mês"
+    "month": "mês",
+    "clear": "Limpar",
+    "paste": "Colar"
   },
   "auth": {
     "subtitle": "Digite sua senha para continuar",
@@ -112,7 +114,8 @@
     "subTxEditTitle": "Transação de Assinatura",
     "subTxEditMsg": "Despesas de assinatura não podem ser editadas diretamente no Histórico de Transações. Edite a assinatura na página de Assinaturas.",
     "subTxDuplicateMsg": "Despesas de assinatura não podem ser duplicadas diretamente no Histórico de Transações. Edite a assinatura na página de Assinaturas.",
-    "duplicateError": "Falha ao duplicar transação."
+    "duplicateError": "Falha ao duplicar transação.",
+    "referencedPrefix": "Ref:"
   },
   "transactionModal": {
     "addTitle": "Adicionar Transação",
@@ -121,6 +124,15 @@
     "editSubtitle": "Atualize os detalhes da transação",
     "addTransaction": "Adicionar Transação",
     "editTransaction": "Editar Transação",
+    "transactionId": "ID da Transação",
+    "copyId": "Copiar ID",
+    "idCopied": "ID da transação copiado para a área de transferência!",
+    "referencedTransactionLabel": "ID da Transação Referenciada",
+    "referencedTransactionField": "ID da Transação Referenciada",
+    "referencedTransactionPlaceholder": "Cole ou digite o ID da transação...",
+    "referenceNotFound": "Transação referenciada não encontrada.",
+    "cannotReferenceSelf": "Uma transação não pode referenciar a si mesma.",
+    "unlink": "Desvincular",
     "titleLabel": "Título *",
     "titleField": "Título *",
     "titlePlaceholder": "ex: Supermercado, Salário",

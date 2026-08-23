@@ -54,26 +54,25 @@ class CurrencyService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        const res = await client.execute('SELECT * FROM currencies ORDER BY display_order ASC');
-        if (res.rows && res.rows.length > 0) {
-          const dbItems: CurrencyInfo[] = res.rows.map((row: any) => ({
-            code: String(row.id),
-            symbol: String(row.symbol),
-            name: String(row.name),
-            flag: String(row.flag),
-            displayOrder: Number(row.display_order ?? 0),
-            enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
-          }));
-          this.currencies = dbItems;
-          this.saveToLocalStorage();
-          return [...this.currencies];
-        }
-      } catch (e) {
-        console.warn('Could not fetch currencies from Turso DB, using local cache:', e);
+    try {
+      const res = await tursoService.executeWithSchemaRetry((client) =>
+        client.execute('SELECT * FROM currencies ORDER BY display_order ASC')
+      );
+      if (res.rows && res.rows.length > 0) {
+        const dbItems: CurrencyInfo[] = res.rows.map((row: any) => ({
+          code: String(row.id),
+          symbol: String(row.symbol),
+          name: String(row.name),
+          flag: String(row.flag),
+          displayOrder: Number(row.display_order ?? 0),
+          enabled: row.enabled === undefined || row.enabled === null ? true : Boolean(row.enabled),
+        }));
+        this.currencies = dbItems;
+        this.saveToLocalStorage();
+        return [...this.currencies];
       }
+    } catch (e) {
+      console.warn('Could not fetch currencies from Turso DB, using local cache:', e);
     }
 
     return [...this.currencies];
@@ -134,18 +133,17 @@ class CurrencyService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
+    try {
+      await tursoService.executeWithSchemaRetry(async (client) => {
         for (let index = 0; index < orderedCodes.length; index++) {
           await client.execute({
             sql: 'UPDATE currencies SET display_order = ? WHERE UPPER(id) = ?',
             args: [index, orderedCodes[index].toUpperCase()],
           });
         }
-      } catch (err) {
-        console.error('Failed to sync currency reorder to Turso DB:', err);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to sync currency reorder to Turso DB:', err);
     }
 
     return this.getCurrencies();
@@ -198,28 +196,15 @@ class CurrencyService {
       }
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'INSERT INTO currencies (id, symbol, name, flag, display_order, enabled) VALUES (?, ?, ?, ?, ?, 1)',
           args: [info.code, info.symbol, info.name, info.flag, this.currencies.length - 1],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE currencies ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: 'INSERT INTO currencies (id, symbol, name, flag, display_order, enabled) VALUES (?, ?, ?, ?, ?, 1)',
-              args: [info.code, info.symbol, info.name, info.flag, this.currencies.length - 1],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync added currency to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync added currency to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync added currency to Turso DB:', err);
     }
 
     return newCurrency;
@@ -269,28 +254,15 @@ class CurrencyService {
       // Fallback
     }
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'UPDATE currencies SET enabled = ? WHERE UPPER(id) = ?',
           args: [newEnabled ? 1 : 0, normalizedCode],
-        });
-      } catch (err: any) {
-        if (err?.message?.includes('no such column: enabled')) {
-          try {
-            await client.execute('ALTER TABLE currencies ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1');
-            await client.execute({
-              sql: 'UPDATE currencies SET enabled = ? WHERE UPPER(id) = ?',
-              args: [newEnabled ? 1 : 0, normalizedCode],
-            });
-          } catch (retryErr) {
-            console.error('Failed to sync currency enabled state to Turso DB after migration:', retryErr);
-          }
-        } else {
-          console.error('Failed to sync currency enabled state to Turso DB:', err);
-        }
-      }
+        })
+      );
+    } catch (err: any) {
+      console.error('Failed to sync currency enabled state to Turso DB:', err);
     }
 
     return updated;
@@ -329,16 +301,15 @@ class CurrencyService {
     this.currencies = this.currencies.filter((c) => c.code.toUpperCase() !== normalizedCode);
     this.saveToLocalStorage();
 
-    const client = tursoService.getClient();
-    if (client) {
-      try {
-        await client.execute({
+    try {
+      await tursoService.executeWithSchemaRetry((client) =>
+        client.execute({
           sql: 'DELETE FROM currencies WHERE id = ?',
           args: [normalizedCode],
-        });
-      } catch (err) {
-        console.error('Failed to delete currency from Turso DB:', err);
-      }
+        })
+      );
+    } catch (err) {
+      console.error('Failed to delete currency from Turso DB:', err);
     }
 
     return true;

@@ -24,7 +24,9 @@
     "subscription": "Subscription",
     "annualSubscription": "Annual Subscription",
     "preview": "Preview",
-    "month": "month"
+    "month": "month",
+    "clear": "Clear",
+    "paste": "Paste"
   },
   "auth": {
     "subtitle": "Enter your password to continue",
@@ -112,7 +114,8 @@
     "subTxEditTitle": "Subscription Transaction",
     "subTxEditMsg": "Subscription expenses cannot be edited directly from Transaction History. Please edit the subscription on the Subscriptions management page.",
     "subTxDuplicateMsg": "Subscription expenses cannot be duplicated directly from Transaction History. Please edit the subscription on the Subscriptions management page.",
-    "duplicateError": "Failed to duplicate transaction."
+    "duplicateError": "Failed to duplicate transaction.",
+    "referencedPrefix": "Ref:"
   },
   "transactionModal": {
     "addTitle": "Add Transaction",
@@ -121,6 +124,15 @@
     "editSubtitle": "Update existing transaction details",
     "addTransaction": "Add Transaction",
     "editTransaction": "Edit Transaction",
+    "transactionId": "Transaction ID",
+    "copyId": "Copy ID",
+    "idCopied": "Transaction ID copied to clipboard!",
+    "referencedTransactionLabel": "Referenced Transaction ID",
+    "referencedTransactionField": "Referenced Transaction ID",
+    "referencedTransactionPlaceholder": "Paste or enter transaction ID...",
+    "referenceNotFound": "Referenced transaction not found.",
+    "cannotReferenceSelf": "A transaction cannot reference itself.",
+    "unlink": "Unlink",
     "titleLabel": "Title *",
     "titleField": "Title *",
     "titlePlaceholder": "e.g. Grocery Store, Salary",

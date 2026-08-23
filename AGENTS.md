@@ -538,15 +538,28 @@ api/_db.ts
 
 for database access instead of creating another database client.
 
-### Database schema changes
+### Database schema changes & migration protocol
 
-Before modifying schema or migration behavior:
+FinanceCloud uses a dual-connection architecture:
+1. **Serverless API Layer (`api/_db.ts` & `api/*`)**: Handles requests in production and cloud environments.
+2. **Direct Client Layer (`src/services/tursoService.ts` & client services)**: Handles requests in Metro dev mode (`npm start`), mobile native, or when serverless functions are bypassed.
 
-1. Inspect the existing schema/migration logic in `api/_db.ts`.
-2. Consider existing production data.
-3. Prefer additive/backward-compatible changes.
-4. Consider both fresh databases and existing databases.
-5. Update types, API routes, services, and UI as required.
+Whenever a database schema change is introduced (new table, new column, modified default):
+
+#### Mandatory Schema Change Checklist:
+1. **Types**: Update interfaces in `src/types/index.ts`.
+2. **Dual-Layer Table Definitions & Additive Migrations**:
+   - Update `CREATE TABLE IF NOT EXISTS` in **both** `api/_db.ts` and `src/services/tursoService.ts`.
+   - Add idempotent `ALTER TABLE ... ADD COLUMN ...` statements in **both** `ensureTablesExist` (`api/_db.ts`) and `ensureSchema` (`src/services/tursoService.ts`).
+3. **Fast-Path Schema Verification**:
+   - Update the fast-path query list in **both** `api/_db.ts` and `src/services/tursoService.ts` to include all new columns in the `SELECT ... LIMIT 0` batch.
+4. **Row Mappers Synchronization**:
+   - Update `mapRowToTransaction` in `api/transactions.ts`, `api/bootstrap.ts`, and `src/services/tursoService.ts` to map the new database columns to camelCase TypeScript properties.
+5. **Self-Healing Execution Wrappers**:
+   - All direct client queries across all services (`tursoService`, `categoryService`, `paymentMethodService`, `bankService`, `currencyService`, `subscriptionService`) **MUST** use `tursoService.executeWithSchemaRetry((client) => ...)`.
+   - All serverless endpoints should leverage `executeWithDbRetry(client, () => ...)`.
+   - If any query encounters a missing column or table error (`no such column`, `no such table`), the wrapper automatically triggers an on-demand schema migration (`ensureSchema(true)` / `ensureTablesExist(client, true)`) and retries the operation seamlessly.
+6. **UI & Forms**: Update modals, edit forms, list cards, and localization JSON files (`en-AU.json`, `pt-BR.json`).
 
 Do not make destructive schema changes without explicit approval.
 

@@ -6,14 +6,14 @@
 
 | Status | Count |
 |--------|-------|
-| ✅ Automated and passing | 83 |
+| ✅ Automated and passing | 89 |
 | 🟡 Implemented but not automated | 21 |
 | ⬜ Not implemented | 0 |
 | 🔴 Automated but failing | 0 |
 | ⚠️ Cannot currently be verified | 0 |
-| **Total** | **104** |
+| **Total** | **110** |
 
-All 83 automated tests across 13 test suites were verified passing via `npm test` on 2026-08-16.
+All automated tests across 16 test suites were verified passing via `npm test`.
 
 ### Automated Test Suites
 
@@ -26,11 +26,14 @@ All 83 automated tests across 13 test suites were verified passing via `npm test
 - [`src/services/__tests__/currencyService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/currencyService.test.ts) — Currency lookup, add, remove, minimum 1 currency constraint, enabled toggling, and reordering
 - [`src/services/__tests__/subscriptionService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/subscriptionService.test.ts) — Subscription CRUD operations, active status toggling, deletion
 - [`src/services/__tests__/subscriptionAutoGenerator.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/subscriptionAutoGenerator.test.ts) — Subscription target date calculation, monthly expense auto-generation, idempotency, billing day update scope
-- [`src/services/__tests__/tursoService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/tursoService.test.ts) — Transaction CRUD operations, single delete, installment group deletion, clear all
+- [`src/services/__tests__/tursoService.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/services/__tests__/tursoService.test.ts) — Transaction CRUD operations, single delete, installment group deletion, clear all, referenced transactions, duplication
 - [`src/utils/__tests__/authUtils.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/authUtils.test.ts) — Password hashing, comparison, and input validation
 - [`src/utils/__tests__/currencies.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/currencies.test.ts) — Currency symbol lookup, formatting, conversion, and constants
 - [`src/utils/__tests__/financials.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/financials.test.ts) — Financial summaries, installment title parsing, monthly/category aggregation, and filtering
+- [`src/utils/__tests__/clipboard.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/utils/__tests__/clipboard.test.ts) — Cross-platform clipboard copy and paste helper
 - [`src/components/ui/__tests__/AppIconButton.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/components/ui/__tests__/AppIconButton.test.ts) — Standardized icon action button variants (edit, delete, duplicate, custom), custom sizes/colors, accessibility roles, and disabled states
+- [`src/components/transactions/__tests__/TransactionEditModal.test.ts`](file:///home/boa50/Desenvolvimento/finances-organiser/src/components/transactions/__tests__/TransactionEditModal.test.ts) — TransactionEditModal async save, toast feedback, and form validation
+- [`src/components/transactions/__tests__/TransactionItemCard.test.tsx`](file:///home/boa50/Desenvolvimento/finances-organiser/src/components/transactions/__tests__/TransactionItemCard.test.tsx) — TransactionItemCard rendering and reference display behavior
 
 ---
 
@@ -2037,6 +2040,126 @@ All 83 automated tests across 13 test suites were verified passing via `npm test
 **Then** All Web and PWA icon resolutions (`icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, `favicon-32x32.png`, `favicon-16x16.png`, `favicon.ico`, `og-image.png`), `manifest.json`, and `index.html` are dynamically generated into `public/` and bundled into `dist/`, ensuring Android browser installation icons and Vercel overview/social preview images reflect the latest source assets automatically.
 
 **Automation:** `scripts/__tests__/generateWebIcons.test.ts` — `generates all PWA icons, web favicons, manifest and index.html from source assets`
+
+---
+
+### TC-096 — Copy transaction ID in Edit Transaction Modal
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions / Reference
+
+**Platform:** Web, Android, iOS
+
+**Given** An existing transaction is opened in the Edit Transaction Modal.
+
+**When** The user clicks the Copy ID badge next to the transaction ID.
+
+**Then** The unique transaction ID is copied to the system clipboard via `copyToClipboard()` and a confirmation feedback message is displayed.
+
+**Automation:** `src/utils/__tests__/clipboard.test.ts` — `copies text via navigator.clipboard.writeText when available`
+
+---
+
+### TC-097 — Link valid referenced transaction with live preview
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions / Reference
+
+**Platform:** Web, Android, iOS
+
+**Given** A transaction exists in the database with ID `tx_123`.
+
+**When** The user enters `tx_123` into the Referenced Transaction ID field of a new or existing transaction.
+
+**Then** The application resolves the transaction asynchronously, displays a preview card with the referenced transaction's title, amount, and date, and stores `referencedTransactionId` on save.
+
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `handles referencedTransactionId when adding, updating, and querying transactions`
+
+---
+
+### TC-098 — Non-blocking validation for invalid or missing referenced transaction ID
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions / Reference
+
+**Platform:** Web, Android, iOS
+
+**Given** The user enters a non-existent transaction ID in the Referenced Transaction ID field.
+
+**When** The modal is evaluated and the user clicks Save.
+
+**Then** An error/warning message is displayed informing that the referenced transaction was not found, but saving is non-blocking and the transaction is successfully saved.
+
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `handles referencedTransactionId when adding, updating, and querying transactions`
+
+---
+
+### TC-099 — Display referenced transaction title on TransactionItemCard
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions / Reference
+
+**Platform:** Web, Android, iOS
+
+**Given** A transaction record has a `referencedTransactionId` pointing to an existing transaction.
+
+**When** The transaction item card is rendered in Transaction History or Overview.
+
+**Then** A reference badge (`Ref: <Referenced Title>`) with a link icon is displayed in the card metadata row.
+
+**Automation:** `src/components/transactions/__tests__/TransactionItemCard.test.tsx` — `renders reference title when referencedTransactionId matches a valid transaction`
+
+---
+
+### TC-100 — Graceful omission on TransactionItemCard for invalid or missing reference
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions / Reference
+
+**Platform:** Web, Android, iOS
+
+**Given** A transaction has an invalid or non-existent `referencedTransactionId` (e.g. deleted parent transaction).
+
+**When** The transaction item card is rendered.
+
+**Then** No reference indicator or error badge is displayed, preserving the normal card layout.
+
+**Automation:** `src/components/transactions/__tests__/TransactionItemCard.test.tsx` — `does not crash when referencedTransactionId is not found`
+
+---
+
+### TC-101 — Preserve referenced transaction ID when duplicating transactions
+
+**Status:** ✅ Automated
+
+**Priority:** High
+
+**Feature:** Transactions / Reference
+
+**Platform:** Web, Android, iOS
+
+**Given** A transaction with `referencedTransactionId` is duplicated.
+
+**When** `tursoService.duplicateTransaction()` is executed.
+
+**Then** The newly created duplicate transaction retains the `referencedTransactionId`.
+
+**Automation:** `src/services/__tests__/tursoService.test.ts` — `preserves referencedTransactionId when duplicating transactions`
 
 
 
