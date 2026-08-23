@@ -17,6 +17,17 @@ describe('currencyService', () => {
     expect(currencies.some((c) => c.code === 'EUR')).toBe(true);
   });
 
+  it('adds MYR (Malaysian Ringgit) successfully', async () => {
+    const added = await currencyService.addCurrency('MYR');
+    expect(added.code).toBe('MYR');
+    expect(added.symbol).toBe('RM');
+    expect(added.name).toBe('Malaysian Ringgit');
+    expect(added.flag).toBe('🇲🇾');
+
+    const currencies = await currencyService.getCurrencies();
+    expect(currencies.some((c) => c.code === 'MYR')).toBe(true);
+  });
+
   it('rejects adding an invalid currency option', async () => {
     await expect(currencyService.addCurrency('INVALID_CODE')).rejects.toThrow();
   });

@@ -25,6 +25,14 @@ describe('Currency Utilities', () => {
       expect(info.flag).toBe('🇦🇺');
     });
 
+    it('should return currency info for MYR (Malaysian Ringgit)', () => {
+      const info = getCurrencyInfo('MYR');
+      expect(info.code).toBe('MYR');
+      expect(info.symbol).toBe('RM');
+      expect(info.name).toBe('Malaysian Ringgit');
+      expect(info.flag).toBe('🇲🇾');
+    });
+
     it('should handle case insensitivity', () => {
       const info = getCurrencyInfo('usd');
       expect(info.code).toBe('USD');
@@ -43,17 +51,20 @@ describe('Currency Utilities', () => {
       expect(getCurrencyName('BRL')).toBe('Brazilian Real');
       expect(getCurrencyName('USD')).toBe('US Dollar');
       expect(getCurrencyName('EUR')).toBe('Euro');
+      expect(getCurrencyName('MYR')).toBe('Malaysian Ringgit');
     });
 
     it('should use translation function if available', () => {
       const mockT = jest.fn((key: string) => {
         if (key === 'currencies.BRL') return 'Real Brasileiro';
         if (key === 'currencies.USD') return 'Dólar Americano';
+        if (key === 'currencies.MYR') return 'Ringgit Malaio';
         return key;
       });
 
       expect(getCurrencyName('BRL', mockT)).toBe('Real Brasileiro');
       expect(getCurrencyName('USD', mockT)).toBe('Dólar Americano');
+      expect(getCurrencyName('MYR', mockT)).toBe('Ringgit Malaio');
       expect(getCurrencyName('CAD', mockT)).toBe('Canadian Dollar'); // fallback since mock returned key
     });
   });
@@ -84,6 +95,13 @@ describe('Currency Utilities', () => {
       expect(formatted).toContain('250');
       expect(formatted).toContain('75');
     });
+
+    it('should format MYR amounts with RM symbol', () => {
+      const formatted = formatMoney(350.5, 'MYR');
+      expect(formatted).toContain('RM');
+      expect(formatted).toContain('350');
+      expect(formatted).toContain('50');
+    });
   });
 
   describe('convertCurrency', () => {
@@ -100,6 +118,11 @@ describe('Currency Utilities', () => {
     it('should convert USD to BRL using baseline rates or loaded rates', () => {
       const converted = convertCurrency(100, 'USD', 'BRL');
       expect(converted).toBeGreaterThan(100);
+    });
+
+    it('should convert MYR to BRL using baseline rates', () => {
+      const converted = convertCurrency(100, 'MYR', 'BRL');
+      expect(converted).toBe(125);
     });
 
     it('should convert AUD to BRL when exchange rate is loaded', async () => {
@@ -134,6 +157,11 @@ describe('Currency Utilities', () => {
     it('should contain AUD in VALID_CURRENCIES', () => {
       const hasAud = CURRENCIES.some((c) => c.code === 'AUD');
       expect(hasAud).toBe(true);
+    });
+
+    it('should contain MYR in VALID_CURRENCIES', () => {
+      const hasMyr = CURRENCIES.some((c) => c.code === 'MYR');
+      expect(hasMyr).toBe(true);
     });
   });
 });

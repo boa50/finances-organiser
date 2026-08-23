@@ -365,7 +365,8 @@
     "KRW": "Won Sul-Coreano",
     "EUR": "Euro",
     "GBP": "Libra Esterlina",
-    "COP": "Peso Colombiano"
+    "COP": "Peso Colombiano",
+    "MYR": "Ringgit Malaio"
   },
   "toast": {
     "deleting": "Excluindo...",

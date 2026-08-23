@@ -30,7 +30,7 @@ Ensure financial calculations are exact, currency conversions are correctly pivo
 
 ## Currency Rules
 
-- **Supported currencies**: BRL, USD, EUR, GBP, CAD, AUD, JPY, CHF, INR.
+- **Supported currencies**: BRL, USD, CAD, AUD, THB, JPY, KRW, EUR, GBP, COP, MYR.
 - **Pivot currency**: All conversions use `BRL` as the internal pivot.
 - **Cache**: Exchange rates are cached for 60 seconds (`src/utils/currencies.ts`).
 - **Never convert twice**: Do not apply currency conversion to an amount that was already converted.

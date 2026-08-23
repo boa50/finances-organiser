@@ -11,6 +11,7 @@ export const VALID_CURRENCIES: CurrencyInfo[] = [
   { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺' },
   { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧' },
   { code: 'COP', symbol: '$', name: 'Colombian Peso', flag: '🇨🇴' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', flag: '🇲🇾' },
 ];
 
 export const CURRENCIES = VALID_CURRENCIES;
@@ -32,6 +33,7 @@ export const BASELINE_RATES_TO_BRL: Record<string, number> = {
   KRW: 0.004,
   THB: 0.16,
   COP: 0.0013,
+  MYR: 1.25,
 };
 
 interface CachedRatesPayload {

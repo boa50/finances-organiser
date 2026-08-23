@@ -462,8 +462,10 @@ GBP
 CAD
 AUD
 JPY
-CHF
-INR
+KRW
+THB
+COP
+MYR
 ```
 
 Currency conversion currently uses BRL as the pivot.
