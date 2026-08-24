@@ -71,6 +71,25 @@ function getFileHash(filePath) {
   }
 }
 
+/**
+ * Compute a combined hash from the source icon content AND the app version.
+ * This ensures that version bumps (even without icon changes) produce a new
+ * cache-busting hash, which triggers Chrome's WebAPK update mechanism.
+ */
+function getCombinedHash(filePath, appVersion) {
+  try {
+    const fileBuffer = fs.readFileSync(filePath);
+    const hash = crypto.createHash('md5');
+    hash.update(fileBuffer);
+    if (appVersion) {
+      hash.update(appVersion);
+    }
+    return hash.digest('hex').slice(0, 8);
+  } catch {
+    return Date.now().toString(36);
+  }
+}
+
 async function generateAssets() {
   console.log('🔄 [generate-web-icons] Generating Web, PWA, and OpenGraph icons from source assets...');
 
@@ -81,15 +100,31 @@ async function generateAssets() {
   const expoConfig = getAppConfig();
   const sourceIcon = resolveSourceIcon(expoConfig);
   const faviconSource = resolveFaviconSource(expoConfig, sourceIcon);
-  const iconHash = getFileHash(sourceIcon);
+  const appVersion = expoConfig.version || '';
+  const iconHash = getCombinedHash(sourceIcon, appVersion);
 
-  console.log(`📌 Source Icon: ${path.relative(PROJECT_ROOT, sourceIcon)} (hash: ${iconHash})`);
+  console.log(`📌 Source Icon: ${path.relative(PROJECT_ROOT, sourceIcon)} (hash: ${iconHash}, version: ${appVersion || 'n/a'})`);
   console.log(`📌 Favicon Source: ${path.relative(PROJECT_ROOT, faviconSource)}`);
 
   const themeColor = (expoConfig.web && expoConfig.web.themeColor) || '#083a3e';
   const appName = (expoConfig.web && expoConfig.web.name) || expoConfig.name || 'FinancesOrganiser';
   const shortName = (expoConfig.web && expoConfig.web.shortName) || expoConfig.slug || 'FinancesOrganiser';
   const lang = (expoConfig.web && expoConfig.web.lang) || 'en';
+
+  // Resolve site URL for absolute OG/social meta paths.
+  // Vercel auto-injects VERCEL_PROJECT_PRODUCTION_URL (without protocol) at build time.
+  // SITE_URL can be set manually as a full URL override.
+  const siteUrl = (
+    process.env.SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ||
+    ''
+  ).replace(/\/+$/, '');
+
+  if (siteUrl) {
+    console.log(`📌 Site URL: ${siteUrl} (used for absolute OG/social meta paths)`);
+  } else {
+    console.log('📌 Site URL: not set (OG/social meta paths will be relative — set SITE_URL or deploy to Vercel for absolute URLs)');
+  }
 
   const iconSpecs = [
     { filename: 'icon-192.png', width: 192, height: 192, src: sourceIcon, resizeMode: 'contain', backgroundColor: 'transparent' },
@@ -205,7 +240,7 @@ async function generateAssets() {
     <meta property="og:type" content="website" />
     <meta property="og:title" content="FinanceCloud — Personal Finance Tracker" />
     <meta property="og:description" content="Cross-platform personal finance tracker with cloud sync, multi-currency support, and offline-first persistence." />
-    <meta property="og:image" content="/og-image.png?v=${iconHash}" />
+    <meta property="og:image" content="${siteUrl}/og-image.png?v=${iconHash}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
@@ -213,7 +248,7 @@ async function generateAssets() {
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="FinanceCloud — Personal Finance Tracker" />
     <meta name="twitter:description" content="Cross-platform personal finance tracker with cloud sync, multi-currency support, and offline-first persistence." />
-    <meta name="twitter:image" content="/og-image.png?v=${iconHash}" />
+    <meta name="twitter:image" content="${siteUrl}/og-image.png?v=${iconHash}" />
 
     <!-- The \`react-native-web\` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
@@ -285,4 +320,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { generateAssets, getFileHash };
+module.exports = { generateAssets, getFileHash, getCombinedHash };

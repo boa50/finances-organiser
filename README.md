@@ -89,6 +89,8 @@ npm run generate-icons
 ```
 *(Icons are also regenerated automatically before every `npm start`, `npm run web`, and `npm run build`)*
 
+The icon generator computes a combined hash from the source icon file **and** the app version in `app.json`. Bumping the version ensures Android WebAPK and browser caches detect the update. For Vercel deployments, OG/social media images automatically use absolute URLs via the auto-injected `VERCEL_PROJECT_PRODUCTION_URL`. For custom domains or non-Vercel hosting, set the optional `SITE_URL` environment variable (e.g. `SITE_URL=https://your-domain.com`).
+
 ## 🧪 Running Tests
 
 Run the unit test suite using Jest and ts-jest:
