@@ -106,7 +106,7 @@ async function generateAssets() {
   console.log(`📌 Source Icon: ${path.relative(PROJECT_ROOT, sourceIcon)} (hash: ${iconHash}, version: ${appVersion || 'n/a'})`);
   console.log(`📌 Favicon Source: ${path.relative(PROJECT_ROOT, faviconSource)}`);
 
-  const themeColor = (expoConfig.web && expoConfig.web.themeColor) || '#083a3e';
+  const themeColor = (expoConfig.web && expoConfig.web.themeColor) || '#020617';
   const appName = (expoConfig.web && expoConfig.web.name) || expoConfig.name || 'FinancesOrganiser';
   const shortName = (expoConfig.web && expoConfig.web.shortName) || expoConfig.slug || 'FinancesOrganiser';
   const lang = (expoConfig.web && expoConfig.web.lang) || 'en';

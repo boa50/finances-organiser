@@ -56,6 +56,45 @@ export function setStoredThemeMode(mode: ThemeMode): void {
   }
 }
 
+export function applyThemeToDocument(mode: ThemeMode): void {
+  if (typeof document === 'undefined') return;
+
+  const activeBg = mode === 'dark' ? darkTheme.colors.background : lightTheme.colors.background;
+  const activeText = mode === 'dark' ? darkTheme.colors.textPrimary : lightTheme.colors.textPrimary;
+
+  if (document.documentElement) {
+    document.documentElement.style.backgroundColor = activeBg;
+    document.documentElement.style.colorScheme = mode;
+  }
+  if (document.body) {
+    document.body.style.backgroundColor = activeBg;
+    document.body.style.color = activeText;
+  }
+  const rootEl = document.getElementById('root');
+  if (rootEl) {
+    rootEl.style.backgroundColor = activeBg;
+  }
+
+  // Update meta tags for browser status bar and system navigation bar colors
+  const setMetaTag = (attrName: string, attrVal: string, content: string) => {
+    let meta = document.querySelector(`meta[${attrName}="${attrVal}"]`);
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute(attrName, attrVal);
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', content);
+  };
+
+  setMetaTag('name', 'theme-color', activeBg);
+  setMetaTag('name', 'msapplication-TileColor', activeBg);
+  setMetaTag(
+    'name',
+    'apple-mobile-web-app-status-bar-style',
+    mode === 'dark' ? 'black-translucent' : 'default'
+  );
+}
+
 export interface ThemeProviderProps {
   children: React.ReactNode;
   initialMode?: ThemeMode;
@@ -75,23 +114,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children, initialM
   };
 
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      const activeBg = mode === 'dark' ? darkTheme.colors.background : lightTheme.colors.background;
-      const activeText = mode === 'dark' ? darkTheme.colors.textPrimary : lightTheme.colors.textPrimary;
-
-      if (document.documentElement) {
-        document.documentElement.style.backgroundColor = activeBg;
-        document.documentElement.style.colorScheme = mode;
-      }
-      if (document.body) {
-        document.body.style.backgroundColor = activeBg;
-        document.body.style.color = activeText;
-      }
-      const rootEl = document.getElementById('root');
-      if (rootEl) {
-        rootEl.style.backgroundColor = activeBg;
-      }
-    }
+    applyThemeToDocument(mode);
   }, [mode]);
 
   const value = useMemo<ThemeContextValue>(() => {

@@ -101,4 +101,85 @@ describe('Theme System', () => {
       expect(darkTheme.colors.accent).toBe(palette.sky400);
     });
   });
+
+  describe('ThemeProvider Meta Tag & DOM Sync', () => {
+    const originalDocument = (global as any).document;
+
+    afterEach(() => {
+      if (originalDocument) {
+        (global as any).document = originalDocument;
+      } else {
+        delete (global as any).document;
+      }
+    });
+
+    it('syncs theme-color, msapplication-TileColor and apple status bar meta tags for dark and light modes', () => {
+      const metaTags: Record<string, string> = {};
+      const docStyle: Record<string, any> = {};
+      const bodyStyle: Record<string, any> = {};
+      const rootStyle: Record<string, any> = {};
+
+      const mockDoc: any = {
+        documentElement: { style: docStyle },
+        body: { style: bodyStyle },
+        head: {
+          appendChild: (node: any) => {
+            const name = node.getAttribute('name');
+            const content = node.getAttribute('content');
+            if (name) metaTags[name] = content;
+          },
+        },
+        getElementById: (id: string) => (id === 'root' ? { style: rootStyle } : null),
+        querySelector: (selector: string) => {
+          const match = selector.match(/name="([^"]+)"/);
+          if (match && metaTags[match[1]] !== undefined) {
+            const name = match[1];
+            return {
+              setAttribute: (k: string, v: string) => {
+                if (k === 'content') metaTags[name] = v;
+              },
+              getAttribute: (k: string) => (k === 'content' ? metaTags[name] : null),
+            };
+          }
+          return null;
+        },
+        createElement: (tag: string) => {
+          const attrs: Record<string, string> = {};
+          return {
+            setAttribute: (k: string, v: string) => {
+              attrs[k] = v;
+              if (attrs.name && attrs.content) {
+                metaTags[attrs.name] = attrs.content;
+              }
+            },
+            getAttribute: (k: string) => attrs[k] || null,
+          };
+        },
+      };
+
+      (global as any).document = mockDoc;
+
+      const { applyThemeToDocument } = require('../ThemeContext');
+
+      // 1. Test dark mode sync
+      applyThemeToDocument('dark');
+      expect(metaTags['theme-color']).toBe(darkTheme.colors.background);
+      expect(metaTags['msapplication-TileColor']).toBe(darkTheme.colors.background);
+      expect(metaTags['apple-mobile-web-app-status-bar-style']).toBe('black-translucent');
+      expect(docStyle.backgroundColor).toBe(darkTheme.colors.background);
+      expect(docStyle.colorScheme).toBe('dark');
+      expect(bodyStyle.backgroundColor).toBe(darkTheme.colors.background);
+      expect(rootStyle.backgroundColor).toBe(darkTheme.colors.background);
+
+      // 2. Test light mode sync
+      applyThemeToDocument('light');
+      expect(metaTags['theme-color']).toBe(lightTheme.colors.background);
+      expect(metaTags['msapplication-TileColor']).toBe(lightTheme.colors.background);
+      expect(metaTags['apple-mobile-web-app-status-bar-style']).toBe('default');
+      expect(docStyle.backgroundColor).toBe(lightTheme.colors.background);
+      expect(docStyle.colorScheme).toBe('light');
+      expect(bodyStyle.backgroundColor).toBe(lightTheme.colors.background);
+      expect(rootStyle.backgroundColor).toBe(lightTheme.colors.background);
+    });
+  });
 });
