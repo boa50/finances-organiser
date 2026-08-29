@@ -186,4 +186,61 @@ describe('TransactionItemCard - Reference Display', () => {
     expect(refTextNode.props.numberOfLines).toBe(1);
     expect(refTextNode.props.ellipsizeMode).toBe('tail');
   });
+
+  it('updates reference title automatically when referenced transaction title changes', () => {
+    mockGetLocalTransactionById.mockReturnValue({
+      id: 'tx-parent-123',
+      title: 'Initial Parent Title',
+    });
+
+    const txWithRef: Transaction = {
+      ...baseTx,
+      referencedTransactionId: 'tx-parent-123',
+    };
+
+    const findByProp = (node: any, predicate: (n: any) => boolean): any => {
+      if (!node) return null;
+      if (predicate(node)) return node;
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          const res = findByProp(child, predicate);
+          if (res) return res;
+        }
+      }
+      if (node.props && node.props.children) {
+        return findByProp(node.props.children, predicate);
+      }
+      return null;
+    };
+
+    // First render with Initial Parent Title
+    const initialRender = TransactionItemCard({
+      transaction: txWithRef,
+      onEdit: jest.fn(),
+    }) as any;
+
+    const initialRefTextNode = findByProp(
+      initialRender,
+      (n) => n?.props && typeof n.props.children === 'string' && n.props.children.includes('Initial Parent Title')
+    );
+    expect(initialRefTextNode).toBeDefined();
+
+    // Referenced transaction title is updated in local memory
+    mockGetLocalTransactionById.mockReturnValue({
+      id: 'tx-parent-123',
+      title: 'Updated Parent Title',
+    });
+
+    // Subsequent render of TransactionItemCard
+    const updatedRender = TransactionItemCard({
+      transaction: txWithRef,
+      onEdit: jest.fn(),
+    }) as any;
+
+    const updatedRefTextNode = findByProp(
+      updatedRender,
+      (n) => n?.props && typeof n.props.children === 'string' && n.props.children.includes('Updated Parent Title')
+    );
+    expect(updatedRefTextNode).toBeDefined();
+  });
 });

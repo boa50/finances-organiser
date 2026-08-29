@@ -110,26 +110,19 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
 
   const catLabel = resolvedCategory;
 
-  const [asyncRefTitle, setAsyncRefTitle] = React.useState<string | undefined>(() => {
-    if (referencedTransactionTitle) return referencedTransactionTitle;
-    if (transaction.referencedTransactionId) {
-      return tursoService.getLocalTransactionById(transaction.referencedTransactionId)?.title;
-    }
-    return undefined;
-  });
+  const localReferencedTitle = transaction.referencedTransactionId
+    ? tursoService.getLocalTransactionById(transaction.referencedTransactionId)?.title
+    : undefined;
+
+  const [asyncRefTitle, setAsyncRefTitle] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
-    if (referencedTransactionTitle) {
-      setAsyncRefTitle(referencedTransactionTitle);
+    if (referencedTransactionTitle || localReferencedTitle) {
+      setAsyncRefTitle(undefined);
       return;
     }
     if (!transaction.referencedTransactionId) {
       setAsyncRefTitle(undefined);
-      return;
-    }
-    const local = tursoService.getLocalTransactionById(transaction.referencedTransactionId);
-    if (local?.title) {
-      setAsyncRefTitle(local.title);
       return;
     }
 
@@ -143,13 +136,10 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [transaction.referencedTransactionId, referencedTransactionTitle]);
+  }, [transaction.referencedTransactionId, referencedTransactionTitle, localReferencedTitle]);
 
-  const resolvedReferenceTitle = referencedTransactionTitle ?? asyncRefTitle ?? (
-    transaction.referencedTransactionId
-      ? tursoService.getLocalTransactionById(transaction.referencedTransactionId)?.title
-      : undefined
-  );
+  const resolvedReferenceTitle =
+    referencedTransactionTitle ?? localReferencedTitle ?? asyncRefTitle;
 
   return (
     <AppCard style={styles.txRow} padding="lg">
