@@ -49,6 +49,7 @@ import React from 'react';
 (jest.spyOn(React, 'useCallback') as any).mockImplementation((fn: any) => fn);
 (jest.spyOn(React, 'useMemo') as any).mockImplementation((fn: any) => fn());
 (jest.spyOn(React, 'useEffect') as any).mockImplementation(() => {});
+(jest.spyOn(React, 'useRef') as any).mockImplementation((init: any) => ({ current: init }));
 
 let capturedItemCardProps: any = null;
 jest.mock('../../components/transactions', () => ({
@@ -91,7 +92,7 @@ jest.mock('../../components/ui', () => ({
 }));
 
 import { Transaction } from '../../types';
-import { buildFlattenedTransactions, monthKey } from '../TransactionsScreen';
+import { buildFlattenedTransactions, findCurrentMonthIndex, monthKey, TransactionListItem } from '../TransactionsScreen';
 
 describe('TransactionsScreen helpers', () => {
   const mockTransactions: Transaction[] = [
@@ -222,6 +223,54 @@ describe('TransactionsScreen helpers', () => {
         expect(header.label).toBe('Undated');
         expect(header.netBalance).toBe(-150);
       }
+    });
+  });
+
+  describe('findCurrentMonthIndex', () => {
+    it('returns -1 for empty item list', () => {
+      expect(findCurrentMonthIndex([])).toBe(-1);
+    });
+
+    it('returns index of exact current month header when future months precede it', () => {
+      const items: TransactionListItem[] = [
+        { type: 'header', id: 'header-2026-9', label: 'October 2026', netBalance: -100 },
+        { type: 'transaction', id: 'tx-oct', data: mockTransactions[0] },
+        { type: 'header', id: 'header-2026-8', label: 'September 2026', netBalance: -200 },
+        { type: 'transaction', id: 'tx-sep', data: mockTransactions[0] },
+        { type: 'header', id: 'header-2026-7', label: 'August 2026', netBalance: 500 },
+        { type: 'transaction', id: 'tx-aug', data: mockTransactions[0] },
+      ];
+
+      // August 2026 is month index 7 (0-indexed)
+      const refDate = new Date(2026, 7, 15);
+      const index = findCurrentMonthIndex(items, refDate);
+      expect(index).toBe(4);
+    });
+
+    it('returns 0 when current month is already the first header', () => {
+      const items: TransactionListItem[] = [
+        { type: 'header', id: 'header-2026-7', label: 'August 2026', netBalance: 500 },
+        { type: 'transaction', id: 'tx-aug', data: mockTransactions[0] },
+        { type: 'header', id: 'header-2026-6', label: 'July 2026', netBalance: -200 },
+      ];
+
+      const refDate = new Date(2026, 7, 1);
+      const index = findCurrentMonthIndex(items, refDate);
+      expect(index).toBe(0);
+    });
+
+    it('falls back to the closest preceding month when current month has no transactions', () => {
+      const items: TransactionListItem[] = [
+        { type: 'header', id: 'header-2026-9', label: 'October 2026', netBalance: -100 },
+        { type: 'transaction', id: 'tx-oct', data: mockTransactions[0] },
+        // No August 2026 (header-2026-7)
+        { type: 'header', id: 'header-2026-6', label: 'July 2026', netBalance: 300 },
+        { type: 'transaction', id: 'tx-jul', data: mockTransactions[0] },
+      ];
+
+      const refDate = new Date(2026, 7, 1); // August 2026
+      const index = findCurrentMonthIndex(items, refDate);
+      expect(index).toBe(2); // Should point to July 2026 header
     });
   });
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -6,7 +6,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { useTranslation } from 'react-i18next';
 import { Transaction } from '../types';
 import { filterTransactions, parseTransactionDate } from '../utils/financials';
@@ -78,6 +78,45 @@ export function buildFlattenedTransactions(
   return items;
 }
 
+export function findCurrentMonthIndex(
+  items: TransactionListItem[],
+  referenceDate: Date = new Date()
+): number {
+  if (!items || items.length === 0) return -1;
+  const currentKey = `${referenceDate.getFullYear()}-${referenceDate.getMonth()}`;
+  const currentHeaderId = `header-${currentKey}`;
+
+  // 1. Check exact match for header of current month
+  const exactIndex = items.findIndex(
+    (item) => item.type === 'header' && item.id === currentHeaderId
+  );
+  if (exactIndex !== -1) return exactIndex;
+
+  // 2. If no exact current month header exists, find the first month header with date <= referenceDate (most recent month <= current)
+  const targetTime = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    1
+  ).getTime();
+
+  const fallbackIndex = items.findIndex((item) => {
+    if (item.type === 'header') {
+      const parts = item.id.replace('header-', '').split('-');
+      if (parts.length === 2) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        if (!isNaN(year) && !isNaN(month)) {
+          const itemTime = new Date(year, month, 1).getTime();
+          return itemTime <= targetTime;
+        }
+      }
+    }
+    return false;
+  });
+
+  return fallbackIndex !== -1 ? fallbackIndex : 0;
+}
+
 export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   transactions,
   onRefresh,
@@ -95,6 +134,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const [serverSearchResults, setServerSearchResults] = useState<Transaction[] | null>(null);
   const [serverSearchTotal, setServerSearchTotal] = useState<number | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const flashListRef = useRef<FlashListRef<TransactionListItem>>(null);
+  const hasAutoScrolledRef = useRef(false);
 
   // Debounced server-side search when not all transactions are loaded locally
   useEffect(() => {
@@ -147,6 +188,33 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       t('transactions.undatedTransactions')
     );
   }, [filteredTransactions, i18n.language, t]);
+
+  useEffect(() => {
+    if (
+      hasAutoScrolledRef.current ||
+      flattenedList.length === 0 ||
+      searchQuery.trim() ||
+      filterType !== 'all'
+    ) {
+      return;
+    }
+
+    const targetIndex = findCurrentMonthIndex(flattenedList);
+    if (targetIndex > 0) {
+      hasAutoScrolledRef.current = true;
+      const timer = setTimeout(() => {
+        try {
+          flashListRef.current?.scrollToIndex({
+            index: targetIndex,
+            animated: true,
+          });
+        } catch (err) {
+          // Fallback if FlashList is not yet measured
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [flattenedList, searchQuery, filterType]);
 
   const handleEdit = useCallback((transaction: Transaction) => {
     if (transaction.subscriptionId) {
@@ -363,6 +431,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         {/* Scrollable FlashList Area */}
         <View style={styles.listWrapper}>
           <FlashList<TransactionListItem>
+            ref={flashListRef}
             data={flattenedList}
             renderItem={renderItem}
             getItemType={(item) => item.type}
