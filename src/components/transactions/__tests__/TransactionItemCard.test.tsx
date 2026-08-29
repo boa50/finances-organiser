@@ -55,6 +55,12 @@ jest.mock('../../../theme', () => {
   };
 });
 
+(jest.spyOn(React, 'useState') as any).mockImplementation((initial: any) => [
+  typeof initial === 'function' ? initial() : initial,
+  jest.fn(),
+]);
+(jest.spyOn(React, 'useEffect') as any).mockImplementation(() => {});
+
 jest.mock('react-native', () => {
   const React = require('react');
   return {
@@ -138,5 +144,46 @@ describe('TransactionItemCard - Reference Display', () => {
     });
 
     expect(element).toBeDefined();
+  });
+
+  it('configures reference text with ellipsis (numberOfLines=1 and ellipsizeMode="tail")', () => {
+    mockGetLocalTransactionById.mockReturnValue({
+      id: 'tx-parent-123',
+      title: 'Original Electronic Purchase with very long title',
+    });
+
+    const txWithRef: Transaction = {
+      ...baseTx,
+      referencedTransactionId: 'tx-parent-123',
+    };
+
+    const rendered = TransactionItemCard({
+      transaction: txWithRef,
+      onEdit: jest.fn(),
+    }) as any;
+
+    const findByProp = (node: any, predicate: (n: any) => boolean): any => {
+      if (!node) return null;
+      if (predicate(node)) return node;
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          const res = findByProp(child, predicate);
+          if (res) return res;
+        }
+      }
+      if (node.props && node.props.children) {
+        return findByProp(node.props.children, predicate);
+      }
+      return null;
+    };
+
+    const refTextNode = findByProp(
+      rendered,
+      (n) => n?.props && typeof n.props.children === 'string' && n.props.children.includes('Original Electronic Purchase')
+    );
+
+    expect(refTextNode).toBeDefined();
+    expect(refTextNode.props.numberOfLines).toBe(1);
+    expect(refTextNode.props.ellipsizeMode).toBe('tail');
   });
 });

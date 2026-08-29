@@ -223,7 +223,11 @@ export const TransactionItemCard: React.FC<TransactionItemCardProps> = ({
                 <AppText style={[styles.dotSeparator, { color: theme.colors.borderStrong }]}>•</AppText>
                 <View style={styles.referenceBadge}>
                   <Link2 size={11} color={theme.colors.accent} />
-                  <AppText style={[styles.referenceText, { color: theme.colors.accent }]} numberOfLines={1}>
+                  <AppText
+                    style={[styles.referenceText, { color: theme.colors.accent }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
                     {`${t('transactions.referencedPrefix', { defaultValue: 'Ref:' })} ${resolvedReferenceTitle}`}
                   </AppText>
                 </View>
@@ -293,6 +297,7 @@ const styles = StyleSheet.create({
   },
   txMainInfo: {
     flex: 1,
+    minWidth: 0,
     gap: 3,
   },
   txTopRow: {
@@ -333,6 +338,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: theme.spacing.xs,
     flex: 1,
+    minWidth: 0,
   },
   txCategory: {
     fontSize: theme.fontSize.xs,
@@ -368,10 +374,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    maxWidth: '100%',
+    flexShrink: 1,
   },
   referenceText: {
     fontSize: theme.fontSize.xs,
     fontWeight: theme.fontWeight.semibold,
+    flexShrink: 1,
   },
 });
 
