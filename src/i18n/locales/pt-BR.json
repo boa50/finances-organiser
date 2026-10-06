@@ -100,7 +100,8 @@
     "period1y": "1 Ano",
     "period6m": "6 Meses",
     "monthSummary": "Resumo de {{month}}",
-    "monthSummaryTitle": "Resumo de {{month}}"
+    "monthSummaryTitle": "Resumo de {{month}}",
+    "loadingChartData": "Carregando dados dos gráficos..."
   },
   "transactions": {
     "title": "Histórico de Transações",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Transaction, TursoConfig } from '../types';
 import { tursoService } from '../services/tursoService';
 import { subscriptionService } from '../services/subscriptionService';
@@ -21,6 +21,12 @@ export function useAppData(enabled: boolean = true) {
   });
   const [isFullyLoaded, setIsFullyLoaded] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoadingAllTransactions, setIsLoadingAllTransactions] = useState(false);
+  const isFullyLoadedRef = useRef(isFullyLoaded);
+  useEffect(() => {
+    isFullyLoadedRef.current = isFullyLoaded;
+  }, [isFullyLoaded]);
+  const loadingAllPromiseRef = useRef<Promise<void> | null>(null);
   const { showToast, updateToast } = useToast();
   const [tursoConfig, setTursoConfig] = useState<TursoConfig>(() => tursoService.getConfig());
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -48,9 +54,16 @@ export function useAppData(enabled: boolean = true) {
         bankService.setBanksFromBootstrap(bootstrapResult.banks);
       }
 
-      setTransactions(bootstrapResult.recentTransactions);
-      setTotalCount(bootstrapResult.totalCount);
-      setIsFullyLoaded(bootstrapResult.recentTransactions.length >= bootstrapResult.totalCount);
+      if (isFullyLoadedRef.current) {
+        const all = await tursoService.getTransactions();
+        setTransactions(all);
+        setTotalCount(all.length);
+        setIsFullyLoaded(true);
+      } else {
+        setTransactions(bootstrapResult.recentTransactions);
+        setTotalCount(bootstrapResult.totalCount);
+        setIsFullyLoaded(bootstrapResult.recentTransactions.length >= bootstrapResult.totalCount);
+      }
       const currentConfig = tursoService.getConfig();
       setTursoConfig(currentConfig);
       setIsConnected(currentConfig.isConnected);
@@ -146,6 +159,30 @@ export function useAppData(enabled: boolean = true) {
     });
   };
 
+  const loadAllTransactions = useCallback(async () => {
+    if (isFullyLoadedRef.current) return;
+    if (loadingAllPromiseRef.current) return loadingAllPromiseRef.current;
+
+    setIsLoadingAllTransactions(true);
+    const promise = (async () => {
+      try {
+        const all = await tursoService.getTransactions();
+        setTransactions(all);
+        setTotalCount(all.length);
+        setIsFullyLoaded(true);
+        isFullyLoadedRef.current = true;
+      } catch (err) {
+        console.warn('Error loading all transactions:', err);
+      } finally {
+        setIsLoadingAllTransactions(false);
+        loadingAllPromiseRef.current = null;
+      }
+    })();
+
+    loadingAllPromiseRef.current = promise;
+    return promise;
+  }, []);
+
   return {
     transactions,
     tursoConfig,
@@ -159,5 +196,7 @@ export function useAppData(enabled: boolean = true) {
     isLoadingMore,
     totalCount,
     loadMoreTransactions,
+    isLoadingAllTransactions,
+    loadAllTransactions,
   };
 }

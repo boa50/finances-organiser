@@ -10,18 +10,34 @@ import { tursoService } from '../services/tursoService';
 import { MonthlyBreakdownCharts } from '../components/analytics';
 import { EvolutionTrendChart } from '../components/charts';
 import { DEFAULT_CURRENCY, convertCurrency, formatMoney } from '../utils/currencies';
-import { AppCard, AppText } from '../components/ui';
+import { AppCard, AppLoadingView, AppText } from '../components/ui';
 import { ArrowDownLeft, ArrowUpRight, Scale } from 'lucide-react-native';
 import theme, { useTheme } from '../theme';
 
 interface AnalyticsScreenProps {
   transactions: Transaction[];
+  isFullyLoaded?: boolean;
+  isLoadingAllTransactions?: boolean;
+  onLoadAllTransactions?: () => Promise<void> | void;
 }
 
-export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }) => {
+export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
+  transactions,
+  isFullyLoaded = true,
+  isLoadingAllTransactions = false,
+  onLoadAllTransactions,
+}) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const [lifetimeTotals, setLifetimeTotals] = useState<{ income: number; expense: number } | null>(null);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
+
+  useEffect(() => {
+    if (!isFullyLoaded && onLoadAllTransactions && !hasAttemptedLoad) {
+      setHasAttemptedLoad(true);
+      onLoadAllTransactions();
+    }
+  }, [isFullyLoaded, onLoadAllTransactions, hasAttemptedLoad]);
 
   useEffect(() => {
     let isMounted = true;
@@ -44,6 +60,10 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({ transactions }
       isMounted = false;
     };
   }, [transactions]);
+
+  if ((!isFullyLoaded && !hasAttemptedLoad) || isLoadingAllTransactions) {
+    return <AppLoadingView message={t('analytics.loadingChartData')} />;
+  }
 
   // Compute total statistics across all recorded transactions
   let totalIncomeConverted = 0;

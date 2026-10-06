@@ -39,6 +39,8 @@ function MainApp() {
     isLoadingMore,
     totalCount,
     loadMoreTransactions,
+    isLoadingAllTransactions,
+    loadAllTransactions,
   } = useAppData(isAuthenticated);
   const [activeTab, setActiveTab] = useState<TabName>('overview');
   const [addTransactionModalVisible, setAddTransactionModalVisible] = useState(false);
@@ -118,7 +120,12 @@ function MainApp() {
         )}
 
         {activeTab === 'analytics' && (
-          <AnalyticsScreen transactions={transactions} />
+          <AnalyticsScreen
+            transactions={transactions}
+            isFullyLoaded={isFullyLoaded}
+            isLoadingAllTransactions={isLoadingAllTransactions}
+            onLoadAllTransactions={loadAllTransactions}
+          />
         )}
 
         {activeTab === 'transactions' && (

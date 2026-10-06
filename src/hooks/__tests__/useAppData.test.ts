@@ -21,6 +21,7 @@ jest.mock('../../services/tursoService', () => ({
       hasMore: false,
     }),
     getRecentTransactions: jest.fn().mockResolvedValue([]),
+    getTransactions: jest.fn().mockResolvedValue([]),
     getTransactionCount: jest.fn().mockResolvedValue(0),
     clearAllTransactions: jest.fn().mockResolvedValue([]),
   },
@@ -75,20 +76,66 @@ jest.mock('../../utils/dialogs', () => ({
   confirmAction: jest.fn(),
 }));
 
+let hookState: any[] = [];
+let hookIndex = 0;
+
 describe('useAppData - Connection Gating', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    hookState = [];
+    hookIndex = 0;
   });
 
+  (jest.spyOn(React, 'useState') as any).mockImplementation((initial: any) => {
+    const idx = hookIndex++;
+    if (hookState[idx] === undefined) {
+      hookState[idx] = typeof initial === 'function' ? initial() : initial;
+    }
+    const setValue = (val: any) => {
+      hookState[idx] = typeof val === 'function' ? val(hookState[idx]) : val;
+    };
+    return [hookState[idx], setValue];
+  });
+  (jest.spyOn(React, 'useCallback') as any).mockImplementation((fn: any) => fn);
+  (jest.spyOn(React, 'useEffect') as any).mockImplementation(() => {});
+  (jest.spyOn(React, 'useRef') as any).mockImplementation((init: any) => ({ current: init }));
+
   it('exposes connection gating states and initializes bootstrap', () => {
-    let hookResult: ReturnType<typeof useAppData> | null = null;
+    let hookResult: any = null;
 
     function TestComponent({ enabled }: { enabled: boolean }) {
       hookResult = useAppData(enabled);
       return null;
     }
 
-    const element = React.createElement(TestComponent, { enabled: true });
-    expect(element).toBeDefined();
+    TestComponent({ enabled: true });
+    expect(hookResult).toBeDefined();
+    expect(hookResult?.isLoadingAllTransactions).toBe(false);
+    expect(typeof hookResult?.loadAllTransactions).toBe('function');
+  });
+
+  it('calls tursoService.getTransactions when loadAllTransactions is triggered', async () => {
+    const mockFullTx = [
+      { id: 'tx-1', title: 'Coffee', amount: 10, type: 'expense', date: '2026-01-01', currencyId: 'BRL', createdAt: '2026-01-01T00:00:00.000Z' },
+      { id: 'tx-2', title: 'Salary', amount: 5000, type: 'income', date: '2026-01-02', currencyId: 'BRL', createdAt: '2026-01-02T00:00:00.000Z' },
+    ];
+    (tursoService.getTransactions as jest.Mock).mockResolvedValueOnce(mockFullTx);
+
+    let hookResult: any = null;
+    function TestComponent({ enabled }: { enabled: boolean }) {
+      hookIndex = 0;
+      hookResult = useAppData(enabled);
+      return null;
+    }
+
+    TestComponent({ enabled: true });
+
+    await hookResult?.loadAllTransactions();
+    TestComponent({ enabled: true });
+
+    expect(tursoService.getTransactions).toHaveBeenCalledTimes(1);
+    expect(hookResult?.transactions).toEqual(mockFullTx);
+    expect(hookResult?.totalCount).toBe(2);
+    expect(hookResult?.isFullyLoaded).toBe(true);
   });
 });

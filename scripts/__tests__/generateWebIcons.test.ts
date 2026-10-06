@@ -91,7 +91,7 @@ describe('generateWebIcons script', () => {
   }, 60000);
 
   describe('getCombinedHash', () => {
-    const iconPath = path.resolve(__dirname, '../../assets/icon-v2.png');
+    const iconPath = path.resolve(__dirname, '../../assets/icon.png');
 
     it('produces a different hash when version changes', () => {
       const hash1 = getCombinedHash(iconPath, '1.0.0');
