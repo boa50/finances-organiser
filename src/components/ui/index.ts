@@ -39,4 +39,8 @@ export {
   type AppIconButtonSize,
 } from './AppIconButton';
 export { GlobalToast } from './GlobalToast';
-
+export {
+  AppMultiSelectDropdown,
+  type AppMultiSelectDropdownProps,
+  type MultiSelectItem,
+} from './AppMultiSelectDropdown';

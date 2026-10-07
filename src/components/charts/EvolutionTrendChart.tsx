@@ -1,12 +1,20 @@
 import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import { View, StyleSheet, Dimensions, Pressable, ScrollView } from 'react-native';
 import Svg, { Path, Circle, Line, Text as SvgText, G, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
-import { Transaction, MonthlyAggregate } from '../../types';
+import { X } from 'lucide-react-native';
+import { Transaction, MonthlyAggregate, CategoryItem } from '../../types';
 import { aggregateEvolutionData } from '../../utils/financials';
+import { categoryService } from '../../services/categoryService';
 import { useEvolutionChartD3 } from '../../hooks/useEvolutionChartD3';
 import { MonthDetailSummaryCard } from '../analytics/MonthDetailSummaryCard';
-import { AppCard, AppSegmentedControl, AppText } from '../ui';
+import {
+  AppCard,
+  AppMultiSelectDropdown,
+  AppSegmentedControl,
+  AppText,
+  MultiSelectItem,
+} from '../ui';
 import theme, { useTheme } from '../../theme';
 
 export type EvolutionPeriod = '5y' | '1y' | '6m';
@@ -14,6 +22,7 @@ export type EvolutionPeriod = '5y' | '1y' | '6m';
 export interface EvolutionTrendChartProps {
   transactions: Transaction[];
   targetCurrency: string;
+  categories?: CategoryItem[];
 }
 
 function formatYAxisTick(tick: number): string {
@@ -32,11 +41,49 @@ function formatYAxisTick(tick: number): string {
 export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
   transactions,
   targetCurrency,
+  categories,
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const [selectedPeriod, setSelectedPeriod] = useState<EvolutionPeriod>('1y');
   const [selectedMonth, setSelectedMonth] = useState<MonthlyAggregate | null>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+
+  const availableCategories = useMemo(() => {
+    return categories || categoryService.getCategoriesSync();
+  }, [categories]);
+
+  const categoryFilterItems = useMemo<MultiSelectItem[]>(() => {
+    return availableCategories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      icon: c.icon,
+      color: c.color,
+      type: c.type,
+    }));
+  }, [availableCategories]);
+
+  const hasIncomeSelected = useMemo(() => {
+    if (selectedCategoryIds.length === 0) return true;
+    return availableCategories.some(
+      (c) => selectedCategoryIds.includes(c.id) && c.type === 'income'
+    );
+  }, [selectedCategoryIds, availableCategories]);
+
+  const hasExpenseSelected = useMemo(() => {
+    if (selectedCategoryIds.length === 0) return true;
+    return availableCategories.some(
+      (c) => selectedCategoryIds.includes(c.id) && c.type === 'expense'
+    );
+  }, [selectedCategoryIds, availableCategories]);
+
+  const filteredTransactions = useMemo(() => {
+    if (selectedCategoryIds.length === 0) return transactions;
+    const selectedSet = new Set(selectedCategoryIds);
+    return transactions.filter(
+      (tx) => tx.categoryId && selectedSet.has(tx.categoryId)
+    );
+  }, [transactions, selectedCategoryIds]);
 
   const periodOptions: { label: string; value: EvolutionPeriod }[] = [
     { label: t('analytics.period5y'), value: '5y' },
@@ -47,8 +94,8 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
   const limitMonths = selectedPeriod === '6m' ? 6 : selectedPeriod === '1y' ? 12 : 60;
 
   const monthlyData = useMemo(() => {
-    return aggregateEvolutionData(transactions, targetCurrency, limitMonths);
-  }, [transactions, targetCurrency, limitMonths]);
+    return aggregateEvolutionData(filteredTransactions, targetCurrency, limitMonths);
+  }, [filteredTransactions, targetCurrency, limitMonths]);
 
   const width = Math.min(Dimensions.get('window').width - 48, 680);
   const height = 250;
@@ -75,6 +122,8 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
     marginRight,
     marginBottom,
     marginLeft,
+    includeIncome: hasIncomeSelected,
+    includeExpense: hasExpenseSelected,
   });
 
   const activeMonth =
@@ -88,7 +137,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
 
   return (
     <AppCard variant="glass" padding="4xl" style={styles.card}>
-      {/* Top Header Row with Title on Left and Period Selection on Right */}
+      {/* Top Header Row with Title on Left and Controls on Right */}
       <View style={styles.headerRow}>
         <View style={styles.titleCol}>
           <AppText style={[styles.cardTitle, { color: theme.colors.textPrimary }]}>
@@ -100,6 +149,15 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
         </View>
 
         <View style={styles.headerControls}>
+          <AppMultiSelectDropdown
+            items={categoryFilterItems}
+            selectedIds={selectedCategoryIds}
+            onChange={(ids) => {
+              setSelectedCategoryIds(ids);
+              setSelectedMonth(null);
+            }}
+            showTypeFilter
+          />
           <AppSegmentedControl<EvolutionPeriod>
             options={periodOptions}
             selectedValue={selectedPeriod}
@@ -113,20 +171,86 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
         </View>
       </View>
 
+      {/* Active Category Filter Chips Row */}
+      {selectedCategoryIds.length > 0 && (
+        <View style={styles.activeFilterRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.activeFilterChipsContainer}
+          >
+            {selectedCategoryIds.map((catId) => {
+              const cat = availableCategories.find((c) => c.id === catId);
+              if (!cat) return null;
+              return (
+                <View
+                  key={`active-cat-${catId}`}
+                  style={[
+                    styles.activeChip,
+                    {
+                      backgroundColor: theme.colors.surfaceRecessed,
+                      borderColor: cat.color ? `${cat.color}60` : theme.colors.borderSubtle,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.activeChipDot,
+                      { backgroundColor: cat.color || theme.colors.accent },
+                    ]}
+                  />
+                  <AppText style={[styles.activeChipText, { color: theme.colors.textPrimary }]}>
+                    {cat.name}
+                  </AppText>
+                  <Pressable
+                    onPress={() => {
+                      setSelectedCategoryIds((prev) => prev.filter((id) => id !== catId));
+                      setSelectedMonth(null);
+                    }}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={({ pressed }) => [styles.chipRemoveBtn, pressed && { opacity: 0.6 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove filter ${cat.name}`}
+                  >
+                    <X size={12} color={theme.colors.textMuted} />
+                  </Pressable>
+                </View>
+              );
+            })}
+            <Pressable
+              onPress={() => {
+                setSelectedCategoryIds([]);
+                setSelectedMonth(null);
+              }}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              style={styles.clearAllBtn}
+            >
+              <AppText style={[styles.clearAllBtnText, { color: theme.colors.accent }]}>
+                {t('common.clear')}
+              </AppText>
+            </Pressable>
+          </ScrollView>
+        </View>
+      )}
+
       {/* Compact Legend Row */}
       <View style={styles.legendContainer}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: theme.colors.success }]} />
-          <AppText style={[styles.legendText, { color: theme.colors.textSecondary }]}>
-            {t('common.income')}
-          </AppText>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: theme.colors.danger }]} />
-          <AppText style={[styles.legendText, { color: theme.colors.textSecondary }]}>
-            {t('common.expense')}
-          </AppText>
-        </View>
+        {hasIncomeSelected && (
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: theme.colors.success }]} />
+            <AppText style={[styles.legendText, { color: theme.colors.textSecondary }]}>
+              {t('common.income')}
+            </AppText>
+          </View>
+        )}
+        {hasExpenseSelected && (
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: theme.colors.danger }]} />
+            <AppText style={[styles.legendText, { color: theme.colors.textSecondary }]}>
+              {t('common.expense')}
+            </AppText>
+          </View>
+        )}
       </View>
 
       <View style={styles.chartWrapper}>
@@ -174,26 +298,34 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
             })}
 
             {/* Gradient Area Fills */}
-            <Path d={incomeAreaPath} fill="url(#incomeGradient)" />
-            <Path d={expenseAreaPath} fill="url(#expenseGradient)" />
+            {hasIncomeSelected && incomeAreaPath ? (
+              <Path d={incomeAreaPath} fill="url(#incomeGradient)" />
+            ) : null}
+            {hasExpenseSelected && expenseAreaPath ? (
+              <Path d={expenseAreaPath} fill="url(#expenseGradient)" />
+            ) : null}
 
             {/* Income & Expense Lines with Glowing Stroke */}
-            <Path
-              d={incomePath}
-              fill="none"
-              stroke={theme.colors.success}
-              strokeOpacity={0.9}
-              strokeWidth={3}
-              strokeLinecap="round"
-            />
-            <Path
-              d={expensePath}
-              fill="none"
-              stroke={theme.colors.danger}
-              strokeOpacity={0.9}
-              strokeWidth={3}
-              strokeLinecap="round"
-            />
+            {hasIncomeSelected && incomePath ? (
+              <Path
+                d={incomePath}
+                fill="none"
+                stroke={theme.colors.success}
+                strokeOpacity={0.9}
+                strokeWidth={3}
+                strokeLinecap="round"
+              />
+            ) : null}
+            {hasExpenseSelected && expensePath ? (
+              <Path
+                d={expensePath}
+                fill="none"
+                stroke={theme.colors.danger}
+                strokeOpacity={0.9}
+                strokeWidth={3}
+                strokeLinecap="round"
+              />
+            ) : null}
 
             {/* Month Data Nodes & Dynamic Non-overlapping X Axis Labels */}
             {monthlyData.map((d, index) => {
@@ -222,7 +354,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
                     />
                   )}
 
-                  {isSelected && (
+                  {hasIncomeSelected && isSelected && (
                     <Circle
                       cx={cx}
                       cy={cyIncome}
@@ -231,7 +363,7 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
                       fillOpacity={0.2}
                     />
                   )}
-                  {isSelected && (
+                  {hasExpenseSelected && isSelected && (
                     <Circle
                       cx={cx}
                       cy={cyExpense}
@@ -242,22 +374,26 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
                   )}
 
                   {/* Node circles */}
-                  <Circle
-                    cx={cx}
-                    cy={cyIncome}
-                    r={isSelected ? 6 : 4}
-                    fill={theme.colors.success}
-                    stroke={theme.colors.surface}
-                    strokeWidth={2}
-                  />
-                  <Circle
-                    cx={cx}
-                    cy={cyExpense}
-                    r={isSelected ? 6 : 4}
-                    fill={theme.colors.danger}
-                    stroke={theme.colors.surface}
-                    strokeWidth={2}
-                  />
+                  {hasIncomeSelected && (
+                    <Circle
+                      cx={cx}
+                      cy={cyIncome}
+                      r={isSelected ? 6 : 4}
+                      fill={theme.colors.success}
+                      stroke={theme.colors.surface}
+                      strokeWidth={2}
+                    />
+                  )}
+                  {hasExpenseSelected && (
+                    <Circle
+                      cx={cx}
+                      cy={cyExpense}
+                      r={isSelected ? 6 : 4}
+                      fill={theme.colors.danger}
+                      stroke={theme.colors.surface}
+                      strokeWidth={2}
+                    />
+                  )}
 
                   {/* X Axis Label */}
                   {shouldShowLabel && (
@@ -291,7 +427,12 @@ export const EvolutionTrendChart: React.FC<EvolutionTrendChartProps> = ({
       </View>
 
       {activeMonth && (
-        <MonthDetailSummaryCard activeMonth={activeMonth} targetCurrency={targetCurrency} />
+        <MonthDetailSummaryCard
+          activeMonth={activeMonth}
+          targetCurrency={targetCurrency}
+          showIncome={hasIncomeSelected}
+          showExpense={hasExpenseSelected}
+        />
       )}
     </AppCard>
   );
@@ -325,7 +466,48 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xxs,
   },
   headerControls: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  activeFilterRow: {
+    marginBottom: theme.spacing.xs,
+  },
+  activeFilterChipsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingVertical: theme.spacing.xxs,
+  },
+  activeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xxs,
+    borderRadius: theme.radii.pill,
+    borderWidth: 1,
+  },
+  activeChipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  activeChipText: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.medium,
+  },
+  chipRemoveBtn: {
+    padding: theme.spacing.xxs,
+  },
+  clearAllBtn: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xxs,
+  },
+  clearAllBtnText: {
+    fontSize: theme.fontSize.xs,
+    fontWeight: theme.fontWeight.semibold,
   },
   legendContainer: {
     flexDirection: 'row',

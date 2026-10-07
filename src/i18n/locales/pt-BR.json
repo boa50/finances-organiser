@@ -101,7 +101,22 @@
     "period6m": "6 Meses",
     "monthSummary": "Resumo de {{month}}",
     "monthSummaryTitle": "Resumo de {{month}}",
-    "loadingChartData": "Carregando dados dos gráficos..."
+    "loadingChartData": "Carregando dados dos gráficos...",
+    "filterCategories": "Categorias",
+    "allCategories": "Todas as Categorias",
+    "categoriesSelected": "{{count}} categorias selecionadas",
+    "categoryFilterTitle": "Filtrar por Categoria",
+    "categoryFilterSubtitle": "Selecione as categorias de despesa e receita para exibir",
+    "selectAll": "Selecionar Todas",
+    "clearAll": "Limpar",
+    "applyFilter": "Aplicar Filtro",
+    "resetFilter": "Redefinir para Todas",
+    "searchCategories": "Buscar categorias...",
+    "allTypes": "Todas",
+    "incomeCategories": "Receitas",
+    "expenseCategories": "Despesas",
+    "noCategoriesFound": "Nenhuma categoria encontrada",
+    "noDataForSelectedFilter": "Nenhuma transação encontrada para as categorias selecionadas."
   },
   "transactions": {
     "title": "Histórico de Transações",

@@ -101,7 +101,22 @@
     "period6m": "6 Months",
     "monthSummary": "{{month}} Summary",
     "monthSummaryTitle": "{{month}} Summary",
-    "loadingChartData": "Loading chart data..."
+    "loadingChartData": "Loading chart data...",
+    "filterCategories": "Categories",
+    "allCategories": "All Categories",
+    "categoriesSelected": "{{count}} categories selected",
+    "categoryFilterTitle": "Filter by Category",
+    "categoryFilterSubtitle": "Select expense and income categories to display",
+    "selectAll": "Select All",
+    "clearAll": "Clear",
+    "applyFilter": "Apply Filter",
+    "resetFilter": "Reset to All",
+    "searchCategories": "Search categories...",
+    "allTypes": "All",
+    "incomeCategories": "Incomes",
+    "expenseCategories": "Expenses",
+    "noCategoriesFound": "No categories found",
+    "noDataForSelectedFilter": "No transactions found for the selected categories."
   },
   "transactions": {
     "title": "Transaction History",

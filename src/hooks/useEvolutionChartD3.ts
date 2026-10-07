@@ -9,6 +9,8 @@ interface UseEvolutionChartD3Props {
   marginRight?: number;
   marginBottom?: number;
   marginLeft?: number;
+  includeIncome?: boolean;
+  includeExpense?: boolean;
 }
 
 export function useEvolutionChartD3({
@@ -19,6 +21,8 @@ export function useEvolutionChartD3({
   marginRight = 20,
   marginBottom = 40,
   marginLeft = 55,
+  includeIncome = true,
+  includeExpense = true,
 }: UseEvolutionChartD3Props) {
   const innerWidth = Math.max(width - marginLeft - marginRight, 0);
   const innerHeight = Math.max(height - marginTop - marginBottom, 0);
@@ -29,7 +33,14 @@ export function useEvolutionChartD3({
     .range([0, innerWidth])
     .padding(monthlyData.length <= 1 ? 0.5 : 0.1);
 
-  const maxVal = d3.max(monthlyData, (d) => Math.max(d.income, d.expense)) || 1000;
+  const maxVal =
+    d3.max(monthlyData, (d) => {
+      if (includeIncome && includeExpense) return Math.max(d.income, d.expense);
+      if (includeIncome) return d.income;
+      if (includeExpense) return d.expense;
+      return 0;
+    }) || 1000;
+
   const yScale = d3
     .scaleLinear()
     .domain([0, maxVal * 1.15])
@@ -67,10 +78,10 @@ export function useEvolutionChartD3({
     innerHeight,
     xScale,
     yScale,
-    incomePath: incomeLineGenerator(monthlyData) || '',
-    expensePath: expenseLineGenerator(monthlyData) || '',
-    incomeAreaPath: incomeAreaGenerator(monthlyData) || '',
-    expenseAreaPath: expenseAreaGenerator(monthlyData) || '',
+    incomePath: includeIncome ? incomeLineGenerator(monthlyData) || '' : '',
+    expensePath: includeExpense ? expenseLineGenerator(monthlyData) || '' : '',
+    incomeAreaPath: includeIncome ? incomeAreaGenerator(monthlyData) || '' : '',
+    expenseAreaPath: includeExpense ? expenseAreaGenerator(monthlyData) || '' : '',
     yTicks: yScale.ticks(5),
   };
 }

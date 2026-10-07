@@ -9,11 +9,15 @@ import theme, { useTheme } from '../../theme';
 export interface MonthDetailSummaryCardProps {
   activeMonth: MonthlyAggregate;
   targetCurrency: string;
+  showIncome?: boolean;
+  showExpense?: boolean;
 }
 
 export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
   activeMonth,
   targetCurrency,
+  showIncome = true,
+  showExpense = true,
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -32,25 +36,31 @@ export const MonthDetailSummaryCard: React.FC<MonthDetailSummaryCardProps> = ({
         {t('analytics.monthSummaryTitle', { month: activeMonth.monthLabel })}
       </AppText>
       <View style={styles.detailRow}>
-        <View style={styles.detailMetric}>
-          <AppText style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>
-            {t('common.income')}
-          </AppText>
-          <AppText style={[styles.detailValue, { color: theme.colors.success }]} tabularNums>
-            +{formatMoney(activeMonth.income, targetCurrency)}
-          </AppText>
-        </View>
+        {showIncome && (
+          <View style={styles.detailMetric}>
+            <AppText style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>
+              {t('common.income')}
+            </AppText>
+            <AppText style={[styles.detailValue, { color: theme.colors.success }]} tabularNums>
+              +{formatMoney(activeMonth.income, targetCurrency)}
+            </AppText>
+          </View>
+        )}
 
-        <View style={[styles.detailDivider, { backgroundColor: theme.colors.borderLight }]} />
+        {showIncome && showExpense && (
+          <View style={[styles.detailDivider, { backgroundColor: theme.colors.borderLight }]} />
+        )}
 
-        <View style={styles.detailMetric}>
-          <AppText style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>
-            {t('common.expense')}
-          </AppText>
-          <AppText style={[styles.detailValue, { color: theme.colors.danger }]} tabularNums>
-            -{formatMoney(activeMonth.expense, targetCurrency)}
-          </AppText>
-        </View>
+        {showExpense && (
+          <View style={styles.detailMetric}>
+            <AppText style={[styles.detailLabel, { color: theme.colors.textTertiary }]}>
+              {t('common.expense')}
+            </AppText>
+            <AppText style={[styles.detailValue, { color: theme.colors.danger }]} tabularNums>
+              -{formatMoney(activeMonth.expense, targetCurrency)}
+            </AppText>
+          </View>
+        )}
 
         <View style={[styles.detailDivider, { backgroundColor: theme.colors.borderLight }]} />
 
